@@ -33,6 +33,18 @@ public class LessonDefinition
     public int EstimatedMinutes { get; set; }
 
     /// <summary>
+    /// Describes when this lesson becomes available to the learner.
+    /// Expressed in content and evaluated by the progression engine.
+    /// </summary>
+    public UnlockRule Unlock { get; set; } = new();
+
+    /// <summary>
+    /// Describes what must be achieved for this lesson to count as completed.
+    /// Expressed in content and evaluated by the progression engine.
+    /// </summary>
+    public CompletionRule Completion { get; set; } = new();
+
+    /// <summary>
     /// The exercises that make up the lesson.
     /// Items are polymorphic; each entry deserializes into a concrete
     /// <see cref="ExerciseDefinition"/> subclass based on its <c>Type</c> discriminator.

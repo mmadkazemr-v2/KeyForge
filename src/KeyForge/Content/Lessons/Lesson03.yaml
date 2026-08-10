@@ -1,0 +1,80 @@
+id: lesson-03
+title: "Melodic Ear and Independence"
+description: "Ear training, finger independence, and octave work for both hands."
+level: elementary
+order: 3
+estimatedMinutes: 35
+
+unlock:
+  mode: prerequisitesCompleted
+  requiredLessonIds:
+    - lesson-01
+    - lesson-02
+
+completion:
+  minimumScore: 80
+  requireAllExercises: true
+
+exercises:
+  - type: earTraining
+    id: ex-01
+    title: "Major or Minor Chord"
+    description: "Listen and identify whether a chord sounds major or minor."
+    duration: 6
+    difficulty: easy
+    taskType: chordRecognition
+    rounds: 10
+    keys: [C major, G major]
+
+  - type: interval
+    id: ex-02
+    title: "Matching Melodies"
+    description: "Recognise intervals within short melodic phrases."
+    duration: 5
+    tempo: 72
+    difficulty: easy
+    intervals: [M2, M3, P5]
+    direction: ascending
+    startingNote: "C4"
+
+  - type: fingerIndependence
+    id: ex-03
+    title: "Three and Four"
+    description: "Drill fingers 3 and 4 independently in each hand."
+    duration: 5
+    tempo: 60
+    difficulty: easy
+    fingers: [3, 4]
+    hand: both
+
+  - type: octave
+    id: ex-04
+    title: "Octave Leaps in Both Hands"
+    description: "Play octave leaps with both hands together."
+    duration: 5
+    tempo: 76
+    difficulty: easy
+    octaves: 2
+    direction: ascending
+    startingNote: "C3"
+
+  - type: mentalKeyboard
+    id: ex-05
+    title: "Key Positions"
+    description: "Visualise scale positions mentally before playing them."
+    duration: 4
+    difficulty: easy
+    startingNote: "G3"
+    direction: ascending
+    steps: 6
+
+  - type: speed
+    id: ex-06
+    title: "Fast Octave Run"
+    description: "Play octave leaps at a steady, controlled tempo."
+    duration: 4
+    tempo: 84
+    difficulty: medium
+    pattern: repeatedNote
+    targetTempo: 120
+    repetitions: 8

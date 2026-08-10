@@ -1,0 +1,99 @@
+id: lesson-01
+title: "Keyboard Foundations"
+description: "Introduction to keyboard geography, rhythm, and basic note reading."
+level: beginner
+order: 1
+estimatedMinutes: 30
+
+unlock:
+  mode: immediate
+
+completion:
+  minimumScore: 70
+  requireAllExercises: true
+
+exercises:
+  - type: rhythm
+    id: ex-01
+    title: "Steady Quarter Notes"
+    description: "Clap and play steady quarter notes at a comfortable tempo."
+    duration: 5
+    tempo: 80
+    difficulty: easy
+    timeSignature: "4/4"
+    noteValues: [quarter, eighth]
+    patternCount: 4
+
+  - type: noteReading
+    id: ex-02
+    title: "Find the Notes"
+    description: "Identify notes on the staff and locate them on the keyboard."
+    duration: 5
+    tempo: 60
+    difficulty: easy
+    clef: treble
+    range: "C4-G5"
+    keySignature: "C major"
+
+  - type: earTraining
+    id: ex-03
+    title: "High or Low"
+    description: "Listen and decide whether the second note is higher or lower."
+    duration: 4
+    difficulty: easy
+    taskType: pitchMatching
+    rounds: 10
+    keys: [C major]
+
+  - type: interval
+    id: ex-04
+    title: "Step or Skip"
+    description: "Recognise whether two notes move by step or by skip."
+    duration: 4
+    tempo: 70
+    difficulty: easy
+    intervals: [M2, M3]
+    direction: both
+    startingNote: "C4"
+
+  - type: octave
+    id: ex-05
+    title: "Octave Leaps"
+    description: "Play and recognise octave leaps across the keyboard."
+    duration: 4
+    tempo: 70
+    difficulty: easy
+    octaves: 2
+    direction: both
+    startingNote: "C3"
+
+  - type: fingerIndependence
+    id: ex-06
+    title: "Quiet Neighbours"
+    description: "Hold each finger down while its neighbours stay still."
+    duration: 4
+    tempo: 60
+    difficulty: easy
+    fingers: [2, 3, 4]
+    hand: both
+
+  - type: mentalKeyboard
+    id: ex-07
+    title: "Keyboard Geography"
+    description: "Visualise note positions mentally without looking at the keys."
+    duration: 3
+    difficulty: easy
+    startingNote: "C4"
+    direction: ascending
+    steps: 4
+
+  - type: speed
+    id: ex-08
+    title: "Five-Finger Run"
+    description: "Play a five-finger pattern gradually faster."
+    duration: 3
+    tempo: 70
+    difficulty: easy
+    pattern: scale
+    targetTempo: 110
+    repetitions: 10

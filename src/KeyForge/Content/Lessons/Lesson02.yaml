@@ -1,0 +1,67 @@
+id: lesson-02
+title: "Rhythm and Reading"
+description: "Build rhythm accuracy and note-reading confidence."
+level: beginner
+order: 2
+estimatedMinutes: 25
+
+unlock:
+  mode: previousLessonCompleted
+
+completion:
+  minimumScore: 75
+
+exercises:
+  - type: rhythm
+    id: ex-01
+    title: "Eighth Note Pairs"
+    description: "Clap and play paired eighth notes against a steady beat."
+    duration: 5
+    tempo: 84
+    difficulty: easy
+    timeSignature: "4/4"
+    noteValues: [quarter, eighth]
+    patternCount: 4
+
+  - type: noteReading
+    id: ex-02
+    title: "Treble and Bass"
+    description: "Read notes in treble and bass clefs and find them on the keyboard."
+    duration: 6
+    tempo: 60
+    difficulty: easy
+    clef: grand
+    range: "C3-G5"
+    keySignature: "C major"
+
+  - type: interval
+    id: ex-03
+    title: "Skip Recognition"
+    description: "Recognise thirds and fifths by ear and on the page."
+    duration: 4
+    tempo: 70
+    difficulty: easy
+    intervals: [M3, P5]
+    direction: both
+    startingNote: "C4"
+
+  - type: mentalKeyboard
+    id: ex-04
+    title: "Black Key Landmarks"
+    description: "Use black-key groups to visualise note positions mentally."
+    duration: 3
+    difficulty: easy
+    startingNote: "F4"
+    direction: both
+    steps: 4
+
+  - type: speed
+    id: ex-05
+    title: "Faster Five-Finger Run"
+    description: "Increase the tempo of the five-finger pattern."
+    duration: 3
+    tempo: 80
+    difficulty: easy
+    pattern: scale
+    targetTempo: 120
+    repetitions: 12
