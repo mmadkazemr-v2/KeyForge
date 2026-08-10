@@ -1,10 +1,19 @@
 using KeyForge.Components;
+using KeyForge.Features.Lessons.Services;
+using KeyForge.Infrastructure.Content.Lessons;
+using KeyForge.Infrastructure.Yaml.Parsing;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+builder.Services.Configure<LessonCatalogOptions>(
+    builder.Configuration.GetSection(LessonCatalogOptions.SectionName));
+
+builder.Services.AddSingleton<IYamlLessonParser, YamlLessonParser>();
+builder.Services.AddSingleton<ILessonCatalog, FileSystemLessonCatalog>();
 
 var app = builder.Build();
 
