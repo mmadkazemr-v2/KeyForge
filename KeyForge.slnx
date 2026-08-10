@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/KeyForge/KeyForge.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/KeyForge.Tests/KeyForge.Tests.csproj" />
+  </Folder>
+</Solution>
