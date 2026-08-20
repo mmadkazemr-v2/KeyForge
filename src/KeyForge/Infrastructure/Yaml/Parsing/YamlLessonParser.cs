@@ -1,7 +1,4 @@
-using KeyForge.Features.Exercises.Models;
-using KeyForge.Features.Lessons.Models;
 using YamlDotNet.Core;
-using YamlDotNet.RepresentationModel;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 

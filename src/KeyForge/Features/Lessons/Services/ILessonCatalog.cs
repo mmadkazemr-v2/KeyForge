@@ -1,5 +1,3 @@
-using KeyForge.Features.Lessons.Models;
-
 namespace KeyForge.Features.Lessons.Services;
 
 /// <summary>

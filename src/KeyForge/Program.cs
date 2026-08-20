@@ -1,8 +1,3 @@
-using KeyForge.Components;
-using KeyForge.Features.Lessons.Services;
-using KeyForge.Infrastructure.Content.Lessons;
-using KeyForge.Infrastructure.Yaml.Parsing;
-
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.

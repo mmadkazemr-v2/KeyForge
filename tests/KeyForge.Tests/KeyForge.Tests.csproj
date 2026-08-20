@@ -29,6 +29,7 @@
     <Folder Include="Features\Practice\" />
     <Folder Include="Features\Progress\" />
     <Folder Include="Infrastructure\Yaml\" />
+    <Folder Include="Infrastructure\Persistence\" />
   </ItemGroup>
 
 </Project>

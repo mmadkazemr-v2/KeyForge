@@ -1,6 +1,3 @@
-using KeyForge.Features.Exercises.Models;
-using YamlDotNet.RepresentationModel;
-
 namespace KeyForge.Infrastructure.Yaml.Parsing;
 
 /// <summary>

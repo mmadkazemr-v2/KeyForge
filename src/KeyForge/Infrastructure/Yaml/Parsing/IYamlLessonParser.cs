@@ -1,5 +1,3 @@
-using KeyForge.Features.Lessons.Models;
-
 namespace KeyForge.Infrastructure.Yaml.Parsing;
 
 /// <summary>

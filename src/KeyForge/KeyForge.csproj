@@ -35,6 +35,7 @@
     <Folder Include="Infrastructure\Midi\" />
     <Folder Include="Infrastructure\Content\Lessons\" />
     <Folder Include="Infrastructure\Persistence\" />
+    <Folder Include="Infrastructure\Persistence\Progress\" />
     <Folder Include="Infrastructure\Yaml\Parsing\" />
     <Folder Include="Infrastructure\Yaml\Validation\" />
   </ItemGroup>
