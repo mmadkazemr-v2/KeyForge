@@ -19,6 +19,7 @@ builder.Services.AddSingleton<ILessonProgressQueryService, LessonProgressQuerySe
 builder.Services.AddSingleton<IExerciseEvaluator, ExerciseEvaluator>();
 builder.Services.AddSingleton<IExerciseScorer, ExerciseScorer>();
 builder.Services.AddSingleton<IPracticeSessionService, PracticeSessionService>();
+builder.Services.AddSingleton<IProgressUpdateService, ProgressUpdateService>();
 
 // ── Blazor ─────────────────────────────────────────────────────────
 
