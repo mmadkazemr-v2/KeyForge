@@ -1,9 +1,10 @@
+using System.Collections.Concurrent;
 using KeyForge.Features.Practice.Services;
 
 namespace KeyForge.Infrastructure.Practice.InMemory;
 
 /// <summary>
-/// A simple in-memory exercise attempt recorder backed by a list.
+/// A simple in-memory exercise attempt recorder backed by a concurrent queue.
 /// <para>
 /// Data lives only for the lifetime of the application process and is lost on
 /// restart. Replace this with a persistent implementation without changing
@@ -12,28 +13,19 @@ namespace KeyForge.Infrastructure.Practice.InMemory;
 /// </summary>
 public sealed class InMemoryExerciseAttemptRecorder : IExerciseAttemptRecorder
 {
-    private readonly object _lock = new();
-    private readonly List<ExerciseAttempt> _attempts = [];
+    private readonly ConcurrentQueue<ExerciseAttempt> _attempts = new();
 
     /// <inheritdoc />
     public void Record(ExerciseAttempt attempt)
     {
         ArgumentNullException.ThrowIfNull(attempt);
-
-        lock (_lock)
-        {
-            _attempts.Add(attempt);
-        }
+        _attempts.Enqueue(attempt);
     }
 
     /// <summary>
-    /// Returns all recorded attempts. Intended for testing and diagnostics only.
+    /// Returns all recorded attempts in insertion order.
+    /// Intended for testing and diagnostics only.
     /// </summary>
-    public IReadOnlyList<ExerciseAttempt> GetAllAttempts()
-    {
-        lock (_lock)
-        {
-            return [.. _attempts];
-        }
-    }
+    public IReadOnlyList<ExerciseAttempt> GetAllAttempts() =>
+        [.. _attempts];
 }
