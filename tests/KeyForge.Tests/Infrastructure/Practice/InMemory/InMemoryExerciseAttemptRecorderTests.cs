@@ -1,8 +1,3 @@
-using KeyForge.Features.Practice.Models;
-using KeyForge.Features.Practice.Services;
-using KeyForge.Infrastructure.Practice.InMemory;
-using Microsoft.Extensions.DependencyInjection;
-
 namespace KeyForge.Tests.Infrastructure.Practice.InMemory;
 
 /// <summary>

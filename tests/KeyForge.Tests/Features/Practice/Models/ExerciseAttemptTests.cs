@@ -1,5 +1,3 @@
-using KeyForge.Features.Practice.Models;
-
 namespace KeyForge.Tests.Features.Practice.Models;
 
 /// <summary>

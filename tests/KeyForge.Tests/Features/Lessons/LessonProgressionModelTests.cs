@@ -1,5 +1,3 @@
-using KeyForge.Features.Lessons.Models;
-
 namespace KeyForge.Tests.Features.Lessons;
 
 public class LessonProgressionModelTests

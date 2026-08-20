@@ -1,7 +1,3 @@
-using KeyForge.Features.Progress.Models;
-using KeyForge.Infrastructure.Persistence.Progress;
-using Microsoft.Extensions.Options;
-
 namespace KeyForge.Tests.Infrastructure.Persistence.Progress;
 
 /// <summary>

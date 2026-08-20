@@ -1,8 +1,3 @@
-using KeyForge.Features.Progress.Models;
-using KeyForge.Features.Progress.Services;
-using KeyForge.Infrastructure.Progress.InMemory;
-using Microsoft.Extensions.DependencyInjection;
-
 namespace KeyForge.Tests.Infrastructure.Progress.InMemory;
 
 /// <summary>

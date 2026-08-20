@@ -1,8 +1,3 @@
-using KeyForge.Features.Lessons.Models;
-using KeyForge.Infrastructure.Content.Lessons;
-using KeyForge.Infrastructure.Yaml.Parsing;
-using Microsoft.Extensions.Options;
-
 namespace KeyForge.Tests.Infrastructure.Content.Lessons;
 
 /// <summary>

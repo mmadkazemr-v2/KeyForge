@@ -1,7 +1,3 @@
-using KeyForge.Features.Practice.Models;
-using KeyForge.Features.Practice.Services;
-using KeyForge.Infrastructure.Practice.InMemory;
-
 namespace KeyForge.Tests.Features.Practice.Services;
 
 /// <summary>

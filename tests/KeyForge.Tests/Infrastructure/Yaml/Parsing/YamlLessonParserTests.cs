@@ -1,8 +1,3 @@
-using KeyForge.Features.Exercises.Models;
-using KeyForge.Features.Lessons.Models;
-using KeyForge.Infrastructure.Yaml.Parsing;
-using YamlDotNet.Core;
-
 namespace KeyForge.Tests.Infrastructure.Yaml.Parsing;
 
 public class YamlLessonParserTests

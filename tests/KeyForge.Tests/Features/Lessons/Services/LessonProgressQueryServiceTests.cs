@@ -1,9 +1,3 @@
-using KeyForge.Features.Lessons.Models;
-using KeyForge.Features.Lessons.Services;
-using KeyForge.Features.Progress.Models;
-using KeyForge.Features.Progress.Services;
-using KeyForge.Infrastructure.Progress.InMemory;
-
 namespace KeyForge.Tests.Features.Lessons.Services;
 
 /// <summary>
