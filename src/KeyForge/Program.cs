@@ -1,3 +1,6 @@
+using KeyForge.Features.Progress.Services;
+using KeyForge.Infrastructure.Progress.InMemory;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -9,6 +12,8 @@ builder.Services.Configure<LessonCatalogOptions>(
 
 builder.Services.AddSingleton<IYamlLessonParser, YamlLessonParser>();
 builder.Services.AddSingleton<ILessonCatalog, FileSystemLessonCatalog>();
+builder.Services.AddSingleton<IProgressStore, InMemoryProgressStore>();
+builder.Services.AddSingleton<ILessonProgressionService, LessonProgressionService>();
 
 var app = builder.Build();
 
