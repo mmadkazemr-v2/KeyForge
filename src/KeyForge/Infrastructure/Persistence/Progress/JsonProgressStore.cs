@@ -18,7 +18,7 @@ public sealed class JsonProgressStore : IProgressStore
     };
 
     private readonly string _filePath;
-    private readonly object _persistLock = new();
+    private readonly Lock _persistLock = new();
     private readonly ConcurrentDictionary<string, LessonProgress> _progress = new(StringComparer.OrdinalIgnoreCase);
 
     public JsonProgressStore(IOptions<ProgressStoreOptions> options)
