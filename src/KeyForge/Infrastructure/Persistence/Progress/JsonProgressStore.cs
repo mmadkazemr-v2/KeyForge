@@ -1,6 +1,3 @@
-using System.Text.Json;
-using KeyForge.Features.Progress.Services;
-
 namespace KeyForge.Infrastructure.Persistence.Progress;
 
 /// <summary>

@@ -1,4 +1,3 @@
-using KeyForge.Features.Practice.Models;
 using KeyForge.Features.Practice.Services;
 
 namespace KeyForge.Infrastructure.Practice.InMemory;

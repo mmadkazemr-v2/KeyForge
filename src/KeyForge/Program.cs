@@ -1,6 +1,3 @@
-using KeyForge.Infrastructure.Practice.InMemory;
-using KeyForge.Infrastructure.Progress.InMemory;
-
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
