@@ -35,6 +35,46 @@ public sealed class LessonProgressionService : ILessonProgressionService
         };
     }
 
+    /// <inheritdoc />
+    public bool IsCompleted(string lessonId)
+    {
+        ArgumentNullException.ThrowIfNull(lessonId);
+
+        var lesson = _catalog.GetById(lessonId);
+
+        if (lesson is null)
+        {
+            return false;
+        }
+
+        var progress = _progressStore.GetProgress(lessonId);
+
+        if (progress is null)
+        {
+            return false;
+        }
+
+        if (!progress.IsCompleted)
+        {
+            return false;
+        }
+
+        if (lesson.Completion.RequireAllExercises)
+        {
+            return false;
+        }
+
+        if (lesson.Completion.MinimumScore is { } minScore)
+        {
+            if (progress.BestScore is null || progress.BestScore < minScore)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     private bool IsPreviousCompleted(LessonDefinition lesson)
     {
         var allLessons = _catalog.GetAll();
@@ -54,14 +94,14 @@ public sealed class LessonProgressionService : ILessonProgressionService
             return true;
         }
 
-        return IsLessonCompleted(previous.Id);
+        return IsPrerequisiteMet(previous.Id);
     }
 
     private bool ArePrerequisitesCompleted(UnlockRule unlock)
     {
         foreach (var requiredId in unlock.RequiredLessonIds)
         {
-            if (!IsLessonCompleted(requiredId))
+            if (!IsPrerequisiteMet(requiredId))
             {
                 return false;
             }
@@ -70,7 +110,7 @@ public sealed class LessonProgressionService : ILessonProgressionService
         return true;
     }
 
-    private bool IsLessonCompleted(string lessonId)
+    private bool IsPrerequisiteMet(string lessonId)
     {
         var progress = _progressStore.GetProgress(lessonId);
         return progress is not null && progress.IsCompleted;

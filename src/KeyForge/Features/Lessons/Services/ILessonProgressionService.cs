@@ -21,4 +21,17 @@ public interface ILessonProgressionService
     /// locked or when the lesson does not exist.
     /// </returns>
     bool IsUnlocked(string lessonId);
+
+    /// <summary>
+    /// Determines whether a lesson is considered completed based on the
+    /// learner's stored progress and the lesson's <see cref="LessonDefinition.Completion"/>.
+    /// </summary>
+    /// <param name="lessonId">
+    /// The stable identifier of the lesson to evaluate.
+    /// </param>
+    /// <returns>
+    /// <c>true</c> when the lesson is completed; <c>false</c> when it is
+    /// not completed or when the lesson does not exist.
+    /// </returns>
+    bool IsCompleted(string lessonId);
 }

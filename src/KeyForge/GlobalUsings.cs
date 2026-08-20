@@ -3,6 +3,8 @@ global using KeyForge.Components;
 global using KeyForge.Features.Exercises.Models;
 global using KeyForge.Features.Lessons.Models;
 global using KeyForge.Features.Lessons.Services;
+global using KeyForge.Features.Practice.Models;
+global using KeyForge.Features.Practice.Services;
 global using KeyForge.Features.Progress.Models;
 global using KeyForge.Features.Progress.Services;
 global using KeyForge.Infrastructure.Content.Lessons;

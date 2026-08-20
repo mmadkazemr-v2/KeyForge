@@ -419,6 +419,239 @@ public sealed class LessonProgressionServiceTests
         Assert.True(prereq.IsCompleted);
     }
 
+    [Fact]
+    public void IsCompleted_UnknownLesson_ReturnsFalse()
+    {
+        var service = CreateService([]);
+
+        Assert.False(service.IsCompleted("does-not-exist"));
+    }
+
+    [Fact]
+    public void IsCompleted_MissingProgress_ReturnsFalse()
+    {
+        var lesson = new LessonDefinition
+        {
+            Id = "lesson-01",
+            Completion = new CompletionRule()
+        };
+
+        var service = CreateService([lesson]);
+
+        Assert.False(service.IsCompleted("lesson-01"));
+    }
+
+    [Fact]
+    public void IsCompleted_IsCompletedFalse_ReturnsFalse()
+    {
+        var lesson = new LessonDefinition
+        {
+            Id = "lesson-01",
+            Completion = new CompletionRule()
+        };
+
+        var progressStore = CreateProgressStore();
+        progressStore.SaveProgress(new LessonProgress
+        {
+            LessonId = "lesson-01",
+            IsCompleted = false
+        });
+
+        var service = CreateService([lesson], progressStore);
+
+        Assert.False(service.IsCompleted("lesson-01"));
+    }
+
+    [Fact]
+    public void IsCompleted_NoAdditionalRequirements_ReturnsTrue()
+    {
+        var lesson = new LessonDefinition
+        {
+            Id = "lesson-01",
+            Completion = new CompletionRule()
+        };
+
+        var progressStore = CreateProgressStore();
+        progressStore.SaveProgress(new LessonProgress
+        {
+            LessonId = "lesson-01",
+            IsCompleted = true
+        });
+
+        var service = CreateService([lesson], progressStore);
+
+        Assert.True(service.IsCompleted("lesson-01"));
+    }
+
+    [Fact]
+    public void IsCompleted_MinimumScore_BelowThreshold_ReturnsFalse()
+    {
+        var lesson = new LessonDefinition
+        {
+            Id = "lesson-01",
+            Completion = new CompletionRule { MinimumScore = 70 }
+        };
+
+        var progressStore = CreateProgressStore();
+        progressStore.SaveProgress(new LessonProgress
+        {
+            LessonId = "lesson-01",
+            IsCompleted = true,
+            BestScore = 69
+        });
+
+        var service = CreateService([lesson], progressStore);
+
+        Assert.False(service.IsCompleted("lesson-01"));
+    }
+
+    [Fact]
+    public void IsCompleted_MinimumScore_ExactlyAtThreshold_ReturnsTrue()
+    {
+        var lesson = new LessonDefinition
+        {
+            Id = "lesson-01",
+            Completion = new CompletionRule { MinimumScore = 70 }
+        };
+
+        var progressStore = CreateProgressStore();
+        progressStore.SaveProgress(new LessonProgress
+        {
+            LessonId = "lesson-01",
+            IsCompleted = true,
+            BestScore = 70
+        });
+
+        var service = CreateService([lesson], progressStore);
+
+        Assert.True(service.IsCompleted("lesson-01"));
+    }
+
+    [Fact]
+    public void IsCompleted_MinimumScore_AboveThreshold_ReturnsTrue()
+    {
+        var lesson = new LessonDefinition
+        {
+            Id = "lesson-01",
+            Completion = new CompletionRule { MinimumScore = 70 }
+        };
+
+        var progressStore = CreateProgressStore();
+        progressStore.SaveProgress(new LessonProgress
+        {
+            LessonId = "lesson-01",
+            IsCompleted = true,
+            BestScore = 90
+        });
+
+        var service = CreateService([lesson], progressStore);
+
+        Assert.True(service.IsCompleted("lesson-01"));
+    }
+
+    [Fact]
+    public void IsCompleted_MinimumScore_NullScore_ReturnsFalse()
+    {
+        var lesson = new LessonDefinition
+        {
+            Id = "lesson-01",
+            Completion = new CompletionRule { MinimumScore = 70 }
+        };
+
+        var progressStore = CreateProgressStore();
+        progressStore.SaveProgress(new LessonProgress
+        {
+            LessonId = "lesson-01",
+            IsCompleted = true,
+            BestScore = null
+        });
+
+        var service = CreateService([lesson], progressStore);
+
+        Assert.False(service.IsCompleted("lesson-01"));
+    }
+
+    [Fact]
+    public void IsCompleted_RequireAllExercises_ReturnsFalse()
+    {
+        var lesson = new LessonDefinition
+        {
+            Id = "lesson-01",
+            Completion = new CompletionRule { RequireAllExercises = true }
+        };
+
+        var progressStore = CreateProgressStore();
+        progressStore.SaveProgress(new LessonProgress
+        {
+            LessonId = "lesson-01",
+            IsCompleted = true
+        });
+
+        var service = CreateService([lesson], progressStore);
+
+        // LessonProgress does not contain per-exercise completion data,
+        // so RequireAllExercises cannot be evaluated. Returns false.
+        Assert.False(service.IsCompleted("lesson-01"));
+    }
+
+    [Fact]
+    public void IsCompleted_RequireAllExercises_WithMinimumScore_ReturnsFalse()
+    {
+        var lesson = new LessonDefinition
+        {
+            Id = "lesson-01",
+            Completion = new CompletionRule
+            {
+                RequireAllExercises = true,
+                MinimumScore = 70
+            }
+        };
+
+        var progressStore = CreateProgressStore();
+        progressStore.SaveProgress(new LessonProgress
+        {
+            LessonId = "lesson-01",
+            IsCompleted = true,
+            BestScore = 90
+        });
+
+        var service = CreateService([lesson], progressStore);
+
+        // RequireAllExercises blocks completion regardless of score
+        Assert.False(service.IsCompleted("lesson-01"));
+    }
+
+    [Fact]
+    public void IsCompleted_DoNotMutateProgressOrLesson()
+    {
+        var lesson = new LessonDefinition
+        {
+            Id = "lesson-01",
+            Completion = new CompletionRule { MinimumScore = 70 }
+        };
+
+        var progressStore = CreateProgressStore();
+        progressStore.SaveProgress(new LessonProgress
+        {
+            LessonId = "lesson-01",
+            IsCompleted = true,
+            BestScore = 90
+        });
+
+        var service = CreateService([lesson], progressStore);
+        service.IsCompleted("lesson-01");
+
+        // Verify lesson was not mutated
+        Assert.Equal(70, lesson.Completion.MinimumScore);
+        Assert.False(lesson.Completion.RequireAllExercises);
+
+        // Verify progress was not mutated
+        var progress = progressStore.GetProgress("lesson-01");
+        Assert.NotNull(progress);
+        Assert.True(progress.IsCompleted);
+        Assert.Equal(90, progress.BestScore);
+    }
+
     /// <summary>
     /// Minimal in-memory implementation of <see cref="ILessonCatalog"/>
     /// for testing purposes only.

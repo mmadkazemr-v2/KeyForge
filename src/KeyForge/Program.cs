@@ -1,4 +1,6 @@
+using KeyForge.Features.Practice.Services;
 using KeyForge.Features.Progress.Services;
+using KeyForge.Infrastructure.Practice.InMemory;
 using KeyForge.Infrastructure.Progress.InMemory;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,6 +16,8 @@ builder.Services.AddSingleton<IYamlLessonParser, YamlLessonParser>();
 builder.Services.AddSingleton<ILessonCatalog, FileSystemLessonCatalog>();
 builder.Services.AddSingleton<IProgressStore, InMemoryProgressStore>();
 builder.Services.AddSingleton<ILessonProgressionService, LessonProgressionService>();
+builder.Services.AddSingleton<ILessonProgressQueryService, LessonProgressQueryService>();
+builder.Services.AddSingleton<IExerciseAttemptRecorder, InMemoryExerciseAttemptRecorder>();
 
 var app = builder.Build();
 
