@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+
 namespace KeyForge.Infrastructure.Persistence.Progress;
 
 /// <summary>
@@ -16,8 +18,8 @@ public sealed class JsonProgressStore : IProgressStore
     };
 
     private readonly string _filePath;
-    private readonly object _lock = new();
-    private Dictionary<string, LessonProgress> _progress = new(StringComparer.OrdinalIgnoreCase);
+    private readonly object _persistLock = new();
+    private readonly ConcurrentDictionary<string, LessonProgress> _progress = new(StringComparer.OrdinalIgnoreCase);
 
     public JsonProgressStore(IOptions<ProgressStoreOptions> options)
     {
@@ -31,30 +33,21 @@ public sealed class JsonProgressStore : IProgressStore
     public LessonProgress? GetProgress(string lessonId)
     {
         ArgumentNullException.ThrowIfNull(lessonId);
-
-        lock (_lock)
-        {
-            return _progress.GetValueOrDefault(lessonId);
-        }
+        return _progress.GetValueOrDefault(lessonId);
     }
 
     /// <inheritdoc />
-    public IReadOnlyList<LessonProgress> GetAllProgress()
-    {
-        lock (_lock)
-        {
-            return _progress.Values.ToList().AsReadOnly();
-        }
-    }
+    public IReadOnlyList<LessonProgress> GetAllProgress() =>
+        [.. _progress.Values];
 
     /// <inheritdoc />
     public void SaveProgress(LessonProgress progress)
     {
         ArgumentNullException.ThrowIfNull(progress);
+        _progress[progress.LessonId] = progress;
 
-        lock (_lock)
+        lock (_persistLock)
         {
-            _progress[progress.LessonId] = progress;
             Persist();
         }
     }
@@ -73,8 +66,6 @@ public sealed class JsonProgressStore : IProgressStore
         {
             return;
         }
-
-        _progress = new Dictionary<string, LessonProgress>(list.Count, StringComparer.OrdinalIgnoreCase);
 
         foreach (var entry in list)
         {
