@@ -1,4 +1,4 @@
-namespace KeyForge.Infrastructure.Content.Lessons;
+namespace KeyForge.Infrastructure.Content.Lessons.Exceptions;
 
 /// <summary>
 /// Thrown when two or more lesson files declare the same lesson id.

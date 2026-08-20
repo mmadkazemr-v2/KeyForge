@@ -1,4 +1,4 @@
-namespace KeyForge.Infrastructure.Content.Lessons;
+namespace KeyForge.Infrastructure.Content.Lessons.Exceptions;
 
 /// <summary>
 /// Thrown when a single lesson file cannot be turned into a lesson, for example

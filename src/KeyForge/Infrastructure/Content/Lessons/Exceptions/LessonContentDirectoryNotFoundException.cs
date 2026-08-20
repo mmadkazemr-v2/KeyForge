@@ -1,4 +1,4 @@
-namespace KeyForge.Infrastructure.Content.Lessons;
+namespace KeyForge.Infrastructure.Content.Lessons.Exceptions;
 
 /// <summary>
 /// Thrown when the configured lesson content directory does not exist.

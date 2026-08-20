@@ -15,6 +15,8 @@ global using KeyForge.Features.Practice.Services;
 global using KeyForge.Features.Progress.Models;
 global using KeyForge.Features.Progress.Services;
 global using KeyForge.Infrastructure.Content.Lessons;
+global using KeyForge.Infrastructure.Content.Lessons.Exceptions;
+global using KeyForge.Infrastructure.Content.Lessons.Validation;
 global using KeyForge.Infrastructure.Practice.InMemory;
 global using KeyForge.Infrastructure.Progress.InMemory;
 global using KeyForge.Infrastructure.Yaml.Exceptions;

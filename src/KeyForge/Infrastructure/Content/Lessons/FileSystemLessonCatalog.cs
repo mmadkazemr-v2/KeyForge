@@ -12,8 +12,6 @@ namespace KeyForge.Infrastructure.Content.Lessons;
 /// </summary>
 public sealed class FileSystemLessonCatalog : ILessonCatalog
 {
-    private static readonly string[] LessonFileExtensions = [".yaml", ".yml"];
-
     private readonly IReadOnlyList<LessonDefinition> _lessons;
     private readonly IReadOnlyDictionary<string, LessonDefinition> _lessonsById;
 
@@ -23,11 +21,7 @@ public sealed class FileSystemLessonCatalog : ILessonCatalog
         ArgumentNullException.ThrowIfNull(parser);
 
         var contentDirectory = Path.GetFullPath(options.Value.ContentPath);
-
-        if (!Directory.Exists(contentDirectory))
-        {
-            throw new LessonContentDirectoryNotFoundException(contentDirectory);
-        }
+        LessonContentValidator.ValidateDirectory(contentDirectory);
 
         _lessons = LoadLessons(contentDirectory, parser);
         _lessonsById = _lessons.ToDictionary(lesson => lesson.Id, StringComparer.OrdinalIgnoreCase);
@@ -40,38 +34,28 @@ public sealed class FileSystemLessonCatalog : ILessonCatalog
     public LessonDefinition? GetById(string id)
     {
         ArgumentNullException.ThrowIfNull(id);
-
         return _lessonsById.GetValueOrDefault(id);
     }
 
-    /// <summary>
-    /// Discovers, parses and validates every lesson file in the directory.
-    /// Files are processed in a deterministic (name) order so that duplicate-id
-    /// reporting is stable. Lessons are ordered by <see cref="LessonDefinition.Order"/>.
-    /// </summary>
     private static IReadOnlyList<LessonDefinition> LoadLessons(string contentDirectory, IYamlLessonParser parser)
     {
         var lessonFiles = Directory
             .EnumerateFiles(contentDirectory)
-            .Where(IsLessonFile)
+            .Where(LessonContentValidator.IsLessonFile)
             .OrderBy(file => file, StringComparer.Ordinal)
             .ToArray();
 
         var lessons = new List<LessonDefinition>(lessonFiles.Length);
-        var filesById = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var entries = new List<(string LessonId, string FilePath)>(lessonFiles.Length);
 
         foreach (var file in lessonFiles)
         {
             var lesson = LoadLesson(file, parser);
-
-            if (filesById.TryGetValue(lesson.Id, out var originalFile))
-            {
-                throw new DuplicateLessonIdException(lesson.Id, originalFile, file);
-            }
-
-            filesById[lesson.Id] = file;
+            entries.Add((lesson.Id, file));
             lessons.Add(lesson);
         }
+
+        LessonContentValidator.ValidateNoDuplicateIds(entries);
 
         return lessons
             .OrderBy(lesson => lesson.Order)
@@ -79,10 +63,6 @@ public sealed class FileSystemLessonCatalog : ILessonCatalog
             .AsReadOnly();
     }
 
-    /// <summary>
-    /// Reads a lesson file and parses it, adding file context to any failure so
-    /// the problematic file can be identified.
-    /// </summary>
     private static LessonDefinition LoadLesson(string file, IYamlLessonParser parser)
     {
         string yaml;
@@ -104,8 +84,4 @@ public sealed class FileSystemLessonCatalog : ILessonCatalog
             throw new LessonContentLoadException(file, ex);
         }
     }
-
-    private static bool IsLessonFile(string filePath) =>
-        LessonFileExtensions.Contains(
-            Path.GetExtension(filePath), StringComparer.OrdinalIgnoreCase);
 }
