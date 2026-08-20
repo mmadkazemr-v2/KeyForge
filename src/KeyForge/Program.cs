@@ -1,5 +1,3 @@
-using KeyForge.Features.Practice.Services;
-using KeyForge.Features.Progress.Services;
 using KeyForge.Infrastructure.Practice.InMemory;
 using KeyForge.Infrastructure.Progress.InMemory;
 
