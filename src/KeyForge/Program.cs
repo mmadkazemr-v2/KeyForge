@@ -17,6 +17,7 @@ builder.Services.AddSingleton<IExerciseAttemptRecorder, InMemoryExerciseAttemptR
 builder.Services.AddSingleton<ILessonProgressionService, LessonProgressionService>();
 builder.Services.AddSingleton<ILessonProgressQueryService, LessonProgressQueryService>();
 builder.Services.AddSingleton<IExerciseEvaluator, ExerciseEvaluator>();
+builder.Services.AddSingleton<IExerciseScorer, ExerciseScorer>();
 
 // ── Blazor ─────────────────────────────────────────────────────────
 
