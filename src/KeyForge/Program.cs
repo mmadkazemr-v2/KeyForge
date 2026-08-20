@@ -13,6 +13,7 @@ builder.Services.AddSingleton<IProgressStore, InMemoryProgressStore>();
 builder.Services.AddSingleton<ILessonProgressionService, LessonProgressionService>();
 builder.Services.AddSingleton<ILessonProgressQueryService, LessonProgressQueryService>();
 builder.Services.AddSingleton<IExerciseAttemptRecorder, InMemoryExerciseAttemptRecorder>();
+builder.Services.AddSingleton<IExerciseEvaluator, ExerciseEvaluator>();
 
 var app = builder.Build();
 
