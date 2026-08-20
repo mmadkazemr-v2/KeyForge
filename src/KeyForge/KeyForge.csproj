@@ -39,7 +39,6 @@
     <Folder Include="Infrastructure\Progress\" />
     <Folder Include="Infrastructure\Progress\InMemory\" />
     <Folder Include="Infrastructure\Yaml\Parsing\" />
-    <Folder Include="Infrastructure\Yaml\Validation\" />
   </ItemGroup>
 
 </Project>

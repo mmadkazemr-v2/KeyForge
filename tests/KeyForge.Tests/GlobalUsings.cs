@@ -11,6 +11,7 @@ global using KeyForge.Infrastructure.Content.Lessons;
 global using KeyForge.Infrastructure.Persistence.Progress;
 global using KeyForge.Infrastructure.Practice.InMemory;
 global using KeyForge.Infrastructure.Progress.InMemory;
+global using KeyForge.Infrastructure.Yaml.Exceptions;
 global using KeyForge.Infrastructure.Yaml.Parsing;
 global using Microsoft.Extensions.DependencyInjection;
 global using Microsoft.Extensions.Options;

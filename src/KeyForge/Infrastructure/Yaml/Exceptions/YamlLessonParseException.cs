@@ -1,4 +1,4 @@
-namespace KeyForge.Infrastructure.Yaml.Parsing;
+namespace KeyForge.Infrastructure.Yaml.Exceptions;
 
 /// <summary>
 /// Thrown when lesson YAML content cannot be parsed into a <see cref="LessonDefinition"/>.

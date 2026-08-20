@@ -1,4 +1,4 @@
-namespace KeyForge.Infrastructure.Yaml.Parsing;
+namespace KeyForge.Infrastructure.Yaml.Exceptions;
 
 /// <summary>
 /// Thrown when an exercise entry declares a 'type' discriminator that does not
