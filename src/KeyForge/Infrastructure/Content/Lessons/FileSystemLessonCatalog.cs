@@ -105,18 +105,7 @@ public sealed class FileSystemLessonCatalog : ILessonCatalog
         }
     }
 
-    private static bool IsLessonFile(string filePath)
-    {
-        var extension = Path.GetExtension(filePath);
-
-        foreach (var supported in LessonFileExtensions)
-        {
-            if (extension.Equals(supported, StringComparison.OrdinalIgnoreCase))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
+    private static bool IsLessonFile(string filePath) =>
+        LessonFileExtensions.Contains(
+            Path.GetExtension(filePath), StringComparer.OrdinalIgnoreCase);
 }
