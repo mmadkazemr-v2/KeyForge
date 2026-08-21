@@ -690,6 +690,90 @@ public sealed class PracticeSessionServiceTests
     }
 
     [Fact]
+    public void SubmitAttempt_CompletedAttempt_SetsIsExerciseCompletedTrue()
+    {
+        var lesson = new LessonDefinition
+        {
+            Id = "lesson-01",
+            Exercises = [Exercise1]
+        };
+        var catalog = CreateCatalog(lesson);
+        var service = CreateService(catalog: catalog);
+        var session = service.StartSession("lesson-01")!;
+
+        var attempt = new ExerciseAttempt
+        {
+            LessonId = "lesson-01",
+            ExerciseId = "ex-01",
+            CompletedAt = DateTime.UtcNow,
+            Score = 85
+        };
+
+        var result = service.SubmitAttempt(session, "ex-01", attempt);
+
+        Assert.True(result.IsExerciseCompleted);
+    }
+
+    [Fact]
+    public void SubmitAttempt_IncompleteAttempt_SetsIsExerciseCompletedFalse()
+    {
+        var lesson = new LessonDefinition
+        {
+            Id = "lesson-01",
+            Exercises = [Exercise1]
+        };
+        var catalog = CreateCatalog(lesson);
+        var service = CreateService(catalog: catalog);
+        var session = service.StartSession("lesson-01")!;
+
+        var attempt = new ExerciseAttempt
+        {
+            LessonId = "lesson-01",
+            ExerciseId = "ex-01",
+            CompletedAt = null,
+            Score = null
+        };
+
+        var result = service.SubmitAttempt(session, "ex-01", attempt);
+
+        Assert.False(result.IsExerciseCompleted);
+    }
+
+    [Fact]
+    public void SubmitAttempt_FailedRetryAfterSuccess_RemainsExerciseCompleted()
+    {
+        var lesson = new LessonDefinition
+        {
+            Id = "lesson-01",
+            Exercises = [Exercise1]
+        };
+        var catalog = CreateCatalog(lesson);
+        var service = CreateService(catalog: catalog);
+        var session = service.StartSession("lesson-01")!;
+
+        var successAttempt = new ExerciseAttempt
+        {
+            LessonId = "lesson-01",
+            ExerciseId = "ex-01",
+            CompletedAt = DateTime.UtcNow,
+            Score = 85
+        };
+        service.SubmitAttempt(session, "ex-01", successAttempt);
+
+        var failedAttempt = new ExerciseAttempt
+        {
+            LessonId = "lesson-01",
+            ExerciseId = "ex-01",
+            CompletedAt = null,
+            Score = null
+        };
+        var result = service.SubmitAttempt(session, "ex-01", failedAttempt);
+
+        Assert.False(result.IsSuccessful);
+        Assert.True(result.IsExerciseCompleted);
+    }
+
+    [Fact]
     public void FullLifecycle_SubmitAdvanceSubmitFinish()
     {
         var lesson = new LessonDefinition

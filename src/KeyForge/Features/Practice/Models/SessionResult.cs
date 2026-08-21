@@ -25,4 +25,11 @@ public sealed class SessionResult
     /// Convenience property; equivalent to <c>Evaluation.IsSuccessful</c>.
     /// </summary>
     public bool IsSuccessful => Evaluation.IsSuccessful;
+
+    /// <summary>
+    /// Whether the exercise is now completed.
+    /// An exercise is completed when at least one successful attempt exists for it.
+    /// A failed retry does not undo a prior successful completion.
+    /// </summary>
+    public bool IsExerciseCompleted { get; init; }
 }

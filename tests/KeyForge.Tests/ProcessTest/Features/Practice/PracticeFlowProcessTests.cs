@@ -318,6 +318,48 @@ public sealed class PracticeFlowProcessTests
         Assert.True(allAttempts[2].IsSuccessful);
     }
 
+    [Fact]
+    public void ExerciseCompletion_FlowReflectsState()
+    {
+        var ex1 = Exercise("ex-01", "Quarter Notes");
+        var ex2 = Exercise("ex-02", "Half Notes");
+
+        var lesson = new LessonDefinition
+        {
+            Id = "lesson-01",
+            Title = "Two Exercises",
+            Order = 1,
+            Unlock = new UnlockRule { Mode = UnlockMode.Immediate },
+            Completion = new CompletionRule { RequireAllExercises = true },
+            Exercises = [ex1, ex2]
+        };
+
+        var (sessionService, progressService, store, recorder) = CreateFlow(lesson);
+        var session = sessionService.StartSession("lesson-01");
+        Assert.NotNull(session);
+
+        var failedAttempt = MakeAttempt("lesson-01", "ex-01", 0, completed: false);
+        var failedResult = sessionService.SubmitAttempt(session, "ex-01", failedAttempt);
+        Assert.False(failedResult.IsExerciseCompleted);
+        Assert.Null(store.GetProgress("lesson-01"));
+
+        var successAttempt = MakeAttempt("lesson-01", "ex-01", 85, completed: true);
+        var successResult = sessionService.SubmitAttempt(session, "ex-01", successAttempt);
+        Assert.True(successResult.IsExerciseCompleted);
+
+        progressService.UpdateProgress("lesson-01", successResult);
+        Assert.False(store.GetProgress("lesson-01")!.IsCompleted);
+
+        session.Next();
+
+        var ex2Attempt = MakeAttempt("lesson-01", "ex-02", 90, completed: true);
+        var ex2Result = sessionService.SubmitAttempt(session, "ex-02", ex2Attempt);
+        Assert.True(ex2Result.IsExerciseCompleted);
+
+        progressService.UpdateProgress("lesson-01", ex2Result);
+        Assert.True(store.GetProgress("lesson-01")!.IsCompleted);
+    }
+
     #region Fakes
 
     private sealed class FakeLessonCatalog : ILessonCatalog
@@ -333,7 +375,7 @@ public sealed class PracticeFlowProcessTests
             _lessons.Values.ToList().AsReadOnly();
 
         public LessonDefinition? GetById(string id) =>
-            _lessons.TryGetValue(id, out var lesson) ? lesson : null;
+            _lessons.GetValueOrDefault(id);
     }
 
     #endregion

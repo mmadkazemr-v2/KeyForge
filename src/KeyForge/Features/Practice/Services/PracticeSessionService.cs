@@ -86,10 +86,14 @@ public sealed class PracticeSessionService : IPracticeSessionService
         attempt.IsSuccessful = evaluation.IsSuccessful;
         _recorder.Record(attempt);
 
+        var isExerciseCompleted = _recorder.GetAttemptsByLesson(session.LessonId)
+            .Any(a => a.ExerciseId == exerciseId && a.IsSuccessful);
+
         return new SessionResult
         {
             Evaluation = evaluation,
-            Score = score
+            Score = score,
+            IsExerciseCompleted = isExerciseCompleted
         };
     }
 }
