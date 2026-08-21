@@ -139,6 +139,22 @@ public sealed class PracticeSessionServiceTests
     }
 
     [Fact]
+    public void StartSession_EmptyLessonId_ThrowsArgumentException()
+    {
+        var service = CreateService();
+
+        Assert.Throws<ArgumentException>(() => service.StartSession(""));
+    }
+
+    [Fact]
+    public void StartSession_WhitespaceLessonId_ThrowsArgumentException()
+    {
+        var service = CreateService();
+
+        Assert.Throws<ArgumentException>(() => service.StartSession("   "));
+    }
+
+    [Fact]
     public void StartSession_DoesNotMutateLesson()
     {
         var lesson = new LessonDefinition
@@ -452,6 +468,28 @@ public sealed class PracticeSessionServiceTests
     }
 
     [Fact]
+    public void SubmitAttempt_EmptyExerciseId_ThrowsArgumentException()
+    {
+        var service = CreateService();
+        var session = new PracticeSession("lesson-01", [Exercise1]);
+        var attempt = new ExerciseAttempt();
+
+        Assert.Throws<ArgumentException>(() =>
+            service.SubmitAttempt(session, "", attempt));
+    }
+
+    [Fact]
+    public void SubmitAttempt_WhitespaceExerciseId_ThrowsArgumentException()
+    {
+        var service = CreateService();
+        var session = new PracticeSession("lesson-01", [Exercise1]);
+        var attempt = new ExerciseAttempt();
+
+        Assert.Throws<ArgumentException>(() =>
+            service.SubmitAttempt(session, "   ", attempt));
+    }
+
+    [Fact]
     public void SubmitAttempt_NullAttempt_ThrowsArgumentNullException()
     {
         var service = CreateService();
@@ -514,6 +552,55 @@ public sealed class PracticeSessionServiceTests
         var result = service.SubmitAttempt(session, "ex-01", attempt);
 
         Assert.Equal(100, result.Score);
+    }
+
+    [Fact]
+    public void SubmitAttempt_WrongExerciseId_DoesNotRecordAttempt()
+    {
+        var lesson = new LessonDefinition
+        {
+            Id = "lesson-01",
+            Exercises = [Exercise1, Exercise2]
+        };
+        var catalog = CreateCatalog(lesson);
+        var recorder = new FakeAttemptRecorder();
+        var service = CreateService(catalog: catalog, recorder: recorder);
+        var session = service.StartSession("lesson-01")!;
+
+        var attempt = new ExerciseAttempt
+        {
+            LessonId = "lesson-01",
+            ExerciseId = "ex-02"
+        };
+
+        Assert.Throws<ArgumentException>(() =>
+            service.SubmitAttempt(session, "ex-02", attempt));
+        Assert.Empty(recorder.Recorded);
+    }
+
+    [Fact]
+    public void SubmitAttempt_FinishedSession_DoesNotRecordAttempt()
+    {
+        var lesson = new LessonDefinition
+        {
+            Id = "lesson-01",
+            Exercises = [Exercise1]
+        };
+        var catalog = CreateCatalog(lesson);
+        var recorder = new FakeAttemptRecorder();
+        var service = CreateService(catalog: catalog, recorder: recorder);
+        var session = service.StartSession("lesson-01")!;
+        session.Next();
+
+        var attempt = new ExerciseAttempt
+        {
+            LessonId = "lesson-01",
+            ExerciseId = "ex-01"
+        };
+
+        Assert.Throws<InvalidOperationException>(() =>
+            service.SubmitAttempt(session, "ex-01", attempt));
+        Assert.Empty(recorder.Recorded);
     }
 
     #endregion

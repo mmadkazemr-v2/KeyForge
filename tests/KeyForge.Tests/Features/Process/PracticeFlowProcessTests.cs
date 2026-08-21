@@ -224,6 +224,36 @@ public sealed class PracticeFlowProcessTests
         Assert.All(attempts, a => Assert.True(a.IsSuccessful));
     }
 
+    [Fact]
+    public void InvalidAttempt_DoesNotEnterFlow()
+    {
+        var ex1 = Exercise("ex-01", "Quarter Notes");
+        var ex2 = Exercise("ex-02", "Half Notes");
+
+        var lesson = new LessonDefinition
+        {
+            Id = "lesson-01",
+            Title = "Two Exercises",
+            Order = 1,
+            Unlock = new UnlockRule { Mode = UnlockMode.Immediate },
+            Completion = new CompletionRule { RequireAllExercises = true },
+            Exercises = [ex1, ex2]
+        };
+
+        var (sessionService, progressService, store, recorder) = CreateFlow(lesson);
+
+        var session = sessionService.StartSession("lesson-01");
+        Assert.NotNull(session);
+
+        var invalidAttempt = MakeAttempt("lesson-01", "ex-02", 50);
+
+        Assert.Throws<ArgumentException>(() =>
+            sessionService.SubmitAttempt(session, "ex-02", invalidAttempt));
+
+        Assert.Empty(recorder.GetAttemptsByLesson("lesson-01"));
+        Assert.Null(store.GetProgress("lesson-01"));
+    }
+
     #region Fakes
 
     private sealed class FakeLessonCatalog : ILessonCatalog

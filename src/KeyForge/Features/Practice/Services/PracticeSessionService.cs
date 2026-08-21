@@ -42,7 +42,7 @@ public sealed class PracticeSessionService : IPracticeSessionService
     /// <inheritdoc />
     public PracticeSession? StartSession(string lessonId)
     {
-        ArgumentNullException.ThrowIfNull(lessonId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(lessonId);
 
         var lesson = _lessonCatalog.GetById(lessonId);
         if (lesson is null)
@@ -63,7 +63,7 @@ public sealed class PracticeSessionService : IPracticeSessionService
     public SessionResult SubmitAttempt(PracticeSession session, string exerciseId, ExerciseAttempt attempt)
     {
         ArgumentNullException.ThrowIfNull(session);
-        ArgumentNullException.ThrowIfNull(exerciseId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(exerciseId);
         ArgumentNullException.ThrowIfNull(attempt);
 
         if (session.IsFinished)
