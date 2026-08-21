@@ -1,0 +1,928 @@
+namespace KeyForge.Tests.UnitTest.Features.Lessons.Services;
+
+/// <summary>
+/// Tests <see cref="LessonProgressionService"/> using in-memory fakes
+/// to verify unlock evaluation behaviour without touching files or YAML.
+/// </summary>
+public sealed class LessonProgressionServiceTests
+{
+    private static InMemoryProgressStore CreateProgressStore() => new();
+
+    private static InMemoryExerciseAttemptRecorder CreateRecorder() => new();
+
+    private static LessonProgressionService CreateService(
+        IReadOnlyList<LessonDefinition> lessons,
+        IProgressStore? progressStore = null,
+        IExerciseAttemptRecorder? recorder = null)
+    {
+        var catalog = new FakeLessonCatalog(lessons);
+        var store = progressStore ?? CreateProgressStore();
+        var rec = recorder ?? CreateRecorder();
+        var evaluator = new ExerciseCompletionEvaluator(rec);
+        return new LessonProgressionService(catalog, store, evaluator);
+    }
+
+    [Fact]
+    public void IsUnlocked_ImmediateLesson_ReturnsTrue()
+    {
+        var lesson = new LessonDefinition
+        {
+            Id = "lesson-01",
+            Order = 1,
+            Unlock = new UnlockRule { Mode = UnlockMode.Immediate }
+        };
+
+        var service = CreateService([lesson]);
+
+        Assert.True(service.IsUnlocked("lesson-01"));
+    }
+
+    [Fact]
+    public void IsUnlocked_PreviousLessonCompleted_NoProgress_ReturnsFalse()
+    {
+        var lessons = new[]
+        {
+            new LessonDefinition
+            {
+                Id = "lesson-01",
+                Order = 1,
+                Unlock = new UnlockRule { Mode = UnlockMode.Immediate }
+            },
+            new LessonDefinition
+            {
+                Id = "lesson-02",
+                Order = 2,
+                Unlock = new UnlockRule { Mode = UnlockMode.PreviousLessonCompleted }
+            }
+        };
+
+        var service = CreateService(lessons);
+
+        Assert.False(service.IsUnlocked("lesson-02"));
+    }
+
+    [Fact]
+    public void IsUnlocked_PreviousLessonCompleted_PreviousIncomplete_ReturnsFalse()
+    {
+        var lessons = new[]
+        {
+            new LessonDefinition
+            {
+                Id = "lesson-01",
+                Order = 1,
+                Unlock = new UnlockRule { Mode = UnlockMode.Immediate }
+            },
+            new LessonDefinition
+            {
+                Id = "lesson-02",
+                Order = 2,
+                Unlock = new UnlockRule { Mode = UnlockMode.PreviousLessonCompleted }
+            }
+        };
+
+        var progressStore = CreateProgressStore();
+        progressStore.SaveProgress(new LessonProgress
+        {
+            LessonId = "lesson-01",
+            IsCompleted = false
+        });
+
+        var service = CreateService(lessons, progressStore);
+
+        Assert.False(service.IsUnlocked("lesson-02"));
+    }
+
+    [Fact]
+    public void IsUnlocked_PreviousLessonCompleted_PreviousCompleted_ReturnsTrue()
+    {
+        var lessons = new[]
+        {
+            new LessonDefinition
+            {
+                Id = "lesson-01",
+                Order = 1,
+                Unlock = new UnlockRule { Mode = UnlockMode.Immediate }
+            },
+            new LessonDefinition
+            {
+                Id = "lesson-02",
+                Order = 2,
+                Unlock = new UnlockRule { Mode = UnlockMode.PreviousLessonCompleted }
+            }
+        };
+
+        var progressStore = CreateProgressStore();
+        progressStore.SaveProgress(new LessonProgress
+        {
+            LessonId = "lesson-01",
+            IsCompleted = true
+        });
+
+        var service = CreateService(lessons, progressStore);
+
+        Assert.True(service.IsUnlocked("lesson-02"));
+    }
+
+    [Fact]
+    public void IsUnlocked_PrerequisitesCompleted_OneIncomplete_ReturnsFalse()
+    {
+        var lessons = new[]
+        {
+            new LessonDefinition
+            {
+                Id = "lesson-01",
+                Order = 1,
+                Unlock = new UnlockRule { Mode = UnlockMode.Immediate }
+            },
+            new LessonDefinition
+            {
+                Id = "lesson-02",
+                Order = 2,
+                Unlock = new UnlockRule { Mode = UnlockMode.Immediate }
+            },
+            new LessonDefinition
+            {
+                Id = "lesson-03",
+                Order = 3,
+                Unlock = new UnlockRule
+                {
+                    Mode = UnlockMode.PrerequisitesCompleted,
+                    RequiredLessonIds = ["lesson-01", "lesson-02"]
+                }
+            }
+        };
+
+        var progressStore = CreateProgressStore();
+        progressStore.SaveProgress(new LessonProgress
+        {
+            LessonId = "lesson-01",
+            IsCompleted = true
+        });
+
+        var service = CreateService(lessons, progressStore);
+
+        Assert.False(service.IsUnlocked("lesson-03"));
+    }
+
+    [Fact]
+    public void IsUnlocked_PrerequisitesCompleted_AllCompleted_ReturnsTrue()
+    {
+        var lessons = new[]
+        {
+            new LessonDefinition
+            {
+                Id = "lesson-01",
+                Order = 1,
+                Unlock = new UnlockRule { Mode = UnlockMode.Immediate }
+            },
+            new LessonDefinition
+            {
+                Id = "lesson-02",
+                Order = 2,
+                Unlock = new UnlockRule { Mode = UnlockMode.Immediate }
+            },
+            new LessonDefinition
+            {
+                Id = "lesson-03",
+                Order = 3,
+                Unlock = new UnlockRule
+                {
+                    Mode = UnlockMode.PrerequisitesCompleted,
+                    RequiredLessonIds = ["lesson-01", "lesson-02"]
+                }
+            }
+        };
+
+        var progressStore = CreateProgressStore();
+        progressStore.SaveProgress(new LessonProgress
+        {
+            LessonId = "lesson-01",
+            IsCompleted = true
+        });
+        progressStore.SaveProgress(new LessonProgress
+        {
+            LessonId = "lesson-02",
+            IsCompleted = true
+        });
+
+        var service = CreateService(lessons, progressStore);
+
+        Assert.True(service.IsUnlocked("lesson-03"));
+    }
+
+    [Fact]
+    public void IsUnlocked_PrerequisitesCompleted_MissingProgress_ReturnsFalse()
+    {
+        var lessons = new[]
+        {
+            new LessonDefinition
+            {
+                Id = "lesson-01",
+                Order = 1,
+                Unlock = new UnlockRule { Mode = UnlockMode.Immediate }
+            },
+            new LessonDefinition
+            {
+                Id = "lesson-02",
+                Order = 2,
+                Unlock = new UnlockRule
+                {
+                    Mode = UnlockMode.PrerequisitesCompleted,
+                    RequiredLessonIds = ["lesson-01"]
+                }
+            }
+        };
+
+        var service = CreateService(lessons);
+
+        Assert.False(service.IsUnlocked("lesson-02"));
+    }
+
+    [Fact]
+    public void IsUnlocked_UnknownLesson_ReturnsFalse()
+    {
+        var lessons = new[]
+        {
+            new LessonDefinition
+            {
+                Id = "lesson-01",
+                Order = 1,
+                Unlock = new UnlockRule { Mode = UnlockMode.Immediate }
+            }
+        };
+
+        var service = CreateService(lessons);
+
+        Assert.False(service.IsUnlocked("does-not-exist"));
+    }
+
+    [Fact]
+    public void IsUnlocked_PreviousLessonCompleted_DeterminedByOrder()
+    {
+        var lessons = new[]
+        {
+            new LessonDefinition
+            {
+                Id = "lesson-a",
+                Order = 10,
+                Unlock = new UnlockRule { Mode = UnlockMode.Immediate }
+            },
+            new LessonDefinition
+            {
+                Id = "lesson-b",
+                Order = 5,
+                Unlock = new UnlockRule { Mode = UnlockMode.Immediate }
+            },
+            new LessonDefinition
+            {
+                Id = "lesson-c",
+                Order = 20,
+                Unlock = new UnlockRule { Mode = UnlockMode.PreviousLessonCompleted }
+            }
+        };
+
+        var progressStore = CreateProgressStore();
+        progressStore.SaveProgress(new LessonProgress
+        {
+            LessonId = "lesson-a",
+            IsCompleted = true
+        });
+        progressStore.SaveProgress(new LessonProgress
+        {
+            LessonId = "lesson-b",
+            IsCompleted = false
+        });
+
+        var service = CreateService(lessons, progressStore);
+
+        // Previous by Order is lesson-a (Order=10), which is completed
+        Assert.True(service.IsUnlocked("lesson-c"));
+    }
+
+    [Fact]
+    public void IsUnlocked_PreviousLessonCompleted_FirstLesson_Unlocked()
+    {
+        var lessons = new[]
+        {
+            new LessonDefinition
+            {
+                Id = "lesson-01",
+                Order = 1,
+                Unlock = new UnlockRule { Mode = UnlockMode.PreviousLessonCompleted }
+            }
+        };
+
+        var service = CreateService(lessons);
+
+        // No previous lesson exists, so the first lesson is unlocked
+        Assert.True(service.IsUnlocked("lesson-01"));
+    }
+
+    [Fact]
+    public void IsUnlocked_PrerequisitesCompleted_EmptyList_ReturnsTrue()
+    {
+        var lessons = new[]
+        {
+            new LessonDefinition
+            {
+                Id = "lesson-01",
+                Order = 1,
+                Unlock = new UnlockRule
+                {
+                    Mode = UnlockMode.PrerequisitesCompleted,
+                    RequiredLessonIds = []
+                }
+            }
+        };
+
+        var service = CreateService(lessons);
+
+        Assert.True(service.IsUnlocked("lesson-01"));
+    }
+
+    [Fact]
+    public void IsUnlocked_PreviousLessonCompleted_NonSequentialOrders()
+    {
+        var lessons = new[]
+        {
+            new LessonDefinition
+            {
+                Id = "lesson-x",
+                Order = 100,
+                Unlock = new UnlockRule { Mode = UnlockMode.Immediate }
+            },
+            new LessonDefinition
+            {
+                Id = "lesson-y",
+                Order = 500,
+                Unlock = new UnlockRule { Mode = UnlockMode.PreviousLessonCompleted }
+            },
+            new LessonDefinition
+            {
+                Id = "lesson-z",
+                Order = 999,
+                Unlock = new UnlockRule { Mode = UnlockMode.PreviousLessonCompleted }
+            }
+        };
+
+        var progressStore = CreateProgressStore();
+        progressStore.SaveProgress(new LessonProgress
+        {
+            LessonId = "lesson-x",
+            IsCompleted = true
+        });
+
+        var service = CreateService(lessons, progressStore);
+
+        // lesson-y's previous is lesson-x (completed)
+        Assert.True(service.IsUnlocked("lesson-y"));
+
+        // lesson-z's previous is lesson-y (not completed)
+        Assert.False(service.IsUnlocked("lesson-z"));
+    }
+
+    [Fact]
+    public void IsUnlocked_DoNotMutateProgressOrLesson()
+    {
+        var lessons = new[]
+        {
+            new LessonDefinition
+            {
+                Id = "lesson-01",
+                Order = 1,
+                Unlock = new UnlockRule
+                {
+                    Mode = UnlockMode.PrerequisitesCompleted,
+                    RequiredLessonIds = ["prereq"]
+                }
+            }
+        };
+
+        var progressStore = CreateProgressStore();
+        progressStore.SaveProgress(new LessonProgress
+        {
+            LessonId = "prereq",
+            IsCompleted = true
+        });
+
+        var service = CreateService(lessons, progressStore);
+        service.IsUnlocked("lesson-01");
+
+        // Verify lesson was not mutated
+        Assert.Equal(UnlockMode.PrerequisitesCompleted, lessons[0].Unlock.Mode);
+        Assert.Single(lessons[0].Unlock.RequiredLessonIds);
+
+        // Verify progress was not mutated
+        var prereq = progressStore.GetProgress("prereq");
+        Assert.NotNull(prereq);
+        Assert.True(prereq.IsCompleted);
+    }
+
+    [Fact]
+    public void IsCompleted_UnknownLesson_ReturnsFalse()
+    {
+        var service = CreateService([]);
+
+        Assert.False(service.IsCompleted("does-not-exist"));
+    }
+
+    [Fact]
+    public void IsCompleted_MissingProgress_ReturnsFalse()
+    {
+        var lesson = new LessonDefinition
+        {
+            Id = "lesson-01",
+            Completion = new CompletionRule()
+        };
+
+        var service = CreateService([lesson]);
+
+        Assert.False(service.IsCompleted("lesson-01"));
+    }
+
+    [Fact]
+    public void IsCompleted_IsCompletedFalse_ReturnsFalse()
+    {
+        var lesson = new LessonDefinition
+        {
+            Id = "lesson-01",
+            Completion = new CompletionRule()
+        };
+
+        var progressStore = CreateProgressStore();
+        progressStore.SaveProgress(new LessonProgress
+        {
+            LessonId = "lesson-01",
+            IsCompleted = false
+        });
+
+        var service = CreateService([lesson], progressStore);
+
+        Assert.False(service.IsCompleted("lesson-01"));
+    }
+
+    [Fact]
+    public void IsCompleted_NoAdditionalRequirements_ReturnsTrue()
+    {
+        var lesson = new LessonDefinition
+        {
+            Id = "lesson-01",
+            Completion = new CompletionRule()
+        };
+
+        var progressStore = CreateProgressStore();
+        progressStore.SaveProgress(new LessonProgress
+        {
+            LessonId = "lesson-01",
+            IsCompleted = true
+        });
+
+        var service = CreateService([lesson], progressStore);
+
+        Assert.True(service.IsCompleted("lesson-01"));
+    }
+
+    [Fact]
+    public void IsCompleted_MinimumScore_BelowThreshold_ReturnsFalse()
+    {
+        var lesson = new LessonDefinition
+        {
+            Id = "lesson-01",
+            Completion = new CompletionRule { MinimumScore = 70 }
+        };
+
+        var progressStore = CreateProgressStore();
+        progressStore.SaveProgress(new LessonProgress
+        {
+            LessonId = "lesson-01",
+            IsCompleted = true,
+            BestScore = 69
+        });
+
+        var service = CreateService([lesson], progressStore);
+
+        Assert.False(service.IsCompleted("lesson-01"));
+    }
+
+    [Fact]
+    public void IsCompleted_MinimumScore_ExactlyAtThreshold_ReturnsTrue()
+    {
+        var lesson = new LessonDefinition
+        {
+            Id = "lesson-01",
+            Completion = new CompletionRule { MinimumScore = 70 }
+        };
+
+        var progressStore = CreateProgressStore();
+        progressStore.SaveProgress(new LessonProgress
+        {
+            LessonId = "lesson-01",
+            IsCompleted = true,
+            BestScore = 70
+        });
+
+        var service = CreateService([lesson], progressStore);
+
+        Assert.True(service.IsCompleted("lesson-01"));
+    }
+
+    [Fact]
+    public void IsCompleted_MinimumScore_AboveThreshold_ReturnsTrue()
+    {
+        var lesson = new LessonDefinition
+        {
+            Id = "lesson-01",
+            Completion = new CompletionRule { MinimumScore = 70 }
+        };
+
+        var progressStore = CreateProgressStore();
+        progressStore.SaveProgress(new LessonProgress
+        {
+            LessonId = "lesson-01",
+            IsCompleted = true,
+            BestScore = 90
+        });
+
+        var service = CreateService([lesson], progressStore);
+
+        Assert.True(service.IsCompleted("lesson-01"));
+    }
+
+    [Fact]
+    public void IsCompleted_MinimumScore_NullScore_ReturnsFalse()
+    {
+        var lesson = new LessonDefinition
+        {
+            Id = "lesson-01",
+            Completion = new CompletionRule { MinimumScore = 70 }
+        };
+
+        var progressStore = CreateProgressStore();
+        progressStore.SaveProgress(new LessonProgress
+        {
+            LessonId = "lesson-01",
+            IsCompleted = true,
+            BestScore = null
+        });
+
+        var service = CreateService([lesson], progressStore);
+
+        Assert.False(service.IsCompleted("lesson-01"));
+    }
+
+    [Fact]
+    public void IsCompleted_RequireAllExercises_AllCompleted_ReturnsTrue()
+    {
+        var recorder = new InMemoryExerciseAttemptRecorder();
+        recorder.Record(new ExerciseAttempt
+        {
+            LessonId = "lesson-01",
+            ExerciseId = "ex-01",
+            StartedAt = DateTime.UtcNow,
+            CompletedAt = DateTime.UtcNow,
+            IsSuccessful = true
+        });
+        recorder.Record(new ExerciseAttempt
+        {
+            LessonId = "lesson-01",
+            ExerciseId = "ex-02",
+            StartedAt = DateTime.UtcNow,
+            CompletedAt = DateTime.UtcNow,
+            IsSuccessful = true
+        });
+
+        var lesson = new LessonDefinition
+        {
+            Id = "lesson-01",
+            Completion = new CompletionRule { RequireAllExercises = true },
+            Exercises =
+            [
+                new RhythmExerciseDefinition { Id = "ex-01", Type = ExerciseType.Rhythm },
+                new RhythmExerciseDefinition { Id = "ex-02", Type = ExerciseType.Rhythm }
+            ]
+        };
+
+        var progressStore = CreateProgressStore();
+        progressStore.SaveProgress(new LessonProgress { LessonId = "lesson-01" });
+
+        var service = CreateService([lesson], progressStore, recorder);
+
+        Assert.True(service.IsCompleted("lesson-01"));
+    }
+
+    [Fact]
+    public void IsCompleted_RequireAllExercises_OneIncomplete_ReturnsFalse()
+    {
+        var recorder = new InMemoryExerciseAttemptRecorder();
+        recorder.Record(new ExerciseAttempt
+        {
+            LessonId = "lesson-01",
+            ExerciseId = "ex-01",
+            StartedAt = DateTime.UtcNow,
+            CompletedAt = DateTime.UtcNow,
+            IsSuccessful = true
+        });
+
+        var lesson = new LessonDefinition
+        {
+            Id = "lesson-01",
+            Completion = new CompletionRule { RequireAllExercises = true },
+            Exercises =
+            [
+                new RhythmExerciseDefinition { Id = "ex-01", Type = ExerciseType.Rhythm },
+                new RhythmExerciseDefinition { Id = "ex-02", Type = ExerciseType.Rhythm }
+            ]
+        };
+
+        var progressStore = CreateProgressStore();
+        progressStore.SaveProgress(new LessonProgress { LessonId = "lesson-01" });
+
+        var service = CreateService([lesson], progressStore, recorder);
+
+        Assert.False(service.IsCompleted("lesson-01"));
+    }
+
+    [Fact]
+    public void IsCompleted_RequireAllExercises_NoAttempts_ReturnsFalse()
+    {
+        var lesson = new LessonDefinition
+        {
+            Id = "lesson-01",
+            Completion = new CompletionRule { RequireAllExercises = true },
+            Exercises =
+            [
+                new RhythmExerciseDefinition { Id = "ex-01", Type = ExerciseType.Rhythm }
+            ]
+        };
+
+        var progressStore = CreateProgressStore();
+        progressStore.SaveProgress(new LessonProgress { LessonId = "lesson-01" });
+
+        var service = CreateService([lesson], progressStore);
+
+        Assert.False(service.IsCompleted("lesson-01"));
+    }
+
+    [Fact]
+    public void IsCompleted_RequireAllExercises_EmptyLesson_ReturnsTrue()
+    {
+        var lesson = new LessonDefinition
+        {
+            Id = "lesson-01",
+            Completion = new CompletionRule { RequireAllExercises = true },
+            Exercises = []
+        };
+
+        var progressStore = CreateProgressStore();
+        progressStore.SaveProgress(new LessonProgress { LessonId = "lesson-01" });
+
+        var service = CreateService([lesson], progressStore);
+
+        Assert.True(service.IsCompleted("lesson-01"));
+    }
+
+    [Fact]
+    public void IsCompleted_RequireAllExercises_FailedAttempt_DoesNotComplete()
+    {
+        var recorder = new InMemoryExerciseAttemptRecorder();
+        recorder.Record(new ExerciseAttempt
+        {
+            LessonId = "lesson-01",
+            ExerciseId = "ex-01",
+            StartedAt = DateTime.UtcNow,
+            CompletedAt = DateTime.UtcNow,
+            Score = 30,
+            IsSuccessful = false
+        });
+
+        var lesson = new LessonDefinition
+        {
+            Id = "lesson-01",
+            Completion = new CompletionRule { RequireAllExercises = true },
+            Exercises =
+            [
+                new RhythmExerciseDefinition { Id = "ex-01", Type = ExerciseType.Rhythm }
+            ]
+        };
+
+        var progressStore = CreateProgressStore();
+        progressStore.SaveProgress(new LessonProgress { LessonId = "lesson-01" });
+
+        var service = CreateService([lesson], progressStore, recorder);
+
+        Assert.False(service.IsCompleted("lesson-01"));
+    }
+
+    [Fact]
+    public void IsCompleted_RequireAllExercises_FailedThenSuccessful_Completes()
+    {
+        var recorder = new InMemoryExerciseAttemptRecorder();
+        recorder.Record(new ExerciseAttempt
+        {
+            LessonId = "lesson-01",
+            ExerciseId = "ex-01",
+            StartedAt = DateTime.UtcNow,
+            CompletedAt = DateTime.UtcNow,
+            Score = 30,
+            IsSuccessful = false
+        });
+        recorder.Record(new ExerciseAttempt
+        {
+            LessonId = "lesson-01",
+            ExerciseId = "ex-01",
+            StartedAt = DateTime.UtcNow,
+            CompletedAt = DateTime.UtcNow,
+            Score = 80,
+            IsSuccessful = true
+        });
+
+        var lesson = new LessonDefinition
+        {
+            Id = "lesson-01",
+            Completion = new CompletionRule { RequireAllExercises = true },
+            Exercises =
+            [
+                new RhythmExerciseDefinition { Id = "ex-01", Type = ExerciseType.Rhythm }
+            ]
+        };
+
+        var progressStore = CreateProgressStore();
+        progressStore.SaveProgress(new LessonProgress { LessonId = "lesson-01" });
+
+        var service = CreateService([lesson], progressStore, recorder);
+
+        Assert.True(service.IsCompleted("lesson-01"));
+    }
+
+    [Fact]
+    public void IsCompleted_RequireAllExercises_SuccessfulThenFailed_RemainsCompleted()
+    {
+        var recorder = new InMemoryExerciseAttemptRecorder();
+        recorder.Record(new ExerciseAttempt
+        {
+            LessonId = "lesson-01",
+            ExerciseId = "ex-01",
+            StartedAt = DateTime.UtcNow,
+            CompletedAt = DateTime.UtcNow,
+            Score = 80,
+            IsSuccessful = true
+        });
+        recorder.Record(new ExerciseAttempt
+        {
+            LessonId = "lesson-01",
+            ExerciseId = "ex-01",
+            StartedAt = DateTime.UtcNow,
+            CompletedAt = DateTime.UtcNow,
+            Score = 30,
+            IsSuccessful = false
+        });
+
+        var lesson = new LessonDefinition
+        {
+            Id = "lesson-01",
+            Completion = new CompletionRule { RequireAllExercises = true },
+            Exercises =
+            [
+                new RhythmExerciseDefinition { Id = "ex-01", Type = ExerciseType.Rhythm }
+            ]
+        };
+
+        var progressStore = CreateProgressStore();
+        progressStore.SaveProgress(new LessonProgress { LessonId = "lesson-01" });
+
+        var service = CreateService([lesson], progressStore, recorder);
+
+        Assert.True(service.IsCompleted("lesson-01"));
+    }
+
+    [Fact]
+    public void IsCompleted_RequireAllExercises_WithMinimumScore_AllMet_ReturnsTrue()
+    {
+        var recorder = new InMemoryExerciseAttemptRecorder();
+        recorder.Record(new ExerciseAttempt
+        {
+            LessonId = "lesson-01",
+            ExerciseId = "ex-01",
+            StartedAt = DateTime.UtcNow,
+            CompletedAt = DateTime.UtcNow,
+            Score = 90,
+            IsSuccessful = true
+        });
+
+        var lesson = new LessonDefinition
+        {
+            Id = "lesson-01",
+            Completion = new CompletionRule
+            {
+                RequireAllExercises = true,
+                MinimumScore = 70
+            },
+            Exercises =
+            [
+                new RhythmExerciseDefinition { Id = "ex-01", Type = ExerciseType.Rhythm }
+            ]
+        };
+
+        var progressStore = CreateProgressStore();
+        progressStore.SaveProgress(new LessonProgress
+        {
+            LessonId = "lesson-01",
+            BestScore = 90
+        });
+
+        var service = CreateService([lesson], progressStore, recorder);
+
+        Assert.True(service.IsCompleted("lesson-01"));
+    }
+
+    [Fact]
+    public void IsCompleted_RequireAllExercises_WithMinimumScore_ScoreTooLow_ReturnsFalse()
+    {
+        var recorder = new InMemoryExerciseAttemptRecorder();
+        recorder.Record(new ExerciseAttempt
+        {
+            LessonId = "lesson-01",
+            ExerciseId = "ex-01",
+            StartedAt = DateTime.UtcNow,
+            CompletedAt = DateTime.UtcNow,
+            Score = 60,
+            IsSuccessful = true
+        });
+
+        var lesson = new LessonDefinition
+        {
+            Id = "lesson-01",
+            Completion = new CompletionRule
+            {
+                RequireAllExercises = true,
+                MinimumScore = 70
+            },
+            Exercises =
+            [
+                new RhythmExerciseDefinition { Id = "ex-01", Type = ExerciseType.Rhythm }
+            ]
+        };
+
+        var progressStore = CreateProgressStore();
+        progressStore.SaveProgress(new LessonProgress
+        {
+            LessonId = "lesson-01",
+            BestScore = 60
+        });
+
+        var service = CreateService([lesson], progressStore, recorder);
+
+        Assert.False(service.IsCompleted("lesson-01"));
+    }
+
+    [Fact]
+    public void IsCompleted_DoNotMutateProgressOrLesson()
+    {
+        var lesson = new LessonDefinition
+        {
+            Id = "lesson-01",
+            Completion = new CompletionRule { MinimumScore = 70 }
+        };
+
+        var progressStore = CreateProgressStore();
+        progressStore.SaveProgress(new LessonProgress
+        {
+            LessonId = "lesson-01",
+            IsCompleted = true,
+            BestScore = 90
+        });
+
+        var service = CreateService([lesson], progressStore);
+        service.IsCompleted("lesson-01");
+
+        // Verify lesson was not mutated
+        Assert.Equal(70, lesson.Completion.MinimumScore);
+        Assert.False(lesson.Completion.RequireAllExercises);
+
+        // Verify progress was not mutated
+        var progress = progressStore.GetProgress("lesson-01");
+        Assert.NotNull(progress);
+        Assert.True(progress.IsCompleted);
+        Assert.Equal(90, progress.BestScore);
+    }
+
+    /// <summary>
+    /// Minimal in-memory implementation of <see cref="ILessonCatalog"/>
+    /// for testing purposes only.
+    /// </summary>
+    private sealed class FakeLessonCatalog : ILessonCatalog
+    {
+        private readonly IReadOnlyList<LessonDefinition> _lessons;
+
+        public FakeLessonCatalog(IReadOnlyList<LessonDefinition> lessons)
+        {
+            _lessons = [.. lessons.OrderBy(l => l.Order)];
+        }
+
+        public IReadOnlyList<LessonDefinition> GetAll() => _lessons;
+
+        public LessonDefinition? GetById(string id) =>
+            _lessons.FirstOrDefault(l =>
+                string.Equals(l.Id, id, StringComparison.OrdinalIgnoreCase));
+    }
+}

@@ -23,14 +23,15 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Features\Exercises\" />
-    <Folder Include="Features\Lessons\" />
-    <Folder Include="Features\Midi\" />
-    <Folder Include="Features\Practice\" />
-    <Folder Include="Features\Progress\" />
-    <Folder Include="Infrastructure\Yaml\" />
-    <Folder Include="Infrastructure\Persistence\" />
-    <Folder Include="Infrastructure\Progress\" />
+    <Folder Include="UnitTest\Features\Lessons\" />
+    <Folder Include="UnitTest\Features\Practice\" />
+    <Folder Include="UnitTest\Features\Progress\" />
+    <Folder Include="UnitTest\Infrastructure\Content\" />
+    <Folder Include="UnitTest\Infrastructure\Persistence\" />
+    <Folder Include="UnitTest\Infrastructure\Practice\" />
+    <Folder Include="UnitTest\Infrastructure\Progress\" />
+    <Folder Include="UnitTest\Infrastructure\Yaml\" />
+    <Folder Include="ProcessTest\Features\Practice\" />
   </ItemGroup>
 
 </Project>
