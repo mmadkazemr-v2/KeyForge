@@ -82,6 +82,8 @@ public sealed class PracticeSessionService : IPracticeSessionService
 
         var evaluation = _evaluator.Evaluate(currentExercise, attempt);
         var score = _scorer.Score(evaluation);
+
+        attempt.IsSuccessful = evaluation.IsSuccessful;
         _recorder.Record(attempt);
 
         return new SessionResult
