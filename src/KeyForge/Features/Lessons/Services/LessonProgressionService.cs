@@ -3,16 +3,15 @@ namespace KeyForge.Features.Lessons.Services;
 /// <summary>
 /// Evaluates lesson unlock state based on the learner's stored progress.
 /// </summary>
-public sealed class LessonProgressionService : ILessonProgressionService
+public sealed class LessonProgressionService(
+    ILessonCatalog catalog,
+    IProgressStore progressStore,
+    IExerciseCompletionEvaluator exerciseCompletionEvaluator
+) : ILessonProgressionService
 {
-    private readonly ILessonCatalog _catalog;
-    private readonly IProgressStore _progressStore;
-
-    public LessonProgressionService(ILessonCatalog catalog, IProgressStore progressStore)
-    {
-        _catalog = catalog;
-        _progressStore = progressStore;
-    }
+    private readonly ILessonCatalog _catalog = catalog;
+    private readonly IProgressStore _progressStore = progressStore;
+    private readonly IExerciseCompletionEvaluator _exerciseCompletionEvaluator = exerciseCompletionEvaluator;
 
     /// <inheritdoc />
     public bool IsUnlocked(string lessonId)
@@ -54,25 +53,28 @@ public sealed class LessonProgressionService : ILessonProgressionService
             return false;
         }
 
-        if (!progress.IsCompleted)
-        {
-            return false;
-        }
-
         if (lesson.Completion.RequireAllExercises)
         {
-            return false;
+            var completed = _exerciseCompletionEvaluator.AreAllExercisesCompleted(lessonId, lesson.Exercises);
+            if (!completed)
+            {
+                return false;
+            }
         }
-
-        if (lesson.Completion.MinimumScore is { } minScore)
+        else
         {
-            if (progress.BestScore is null || progress.BestScore < minScore)
+            if (!progress.IsCompleted)
             {
                 return false;
             }
         }
 
-        return true;
+        if (lesson.Completion.MinimumScore is not { } minScore)
+        {
+            return true;
+        }
+
+        return progress.BestScore is not null && !(progress.BestScore < minScore);
     }
 
     private bool IsPreviousCompleted(LessonDefinition lesson)
@@ -82,32 +84,22 @@ public sealed class LessonProgressionService : ILessonProgressionService
 
         for (var i = allLessons.Count - 1; i >= 0; i--)
         {
-            if (allLessons[i].Order < lesson.Order)
+            if (allLessons[i].Order >= lesson.Order)
             {
-                previous = allLessons[i];
-                break;
+                continue;
             }
+
+            previous = allLessons[i];
+
+            break;
         }
 
-        if (previous is null)
-        {
-            return true;
-        }
-
-        return IsPrerequisiteMet(previous.Id);
+        return previous is null || IsPrerequisiteMet(previous.Id);
     }
 
     private bool ArePrerequisitesCompleted(UnlockRule unlock)
     {
-        foreach (var requiredId in unlock.RequiredLessonIds)
-        {
-            if (!IsPrerequisiteMet(requiredId))
-            {
-                return false;
-            }
-        }
-
-        return true;
+        return unlock.RequiredLessonIds.All(IsPrerequisiteMet);
     }
 
     private bool IsPrerequisiteMet(string lessonId)

@@ -22,6 +22,10 @@ public sealed class InMemoryExerciseAttemptRecorder : IExerciseAttemptRecorder
         _attempts.Enqueue(attempt);
     }
 
+    /// <inheritdoc />
+    public IReadOnlyList<ExerciseAttempt> GetAttemptsByLesson(string lessonId) =>
+        [.. _attempts.Where(a => string.Equals(a.LessonId, lessonId, StringComparison.Ordinal))];
+
     /// <summary>
     /// Returns all recorded attempts in insertion order.
     /// Intended for testing and diagnostics only.

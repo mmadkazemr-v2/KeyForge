@@ -4,21 +4,15 @@ namespace KeyForge.Features.Lessons.Services;
 /// Combines lesson catalog data with stored progress and progression logic
 /// to produce <see cref="LessonListItem"/> instances for the future UI.
 /// </summary>
-public sealed class LessonProgressQueryService : ILessonProgressQueryService
+public sealed class LessonProgressQueryService(
+    ILessonCatalog catalog,
+    IProgressStore progressStore,
+    ILessonProgressionService progression
+) : ILessonProgressQueryService
 {
-    private readonly ILessonCatalog _catalog;
-    private readonly IProgressStore _progressStore;
-    private readonly ILessonProgressionService _progression;
-
-    public LessonProgressQueryService(
-        ILessonCatalog catalog,
-        IProgressStore progressStore,
-        ILessonProgressionService progression)
-    {
-        _catalog = catalog;
-        _progressStore = progressStore;
-        _progression = progression;
-    }
+    private readonly ILessonCatalog _catalog = catalog;
+    private readonly IProgressStore _progressStore = progressStore;
+    private readonly ILessonProgressionService _progression = progression;
 
     /// <inheritdoc />
     public IReadOnlyList<LessonListItem> GetLessons()

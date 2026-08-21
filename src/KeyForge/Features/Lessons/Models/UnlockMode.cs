@@ -9,7 +9,9 @@ namespace KeyForge.Features.Lessons.Models;
 /// </summary>
 public enum UnlockMode
 {
-    /// <summary>The lesson is available from the very start of the course.</summary>
+    /// <summary>
+    /// The lesson is available from the very start of the course.
+    /// </summary>
     Immediate,
 
     /// <summary>

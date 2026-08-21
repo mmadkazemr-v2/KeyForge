@@ -17,4 +17,16 @@ public interface IExerciseAttemptRecorder
     /// The attempt data to record. Must not be <c>null</c>.
     /// </param>
     void Record(ExerciseAttempt attempt);
+
+    /// <summary>
+    /// Returns all recorded attempts for the specified lesson.
+    /// </summary>
+    /// <param name="lessonId">
+    /// The stable identifier of the lesson to query.
+    /// </param>
+    /// <returns>
+    /// A read-only list of attempts belonging to the lesson,
+    /// in insertion order. Never <c>null</c>.
+    /// </returns>
+    IReadOnlyList<ExerciseAttempt> GetAttemptsByLesson(string lessonId);
 }

@@ -12,13 +12,19 @@ public class LessonDefinition
     /// </summary>
     public string Id { get; set; } = string.Empty;
 
-    /// <summary>Human-readable title shown to the student.</summary>
+    /// <summary>
+    /// Human-readable title shown to the student.
+    /// </summary>
     public string Title { get; set; } = string.Empty;
 
-    /// <summary>Optional short description of the lesson's goals.</summary>
+    /// <summary>
+    /// Optional short description of the lesson's goals.
+    /// </summary>
     public string Description { get; set; } = string.Empty;
 
-    /// <summary>Skill level this lesson targets.</summary>
+    /// <summary>
+    /// Skill level this lesson targets.
+    /// </summary>
     public LessonLevel Level { get; set; } = LessonLevel.Beginner;
 
     /// <summary>

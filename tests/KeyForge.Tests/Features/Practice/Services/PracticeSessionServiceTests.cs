@@ -589,6 +589,10 @@ public sealed class PracticeSessionServiceTests
         {
             Recorded.Add(attempt);
         }
+
+        public IReadOnlyList<ExerciseAttempt> GetAttemptsByLesson(string lessonId) =>
+            Recorded.Where(a => string.Equals(a.LessonId, lessonId, StringComparison.Ordinal))
+                .ToList().AsReadOnly();
     }
 
     #endregion

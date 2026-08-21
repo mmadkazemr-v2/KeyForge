@@ -19,13 +19,19 @@ public sealed class LessonListItem
     /// </summary>
     public required string Id { get; init; }
 
-    /// <summary>Human-readable title shown to the student.</summary>
+    /// <summary>
+    /// Human-readable title shown to the student.
+    /// </summary>
     public required string Title { get; init; }
 
-    /// <summary>Optional short description of the lesson's goals.</summary>
+    /// <summary>
+    /// Optional short description of the lesson's goals.
+    /// </summary>
     public string Description { get; init; } = string.Empty;
 
-    /// <summary>Skill level this lesson targets.</summary>
+    /// <summary>
+    /// Skill level this lesson targets.
+    /// </summary>
     public LessonLevel Level { get; init; }
 
     /// <summary>
@@ -34,7 +40,9 @@ public sealed class LessonListItem
     /// </summary>
     public int Order { get; init; }
 
-    /// <summary>Estimated total practice time of the lesson in minutes.</summary>
+    /// <summary>
+    /// Estimated total practice time of the lesson in minutes.
+    /// </summary>
     public int EstimatedMinutes { get; init; }
 
     /// <summary>

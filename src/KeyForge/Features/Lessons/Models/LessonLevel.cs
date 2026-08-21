@@ -6,18 +6,28 @@ namespace KeyForge.Features.Lessons.Models;
 /// </summary>
 public enum LessonLevel
 {
-    /// <summary>For students with no or very little keyboard experience.</summary>
+    /// <summary>
+    /// For students with no or very little keyboard experience.
+    /// </summary>
     Beginner,
 
-    /// <summary>For students who know basic notes, fingering, and simple rhythms.</summary>
+    /// <summary>
+    /// For students who know basic notes, fingering, and simple rhythms.
+    /// </summary>
     Elementary,
 
-    /// <summary>For students comfortable with common keys and moderate rhythms.</summary>
+    /// <summary>
+    /// For students comfortable with common keys and moderate rhythms.
+    /// </summary>
     Intermediate,
 
-    /// <summary>For students working on advanced techniques and complex patterns.</summary>
+    /// <summary>
+    /// For students working on advanced techniques and complex patterns.
+    /// </summary>
     Advanced,
 
-    /// <summary>For near-professional or professional players.</summary>
+    /// <summary>
+    /// For near-professional or professional players.
+    /// </summary>
     Master
 }

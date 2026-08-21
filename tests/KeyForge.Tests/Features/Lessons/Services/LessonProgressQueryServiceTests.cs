@@ -14,7 +14,8 @@ public sealed class LessonProgressQueryServiceTests
     {
         var catalog = new FakeLessonCatalog(lessons);
         var store = progressStore ?? CreateProgressStore();
-        return new LessonProgressionService(catalog, store);
+        var evaluator = new ExerciseCompletionEvaluator(new InMemoryExerciseAttemptRecorder());
+        return new LessonProgressionService(catalog, store, evaluator);
     }
 
     private static LessonProgressQueryService CreateService(
@@ -23,7 +24,8 @@ public sealed class LessonProgressQueryServiceTests
     {
         var catalog = new FakeLessonCatalog(lessons);
         var store = progressStore ?? CreateProgressStore();
-        var progression = new LessonProgressionService(catalog, store);
+        var evaluator = new ExerciseCompletionEvaluator(new InMemoryExerciseAttemptRecorder());
+        var progression = new LessonProgressionService(catalog, store, evaluator);
         return new LessonProgressQueryService(catalog, store, progression);
     }
 

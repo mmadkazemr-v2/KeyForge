@@ -8,13 +8,18 @@ public sealed class LessonProgressionServiceTests
 {
     private static InMemoryProgressStore CreateProgressStore() => new();
 
+    private static InMemoryExerciseAttemptRecorder CreateRecorder() => new();
+
     private static LessonProgressionService CreateService(
         IReadOnlyList<LessonDefinition> lessons,
-        IProgressStore? progressStore = null)
+        IProgressStore? progressStore = null,
+        IExerciseAttemptRecorder? recorder = null)
     {
         var catalog = new FakeLessonCatalog(lessons);
         var store = progressStore ?? CreateProgressStore();
-        return new LessonProgressionService(catalog, store);
+        var rec = recorder ?? CreateRecorder();
+        var evaluator = new ExerciseCompletionEvaluator(rec);
+        return new LessonProgressionService(catalog, store, evaluator);
     }
 
     [Fact]
@@ -566,31 +571,244 @@ public sealed class LessonProgressionServiceTests
     }
 
     [Fact]
-    public void IsCompleted_RequireAllExercises_ReturnsFalse()
+    public void IsCompleted_RequireAllExercises_AllCompleted_ReturnsTrue()
     {
+        var recorder = new InMemoryExerciseAttemptRecorder();
+        recorder.Record(new ExerciseAttempt
+        {
+            LessonId = "lesson-01",
+            ExerciseId = "ex-01",
+            StartedAt = DateTime.UtcNow,
+            CompletedAt = DateTime.UtcNow,
+            IsSuccessful = true
+        });
+        recorder.Record(new ExerciseAttempt
+        {
+            LessonId = "lesson-01",
+            ExerciseId = "ex-02",
+            StartedAt = DateTime.UtcNow,
+            CompletedAt = DateTime.UtcNow,
+            IsSuccessful = true
+        });
+
         var lesson = new LessonDefinition
         {
             Id = "lesson-01",
-            Completion = new CompletionRule { RequireAllExercises = true }
+            Completion = new CompletionRule { RequireAllExercises = true },
+            Exercises =
+            [
+                new RhythmExerciseDefinition { Id = "ex-01", Type = ExerciseType.Rhythm },
+                new RhythmExerciseDefinition { Id = "ex-02", Type = ExerciseType.Rhythm }
+            ]
         };
 
         var progressStore = CreateProgressStore();
-        progressStore.SaveProgress(new LessonProgress
+        progressStore.SaveProgress(new LessonProgress { LessonId = "lesson-01" });
+
+        var service = CreateService([lesson], progressStore, recorder);
+
+        Assert.True(service.IsCompleted("lesson-01"));
+    }
+
+    [Fact]
+    public void IsCompleted_RequireAllExercises_OneIncomplete_ReturnsFalse()
+    {
+        var recorder = new InMemoryExerciseAttemptRecorder();
+        recorder.Record(new ExerciseAttempt
         {
             LessonId = "lesson-01",
-            IsCompleted = true
+            ExerciseId = "ex-01",
+            StartedAt = DateTime.UtcNow,
+            CompletedAt = DateTime.UtcNow,
+            IsSuccessful = true
         });
 
-        var service = CreateService([lesson], progressStore);
+        var lesson = new LessonDefinition
+        {
+            Id = "lesson-01",
+            Completion = new CompletionRule { RequireAllExercises = true },
+            Exercises =
+            [
+                new RhythmExerciseDefinition { Id = "ex-01", Type = ExerciseType.Rhythm },
+                new RhythmExerciseDefinition { Id = "ex-02", Type = ExerciseType.Rhythm }
+            ]
+        };
 
-        // LessonProgress does not contain per-exercise completion data,
-        // so RequireAllExercises cannot be evaluated. Returns false.
+        var progressStore = CreateProgressStore();
+        progressStore.SaveProgress(new LessonProgress { LessonId = "lesson-01" });
+
+        var service = CreateService([lesson], progressStore, recorder);
+
         Assert.False(service.IsCompleted("lesson-01"));
     }
 
     [Fact]
-    public void IsCompleted_RequireAllExercises_WithMinimumScore_ReturnsFalse()
+    public void IsCompleted_RequireAllExercises_NoAttempts_ReturnsFalse()
     {
+        var lesson = new LessonDefinition
+        {
+            Id = "lesson-01",
+            Completion = new CompletionRule { RequireAllExercises = true },
+            Exercises =
+            [
+                new RhythmExerciseDefinition { Id = "ex-01", Type = ExerciseType.Rhythm }
+            ]
+        };
+
+        var progressStore = CreateProgressStore();
+        progressStore.SaveProgress(new LessonProgress { LessonId = "lesson-01" });
+
+        var service = CreateService([lesson], progressStore);
+
+        Assert.False(service.IsCompleted("lesson-01"));
+    }
+
+    [Fact]
+    public void IsCompleted_RequireAllExercises_EmptyLesson_ReturnsTrue()
+    {
+        var lesson = new LessonDefinition
+        {
+            Id = "lesson-01",
+            Completion = new CompletionRule { RequireAllExercises = true },
+            Exercises = []
+        };
+
+        var progressStore = CreateProgressStore();
+        progressStore.SaveProgress(new LessonProgress { LessonId = "lesson-01" });
+
+        var service = CreateService([lesson], progressStore);
+
+        Assert.True(service.IsCompleted("lesson-01"));
+    }
+
+    [Fact]
+    public void IsCompleted_RequireAllExercises_FailedAttempt_DoesNotComplete()
+    {
+        var recorder = new InMemoryExerciseAttemptRecorder();
+        recorder.Record(new ExerciseAttempt
+        {
+            LessonId = "lesson-01",
+            ExerciseId = "ex-01",
+            StartedAt = DateTime.UtcNow,
+            CompletedAt = DateTime.UtcNow,
+            Score = 30,
+            IsSuccessful = false
+        });
+
+        var lesson = new LessonDefinition
+        {
+            Id = "lesson-01",
+            Completion = new CompletionRule { RequireAllExercises = true },
+            Exercises =
+            [
+                new RhythmExerciseDefinition { Id = "ex-01", Type = ExerciseType.Rhythm }
+            ]
+        };
+
+        var progressStore = CreateProgressStore();
+        progressStore.SaveProgress(new LessonProgress { LessonId = "lesson-01" });
+
+        var service = CreateService([lesson], progressStore, recorder);
+
+        Assert.False(service.IsCompleted("lesson-01"));
+    }
+
+    [Fact]
+    public void IsCompleted_RequireAllExercises_FailedThenSuccessful_Completes()
+    {
+        var recorder = new InMemoryExerciseAttemptRecorder();
+        recorder.Record(new ExerciseAttempt
+        {
+            LessonId = "lesson-01",
+            ExerciseId = "ex-01",
+            StartedAt = DateTime.UtcNow,
+            CompletedAt = DateTime.UtcNow,
+            Score = 30,
+            IsSuccessful = false
+        });
+        recorder.Record(new ExerciseAttempt
+        {
+            LessonId = "lesson-01",
+            ExerciseId = "ex-01",
+            StartedAt = DateTime.UtcNow,
+            CompletedAt = DateTime.UtcNow,
+            Score = 80,
+            IsSuccessful = true
+        });
+
+        var lesson = new LessonDefinition
+        {
+            Id = "lesson-01",
+            Completion = new CompletionRule { RequireAllExercises = true },
+            Exercises =
+            [
+                new RhythmExerciseDefinition { Id = "ex-01", Type = ExerciseType.Rhythm }
+            ]
+        };
+
+        var progressStore = CreateProgressStore();
+        progressStore.SaveProgress(new LessonProgress { LessonId = "lesson-01" });
+
+        var service = CreateService([lesson], progressStore, recorder);
+
+        Assert.True(service.IsCompleted("lesson-01"));
+    }
+
+    [Fact]
+    public void IsCompleted_RequireAllExercises_SuccessfulThenFailed_RemainsCompleted()
+    {
+        var recorder = new InMemoryExerciseAttemptRecorder();
+        recorder.Record(new ExerciseAttempt
+        {
+            LessonId = "lesson-01",
+            ExerciseId = "ex-01",
+            StartedAt = DateTime.UtcNow,
+            CompletedAt = DateTime.UtcNow,
+            Score = 80,
+            IsSuccessful = true
+        });
+        recorder.Record(new ExerciseAttempt
+        {
+            LessonId = "lesson-01",
+            ExerciseId = "ex-01",
+            StartedAt = DateTime.UtcNow,
+            CompletedAt = DateTime.UtcNow,
+            Score = 30,
+            IsSuccessful = false
+        });
+
+        var lesson = new LessonDefinition
+        {
+            Id = "lesson-01",
+            Completion = new CompletionRule { RequireAllExercises = true },
+            Exercises =
+            [
+                new RhythmExerciseDefinition { Id = "ex-01", Type = ExerciseType.Rhythm }
+            ]
+        };
+
+        var progressStore = CreateProgressStore();
+        progressStore.SaveProgress(new LessonProgress { LessonId = "lesson-01" });
+
+        var service = CreateService([lesson], progressStore, recorder);
+
+        Assert.True(service.IsCompleted("lesson-01"));
+    }
+
+    [Fact]
+    public void IsCompleted_RequireAllExercises_WithMinimumScore_AllMet_ReturnsTrue()
+    {
+        var recorder = new InMemoryExerciseAttemptRecorder();
+        recorder.Record(new ExerciseAttempt
+        {
+            LessonId = "lesson-01",
+            ExerciseId = "ex-01",
+            StartedAt = DateTime.UtcNow,
+            CompletedAt = DateTime.UtcNow,
+            Score = 90,
+            IsSuccessful = true
+        });
+
         var lesson = new LessonDefinition
         {
             Id = "lesson-01",
@@ -598,20 +816,62 @@ public sealed class LessonProgressionServiceTests
             {
                 RequireAllExercises = true,
                 MinimumScore = 70
-            }
+            },
+            Exercises =
+            [
+                new RhythmExerciseDefinition { Id = "ex-01", Type = ExerciseType.Rhythm }
+            ]
         };
 
         var progressStore = CreateProgressStore();
         progressStore.SaveProgress(new LessonProgress
         {
             LessonId = "lesson-01",
-            IsCompleted = true,
             BestScore = 90
         });
 
-        var service = CreateService([lesson], progressStore);
+        var service = CreateService([lesson], progressStore, recorder);
 
-        // RequireAllExercises blocks completion regardless of score
+        Assert.True(service.IsCompleted("lesson-01"));
+    }
+
+    [Fact]
+    public void IsCompleted_RequireAllExercises_WithMinimumScore_ScoreTooLow_ReturnsFalse()
+    {
+        var recorder = new InMemoryExerciseAttemptRecorder();
+        recorder.Record(new ExerciseAttempt
+        {
+            LessonId = "lesson-01",
+            ExerciseId = "ex-01",
+            StartedAt = DateTime.UtcNow,
+            CompletedAt = DateTime.UtcNow,
+            Score = 60,
+            IsSuccessful = true
+        });
+
+        var lesson = new LessonDefinition
+        {
+            Id = "lesson-01",
+            Completion = new CompletionRule
+            {
+                RequireAllExercises = true,
+                MinimumScore = 70
+            },
+            Exercises =
+            [
+                new RhythmExerciseDefinition { Id = "ex-01", Type = ExerciseType.Rhythm }
+            ]
+        };
+
+        var progressStore = CreateProgressStore();
+        progressStore.SaveProgress(new LessonProgress
+        {
+            LessonId = "lesson-01",
+            BestScore = 60
+        });
+
+        var service = CreateService([lesson], progressStore, recorder);
+
         Assert.False(service.IsCompleted("lesson-01"));
     }
 
