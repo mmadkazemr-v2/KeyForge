@@ -2,7 +2,7 @@ namespace KeyForge.Tests.Features.Progress.Services;
 
 /// <summary>
 /// Tests <see cref="ProgressUpdateService"/> using in-memory fakes
-/// to verify progress update behaviour after exercise attempts.
+/// to verify progress update behavior after exercise attempts.
 /// </summary>
 public sealed class ProgressUpdateServiceTests
 {
