@@ -254,6 +254,70 @@ public sealed class PracticeFlowProcessTests
         Assert.Null(store.GetProgress("lesson-01"));
     }
 
+    [Fact]
+    public void RetryThenAdvance_SessionStateTransitionsCorrectly()
+    {
+        var ex1 = Exercise("ex-01", "Quarter Notes");
+        var ex2 = Exercise("ex-02", "Half Notes");
+
+        var lesson = new LessonDefinition
+        {
+            Id = "lesson-01",
+            Title = "Two Exercises",
+            Order = 1,
+            Unlock = new UnlockRule { Mode = UnlockMode.Immediate },
+            Completion = new CompletionRule { RequireAllExercises = true },
+            Exercises = [ex1, ex2]
+        };
+
+        var (sessionService, progressService, store, recorder) = CreateFlow(lesson);
+
+        var session = sessionService.StartSession("lesson-01");
+        Assert.NotNull(session);
+
+        Assert.Equal(0, session.CurrentExerciseIndex);
+        Assert.Equal("ex-01", session.GetCurrentExercise()!.Id);
+        Assert.False(session.IsFinished);
+
+        var failedAttempt = MakeAttempt("lesson-01", "ex-01", 0, completed: false);
+        var failedResult = sessionService.SubmitAttempt(session, "ex-01", failedAttempt);
+        Assert.False(failedResult.IsSuccessful);
+        Assert.Equal(0, session.CurrentExerciseIndex);
+        Assert.Equal("ex-01", session.GetCurrentExercise()!.Id);
+
+        progressService.UpdateProgress("lesson-01", failedResult);
+        Assert.False(store.GetProgress("lesson-01")!.IsCompleted);
+
+        var successAttempt = MakeAttempt("lesson-01", "ex-01", 85, completed: true);
+        var successResult = sessionService.SubmitAttempt(session, "ex-01", successAttempt);
+        Assert.True(successResult.IsSuccessful);
+        Assert.Equal(0, session.CurrentExerciseIndex);
+
+        progressService.UpdateProgress("lesson-01", successResult);
+        Assert.False(store.GetProgress("lesson-01")!.IsCompleted);
+
+        session.Next();
+        Assert.Equal(1, session.CurrentExerciseIndex);
+        Assert.Equal("ex-02", session.GetCurrentExercise()!.Id);
+        Assert.False(session.IsFinished);
+
+        var ex2Attempt = MakeAttempt("lesson-01", "ex-02", 90, completed: true);
+        var ex2Result = sessionService.SubmitAttempt(session, "ex-02", ex2Attempt);
+        Assert.True(ex2Result.IsSuccessful);
+
+        progressService.UpdateProgress("lesson-01", ex2Result);
+        session.Next();
+
+        Assert.Null(session.GetCurrentExercise());
+        Assert.True(session.IsFinished);
+        Assert.True(store.GetProgress("lesson-01")!.IsCompleted);
+        var allAttempts = recorder.GetAttemptsByLesson("lesson-01");
+        Assert.Equal(3, allAttempts.Count);
+        Assert.False(allAttempts[0].IsSuccessful);
+        Assert.True(allAttempts[1].IsSuccessful);
+        Assert.True(allAttempts[2].IsSuccessful);
+    }
+
     #region Fakes
 
     private sealed class FakeLessonCatalog : ILessonCatalog
