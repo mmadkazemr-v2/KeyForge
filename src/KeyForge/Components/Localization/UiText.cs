@@ -1,5 +1,3 @@
-using System.Globalization;
-
 namespace KeyForge.Components.Localization;
 
 /// <summary>

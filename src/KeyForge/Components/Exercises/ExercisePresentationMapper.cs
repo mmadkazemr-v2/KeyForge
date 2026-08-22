@@ -1,6 +1,3 @@
-using KeyForge.Components.Localization;
-using KeyForge.Features.Exercises.Models;
-
 namespace KeyForge.Components.Exercises;
 
 /// <summary>

@@ -1,5 +1,3 @@
-using System.Collections.Concurrent;
-
 namespace KeyForge.Infrastructure.Progress.InMemory;
 
 /// <summary>

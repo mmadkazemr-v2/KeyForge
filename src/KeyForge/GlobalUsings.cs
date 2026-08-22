@@ -1,12 +1,10 @@
 ﻿// Global using directives
 
-global using System.Diagnostics;
-global using System.Net.Http;
-global using System.Net.Http.Json;
+global using System.Collections.Concurrent;
+global using System.Globalization;
 global using System.Text.Json;
-global using KeyForge;
 global using KeyForge.Components;
-global using KeyForge.Components.Layout;
+global using KeyForge.Components.Localization;
 global using KeyForge.Features.Exercises.Models;
 global using KeyForge.Features.Lessons.Models;
 global using KeyForge.Features.Lessons.Services;
@@ -22,14 +20,8 @@ global using KeyForge.Infrastructure.Progress.InMemory;
 global using KeyForge.Infrastructure.Yaml.Exceptions;
 global using KeyForge.Infrastructure.Yaml.Parsing;
 global using KeyForge.Infrastructure.Yaml.Validation;
-global using Microsoft.AspNetCore.Components.Forms;
-global using Microsoft.AspNetCore.Components.Routing;
-global using Microsoft.AspNetCore.Components.Web;
-global using Microsoft.AspNetCore.Components.Web.Virtualization;
 global using Microsoft.Extensions.Options;
-global using Microsoft.JSInterop;
 global using YamlDotNet.Core;
 global using YamlDotNet.RepresentationModel;
 global using YamlDotNet.Serialization;
 global using YamlDotNet.Serialization.NamingConventions;
-global using static Microsoft.AspNetCore.Components.Web.RenderMode;
