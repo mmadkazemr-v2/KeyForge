@@ -1,0 +1,107 @@
+@namespace KeyForge.Components.Music
+
+<div class="piano-keyboard__viewport" dir="ltr">
+    <div class="piano-keyboard" style="@KeyboardStyle" role="group" aria-label="@UiText.VirtualPiano">
+        <div class="piano-keyboard__white-keys">
+            @foreach (var key in Keys.Where(key => !key.Note.IsBlackKey))
+            {
+                <button type="button"
+                        class="@GetKeyClass(key.Note, false)"
+                        disabled="@Disabled"
+                        aria-label="@UiText.GetPianoKeyAriaLabel(key.Note.Value)"
+                        aria-pressed="@(IsSelected(key.Note) ? "true" : "false")"
+                        @onclick="() => SelectNote(key.Note)">
+                    <span class="piano-keyboard__label">@key.Note.Value</span>
+                    @if (GetStateMarker(key.Note) is { } marker)
+                    {
+                        <span class="piano-keyboard__state" aria-hidden="true">@marker</span>
+                    }
+                </button>
+            }
+        </div>
+
+        @foreach (var key in Keys.Where(key => key.Note.IsBlackKey))
+        {
+            <button type="button"
+                    class="@GetKeyClass(key.Note, true)"
+                    style="@($"--kf-piano-key-position: {key.PositionPercent.ToString(CultureInfo.InvariantCulture)}%")"
+                    disabled="@Disabled"
+                    aria-label="@UiText.GetPianoKeyAriaLabel(key.Note.Value)"
+                    aria-pressed="@(IsSelected(key.Note) ? "true" : "false")"
+                    @onclick="() => SelectNote(key.Note)">
+                <span class="piano-keyboard__label">@key.Note.Value</span>
+                @if (GetStateMarker(key.Note) is { } marker)
+                {
+                    <span class="piano-keyboard__state" aria-hidden="true">@marker</span>
+                }
+            </button>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public MusicalNote FirstNote { get; set; } = null!;
+
+    [Parameter, EditorRequired]
+    public MusicalNote LastNote { get; set; } = null!;
+
+    [Parameter]
+    public MusicalNote? SelectedNote { get; set; }
+
+    [Parameter]
+    public MusicalNote? ExpectedNote { get; set; }
+
+    [Parameter]
+    public bool RevealAnswer { get; set; }
+
+    [Parameter]
+    public bool Disabled { get; set; }
+
+    [Parameter]
+    public EventCallback<MusicalNote> OnNoteSelected { get; set; }
+
+    private IReadOnlyList<PianoKeyLayout> Keys => PianoKeyboardLayout.Create(FirstNote, LastNote);
+    private int WhiteKeyCount => Keys.Count(key => !key.Note.IsBlackKey);
+    private string KeyboardStyle => $"--kf-piano-white-key-count: {WhiteKeyCount}";
+
+    private Task SelectNote(MusicalNote note) => OnNoteSelected.InvokeAsync(note);
+
+    private bool IsSelected(MusicalNote note) => SelectedNote == note;
+
+    private bool IsExpected(MusicalNote note) => RevealAnswer && ExpectedNote == note;
+
+    private string GetKeyClass(MusicalNote note, bool black)
+    {
+        var classes = new List<string>
+        {
+            "piano-keyboard__key",
+            black ? "piano-keyboard__key--black" : "piano-keyboard__key--white"
+        };
+
+        if (IsSelected(note))
+        {
+            classes.Add("piano-keyboard__key--selected");
+            classes.Add(ExpectedNote == note
+                ? "piano-keyboard__key--correct"
+                : "piano-keyboard__key--incorrect");
+        }
+
+        if (IsExpected(note))
+        {
+            classes.Add("piano-keyboard__key--expected");
+        }
+
+        return string.Join(' ', classes);
+    }
+
+    private string? GetStateMarker(MusicalNote note)
+    {
+        if (IsSelected(note))
+        {
+            return ExpectedNote == note ? "✓" : "×";
+        }
+
+        return IsExpected(note) ? "✓" : null;
+    }
+}

@@ -26,6 +26,15 @@ public sealed class ProgressUpdateServiceTests
 
     private static SessionResult MakeResult(int score = 80) => new()
     {
+        Attempt = new ExerciseAttempt
+        {
+            LessonId = "lesson-01",
+            ExerciseId = "ex-01",
+            StartedAt = DateTime.UtcNow,
+            CompletedAt = DateTime.UtcNow,
+            Score = score,
+            IsSuccessful = true
+        },
         Evaluation = new ExerciseEvaluationResult { IsSuccessful = true, Score = score },
         Score = score
     };

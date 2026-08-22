@@ -16,10 +16,23 @@ public sealed class ExerciseEvaluationResult
     public bool IsSuccessful { get; init; }
 
     /// <summary>
-    /// Numeric score achieved on this attempt, derived from the
-    /// attempt data and exercise definition.
-    /// <c>null</c> when the score could not be determined
-    /// (e.g. the attempt was incomplete).
+    /// Raw score generated from the challenge and captured input.
+    /// The scorer normalizes this value to the final 0..100 range.
     /// </summary>
     public int? Score { get; init; }
+
+    /// <summary>Presentation-neutral information describing the outcome.</summary>
+    public ExerciseEvaluationFeedback Feedback { get; init; }
+
+    /// <summary>The primary expected value, when one was available.</summary>
+    public string? ExpectedValue { get; init; }
+
+    /// <summary>The primary captured value, when one was available.</summary>
+    public string? ActualValue { get; init; }
+
+    /// <summary>Detailed timing feedback when the evaluated challenge is Rhythm.</summary>
+    public RhythmEvaluationDetails? Rhythm { get; init; }
+
+    /// <summary>Question-by-question feedback when the challenge is Note Reading.</summary>
+    public NoteReadingEvaluationDetails? NoteReading { get; init; }
 }

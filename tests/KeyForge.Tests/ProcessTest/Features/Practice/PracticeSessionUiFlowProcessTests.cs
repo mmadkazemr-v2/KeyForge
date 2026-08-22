@@ -1,9 +1,6 @@
 namespace KeyForge.Tests.ProcessTest.Features.Practice;
 
-/// <summary>
-/// Verifies the service composition consumed by the practice page without
-/// introducing a Razor component testing dependency.
-/// </summary>
+/// <summary>Verifies the service composition consumed by the practice page.</summary>
 public sealed class PracticeSessionUiFlowProcessTests
 {
     [Fact]
@@ -18,8 +15,8 @@ public sealed class PracticeSessionUiFlowProcessTests
             Completion = new CompletionRule { RequireAllExercises = true },
             Exercises =
             [
-                Exercise("exercise-1", "First exercise"),
-                Exercise("exercise-2", "Second exercise")
+                Note("exercise-1", "C4-G4"),
+                Note("exercise-2", "D4-A4")
             ]
         };
         var catalog = new FakeLessonCatalog(lesson);
@@ -30,75 +27,67 @@ public sealed class PracticeSessionUiFlowProcessTests
         var sessionService = new PracticeSessionService(
             catalog,
             progression,
+            new ExerciseChallengeGenerator(),
             new ExerciseEvaluator(),
             new ExerciseScorer(),
             attemptRecorder);
         var progressUpdate = new ProgressUpdateService(progressStore, catalog, progression);
         var lessonQuery = new LessonProgressQueryService(catalog, progressStore, progression);
+        var session = sessionService.StartSession(lesson.Id)!;
 
-        var session = sessionService.StartSession(lesson.Id);
-
-        Assert.NotNull(session);
-        Assert.Equal("exercise-1", session.GetCurrentExercise()!.Id);
-
-        var failedResult = sessionService.SubmitAttempt(
-            session,
-            "exercise-1",
-            Attempt(lesson.Id, "exercise-1", score: null, completed: false));
+        var failedResult = Submit(sessionService, session, "D4");
         progressUpdate.UpdateProgress(lesson.Id, failedResult);
-
         Assert.False(failedResult.IsSuccessful);
-        Assert.Equal(0, session.CurrentExerciseIndex);
         Assert.Equal("exercise-1", session.GetCurrentExercise()!.Id);
 
-        var retryResult = sessionService.SubmitAttempt(
-            session,
-            "exercise-1",
-            Attempt(lesson.Id, "exercise-1", score: 82, completed: true));
+        var retryResult = Submit(sessionService, session, "C4");
         progressUpdate.UpdateProgress(lesson.Id, retryResult);
-
         Assert.True(retryResult.IsSuccessful);
         Assert.Equal(0, session.CurrentExerciseIndex);
 
         session.Next();
-
         Assert.Equal("exercise-2", session.GetCurrentExercise()!.Id);
 
-        var finalResult = sessionService.SubmitAttempt(
-            session,
-            "exercise-2",
-            Attempt(lesson.Id, "exercise-2", score: 91, completed: true));
+        var finalResult = Submit(sessionService, session, "D4");
         progressUpdate.UpdateProgress(lesson.Id, finalResult);
-
         Assert.True(finalResult.IsSuccessful);
         Assert.False(session.IsFinished);
 
         session.Next();
-
         Assert.True(session.IsFinished);
         var displayState = Assert.Single(lessonQuery.GetLessons());
         Assert.True(displayState.IsCompleted);
-        Assert.Equal(91, displayState.BestScore);
+        Assert.Equal(100, displayState.BestScore);
     }
 
-    private static RhythmExerciseDefinition Exercise(string id, string title) => new()
+    private static SessionResult Submit(
+        PracticeSessionService service,
+        PracticeSession session,
+        string answer)
+    {
+        var runtime = service.StartExercise(session);
+        var isCorrectAttempt = string.Equals(
+            answer,
+            runtime.Challenge.ExpectedInputs[0].Value,
+            StringComparison.OrdinalIgnoreCase);
+        foreach (var expected in runtime.Challenge.ExpectedInputs)
+        {
+            runtime.CaptureInput(new ExerciseInputEvent
+            {
+                Timestamp = runtime.StartedAt.AddMilliseconds(200),
+                Source = InputSource.ComputerKeyboard,
+                Type = InputEventType.Note,
+                Value = isCorrectAttempt ? expected.Value : answer
+            });
+        }
+        return service.SubmitAttempt(session, runtime, runtime.StartedAt.AddSeconds(1));
+    }
+
+    private static NoteReadingExerciseDefinition Note(string id, string range) => new()
     {
         Id = id,
-        Title = title,
-        Type = ExerciseType.Rhythm
-    };
-
-    private static ExerciseAttempt Attempt(
-        string lessonId,
-        string exerciseId,
-        int? score,
-        bool completed) => new()
-    {
-        LessonId = lessonId,
-        ExerciseId = exerciseId,
-        StartedAt = DateTime.UtcNow,
-        CompletedAt = completed ? DateTime.UtcNow : null,
-        Score = score
+        Title = "Read note",
+        Range = range
     };
 
     private sealed class FakeLessonCatalog(LessonDefinition lesson) : ILessonCatalog

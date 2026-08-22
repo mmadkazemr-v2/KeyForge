@@ -1,44 +1,65 @@
 namespace KeyForge.Features.Practice.Services;
 
 /// <summary>
-/// Evaluates an exercise attempt against its definition using the data
-/// currently available in the domain models.
-/// <para>
-/// The evaluation rule for this first version is:
-/// <list type="number">
-///   <item>The attempt must belong to the given exercise (ID match).</item>
-///   <item>The attempt must be completed (<see cref="ExerciseAttempt.CompletedAt"/> has a value).</item>
-///   <item>The attempt must have a score (<see cref="ExerciseAttempt.Score"/> has a value).</item>
-///   <item>If all conditions are met, the attempt is considered successful.</item>
-/// </list>
-/// This is the smallest generic rule consistent with the current model.
-/// Future versions may add exercise-type-specific evaluation logic.
-/// </para>
+/// Performs the first generic exact-input evaluation. The input source is not
+/// considered, so keyboard, virtual-piano, and future MIDI adapters share the
+/// same evaluation path.
 /// </summary>
 public sealed class ExerciseEvaluator : IExerciseEvaluator
 {
     /// <inheritdoc />
-    public ExerciseEvaluationResult Evaluate(ExerciseDefinition exercise, ExerciseAttempt attempt)
+    public ExerciseEvaluationResult Evaluate(
+        ExerciseChallenge challenge,
+        IReadOnlyList<ExerciseInputEvent> inputEvents)
     {
-        ArgumentNullException.ThrowIfNull(exercise);
-        ArgumentNullException.ThrowIfNull(attempt);
+        ArgumentNullException.ThrowIfNull(challenge);
+        ArgumentNullException.ThrowIfNull(inputEvents);
 
-        if (!string.Equals(exercise.Id, attempt.ExerciseId, StringComparison.Ordinal))
+        if (challenge.ExerciseType == ExerciseType.Rhythm)
         {
-            throw new ArgumentException(
-                $"Attempt ExerciseId '{attempt.ExerciseId}' does not match exercise Id '{exercise.Id}'.",
-                nameof(attempt));
+            return new RhythmExerciseEvaluator().Evaluate(challenge, inputEvents);
         }
 
-        if (attempt.CompletedAt is null || attempt.Score is null)
+        if (challenge.ExerciseType == ExerciseType.NoteReading)
         {
-            return new ExerciseEvaluationResult { IsSuccessful = false, Score = null };
+            return new NoteReadingExerciseEvaluator().Evaluate(challenge, inputEvents);
         }
+
+        var expected = challenge.ExpectedInputs.FirstOrDefault();
+        if (expected is null)
+        {
+            return new ExerciseEvaluationResult
+            {
+                IsSuccessful = false,
+                Score = 0,
+                Feedback = ExerciseEvaluationFeedback.UnsupportedChallenge
+            };
+        }
+
+        var actual = inputEvents.FirstOrDefault();
+        if (actual is null)
+        {
+            return new ExerciseEvaluationResult
+            {
+                IsSuccessful = false,
+                Score = 0,
+                Feedback = ExerciseEvaluationFeedback.NoInput,
+                ExpectedValue = expected.Value
+            };
+        }
+
+        var isCorrect = actual.Type == expected.Type &&
+            string.Equals(actual.Value.Trim(), expected.Value.Trim(), StringComparison.OrdinalIgnoreCase);
 
         return new ExerciseEvaluationResult
         {
-            IsSuccessful = true,
-            Score = attempt.Score
+            IsSuccessful = isCorrect,
+            Score = isCorrect ? 100 : 0,
+            Feedback = isCorrect
+                ? ExerciseEvaluationFeedback.Correct
+                : ExerciseEvaluationFeedback.Incorrect,
+            ExpectedValue = expected.Value,
+            ActualValue = actual.Value
         };
     }
 }

@@ -1,0 +1,45 @@
+.music-staff {
+    width: 100%;
+    overflow: hidden;
+    background: var(--kf-color-surface-elevated);
+    border: 1px solid var(--kf-color-border);
+    border-radius: var(--kf-radius-card);
+}
+
+.music-staff svg {
+    display: block;
+    width: 100%;
+    min-height: 12rem;
+}
+
+.music-staff__line,
+.music-staff__ledger {
+    stroke: var(--kf-color-text-secondary);
+    stroke-width: 2;
+}
+
+.music-staff__ledger {
+    stroke-width: 2.5;
+}
+
+.music-staff__clef {
+    fill: var(--kf-color-text-primary);
+    font-family: "Segoe UI Symbol", "Noto Music", serif;
+    font-size: 72px;
+}
+
+.music-staff__note ellipse {
+    fill: var(--kf-color-primary);
+}
+
+.music-staff__note line {
+    stroke: var(--kf-color-primary);
+    stroke-width: 4;
+    stroke-linecap: round;
+}
+
+@media (max-width: 40rem) {
+    .music-staff svg {
+        min-height: 9rem;
+    }
+}

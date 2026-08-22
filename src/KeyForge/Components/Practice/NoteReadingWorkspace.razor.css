@@ -1,0 +1,112 @@
+.note-reading-workspace {
+    display: grid;
+    gap: var(--kf-space-5);
+    outline: none;
+}
+
+.note-reading-workspace:focus-visible {
+    outline: 2px solid var(--kf-color-primary);
+    outline-offset: var(--kf-space-2);
+    border-radius: var(--kf-radius-card);
+}
+
+.note-reading-workspace__header,
+.note-reading-workspace__piano-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--kf-space-4);
+}
+
+.note-reading-workspace__header .kf-card__description {
+    margin-block-start: var(--kf-space-3);
+}
+
+.note-reading-workspace__progress {
+    display: grid;
+    gap: var(--kf-space-2);
+}
+
+.note-reading-workspace__piano {
+    display: grid;
+    gap: var(--kf-space-4);
+}
+
+.note-reading-workspace__piano-header .kf-text-secondary,
+.note-reading-workspace__piano-header .kf-meta {
+    margin-block: var(--kf-space-2) 0;
+}
+
+.note-reading-workspace__piano-header .kf-meta {
+    max-width: 32rem;
+    line-height: var(--kf-line-height-body);
+}
+
+.note-reading-feedback {
+    display: grid;
+    gap: var(--kf-space-4);
+    padding-block: var(--kf-space-4);
+    padding-inline: var(--kf-space-5);
+    background: var(--kf-color-surface-elevated);
+    border: 1px solid var(--kf-color-border);
+    border-inline-start-width: 4px;
+    border-radius: var(--kf-radius-card);
+}
+
+.note-reading-feedback--correct {
+    border-inline-start-color: var(--kf-color-success);
+}
+
+.note-reading-feedback--incorrect {
+    border-inline-start-color: var(--kf-color-error);
+}
+
+.note-reading-feedback__values {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--kf-space-5);
+    margin: 0;
+}
+
+.note-reading-feedback__values div {
+    display: grid;
+    gap: var(--kf-space-1);
+}
+
+.note-reading-feedback__values dt {
+    color: var(--kf-color-text-muted);
+    font-size: var(--kf-font-size-small);
+}
+
+.note-reading-feedback__values dd {
+    margin: 0;
+    color: var(--kf-color-text-primary);
+    font-size: var(--kf-font-size-section);
+    font-weight: 700;
+}
+
+.note-reading-feedback__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--kf-space-3);
+}
+
+@media (max-width: 40rem) {
+    .note-reading-workspace {
+        gap: var(--kf-space-4);
+    }
+
+    .note-reading-workspace__header,
+    .note-reading-workspace__piano-header {
+        display: grid;
+    }
+
+    .note-reading-feedback {
+        padding-inline: var(--kf-space-4);
+    }
+
+    .note-reading-feedback__actions .kf-button {
+        flex: 1 1 100%;
+    }
+}

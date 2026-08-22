@@ -10,6 +10,9 @@ namespace KeyForge.Features.Practice.Models;
 /// </summary>
 public sealed class SessionResult
 {
+    /// <summary>Attempt created from system evaluation rather than UI scoring.</summary>
+    public required ExerciseAttempt Attempt { get; init; }
+
     /// <summary>
     /// The evaluation outcome produced by <see cref="IExerciseEvaluator"/>.
     /// </summary>

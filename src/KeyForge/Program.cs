@@ -19,6 +19,7 @@ builder.Services.AddSingleton<IExerciseAttemptRecorder, InMemoryExerciseAttemptR
 builder.Services.AddSingleton<IExerciseCompletionEvaluator, ExerciseCompletionEvaluator>();
 builder.Services.AddSingleton<ILessonProgressionService, LessonProgressionService>();
 builder.Services.AddSingleton<ILessonProgressQueryService, LessonProgressQueryService>();
+builder.Services.AddSingleton<IExerciseChallengeGenerator, ExerciseChallengeGenerator>();
 builder.Services.AddSingleton<IExerciseEvaluator, ExerciseEvaluator>();
 builder.Services.AddSingleton<IExerciseScorer, ExerciseScorer>();
 builder.Services.AddSingleton<IPracticeSessionService, PracticeSessionService>();

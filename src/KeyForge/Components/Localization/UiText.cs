@@ -17,6 +17,7 @@ public static class UiText
             ? "en"
             : "fa";
     public static string Direction => IsPersian ? "rtl" : "ltr";
+    public static string NumeralDigits => IsPersian ? "۰۱۲۳۴۵۶۷۸۹" : "0123456789";
 
     public static string LanguageSelector => Select("انتخاب زبان", "Select language");
     public static string Home => Select("خانه", "Home");
@@ -75,17 +76,71 @@ public static class UiText
         $"تمرین {FormatNumber(current)} از {FormatNumber(total)}",
         $"Exercise {current} of {total}");
     public static string CurrentExercise => Select("تمرین فعلی", "Current exercise");
-    public static string AttemptDetails => Select("ثبت تلاش", "Submit an attempt");
-    public static string AttemptInstructions => Select(
-        "پس از انجام تمرین، وضعیت تکمیل و امتیاز خود را وارد کنید.",
-        "After practising, enter whether you completed the attempt and your score.");
-    public static string AttemptCompleted => Select("تلاش را کامل کردم", "I completed the attempt");
-    public static string AttemptCompletedHint => Select(
-        "اگر تمرین را کامل نکردید، این گزینه را بردارید.",
-        "Clear this option if you did not complete the exercise.");
-    public static string AttemptScore => Select("امتیاز تلاش", "Attempt score");
-    public static string AttemptScoreHint => Select("عددی بین صفر تا ۱۰۰", "A number from 0 to 100");
-    public static string SubmitAttempt => Select("ثبت نتیجه", "Submit result");
+    public static string RuntimeChallenge => Select("چالش تعاملی", "Interactive challenge");
+    public static string RuntimeChallengeInstructions => Select(
+        "نت خواسته‌شده را با نام علمی آن وارد کنید.",
+        "Enter the requested note using scientific pitch notation.");
+    public static string RuntimeAnswer => Select("پاسخ شما", "Your answer");
+    public static string TargetNote => Select("نت هدف", "Target note");
+    public static string RuntimeAnswerHint => Select("برای نمونه: C4 یا F#3", "For example: C4 or F#3");
+    public static string EvaluateAnswer => Select("بررسی پاسخ", "Evaluate answer");
+    public static string RuntimeUnavailable => Select("حالت تعاملی در راه است", "Interactive mode is coming");
+    public static string RuntimeUnavailableDescription => Select(
+        "اجرای تعاملی این نوع تمرین هنوز آماده نیست. برای ادامه، به تمرین بعدی بروید.",
+        "Interactive runtime for this exercise type is not available yet. Continue to the next exercise.");
+    public static string RhythmPractice => Select("تمرین ریتم", "Rhythm practice");
+    public static string KeepTheBeat => Select("ضرب را نگه دارید", "Keep the beat");
+    public static string RhythmReady => Select("آماده", "Ready");
+    public static string StartRhythm => Select("شروع ریتم", "Start rhythm");
+    public static string Countdown => Select("شمارش معکوس", "Countdown");
+    public static string RhythmGo => Select("شروع", "Start");
+    public static string RhythmActive => Select("در حال اجرا", "Active");
+    public static string EvaluatingRhythm => Select("در حال ارزیابی", "Evaluating");
+    public static string PressKOnEachBeat => Select(
+        "روی هر ضرب، کلید K را فشار دهید.",
+        "Press K on each beat.");
+    public static string CapturedHits => Select("ضرب‌های ثبت‌شده", "Captured hits");
+    public static string BeatProgression => Select("روند ضرب‌ها", "Beat progression");
+    public static string RhythmProgress => Select("پیشرفت ریتم", "Rhythm progress");
+    public static string RhythmStartError => Select(
+        "شروع تمرین ریتم ممکن نشد. دوباره تلاش کنید.",
+        "The rhythm exercise could not start. Please try again.");
+    public static string NoteReadingPractice => Select("تمرین نت‌خوانی", "Note-reading practice");
+    public static string ReadTheNote => Select("نت روی حامل را پیدا کنید", "Read the note on the staff");
+    public static string NoteReadingInstructions => Select(
+        "نت نمایش‌داده‌شده را روی پیانو انتخاب کنید. نام نت پس از پاسخ نمایش داده می‌شود.",
+        "Select the displayed note on the piano. The note name is revealed after you answer.");
+    public static string QuestionProgress => Select("پیشرفت پرسش‌ها", "Question progress");
+    public static string GetQuestionPosition(int current, int total) => Select(
+        $"پرسش {FormatNumber(current)} از {FormatNumber(total)}",
+        $"Question {current} of {total}");
+    public static string VirtualPiano => Select("پیانوی مجازی", "Virtual piano");
+    public static string SelectPianoNote => Select("یک کلید پیانو را انتخاب کنید", "Select a piano key");
+    public static string ComputerKeyboardHint => Select(
+        "ورودی صفحه‌کلید: A تا K نت‌های C4 تا C5 را می‌نوازند؛ کلیدهای W، E، T، Y و U نت‌های دیز هستند.",
+        "Keyboard input: A through K play C4 through C5; W, E, T, Y, and U are the sharp notes.");
+    public static string CorrectAnswer => Select("درست", "Correct");
+    public static string IncorrectAnswer => Select("نادرست", "Incorrect");
+    public static string ExpectedNote => Select("نت درست", "Expected note");
+    public static string YourNote => Select("نت انتخابی شما", "Your note");
+    public static string RetryQuestion => Select("تلاش دوباره برای این پرسش", "Retry this question");
+    public static string ContinueQuestions => Select("ادامه", "Continue");
+    public static string CorrectAnswers => Select("پاسخ‌های درست", "Correct answers");
+    public static string IncorrectAnswers => Select("پاسخ‌های نادرست", "Incorrect answers");
+    public static string GetStaffAriaLabel(ClefType clef) => Select(
+        $"حامل موسیقی با کلید {GetClef(clef)} و یک نت هدف",
+        $"Music staff with {GetClef(clef)} clef and one target note");
+    public static string GetPianoKeyAriaLabel(string note) => Select(
+        $"کلید پیانو، نت {note}",
+        $"Piano key, note {note}");
+    public static string ExpectedBeats => Select("ضرب‌های مورد انتظار", "Expected beats");
+    public static string SuccessfulHits => Select("ضرب‌های موفق", "Successful hits");
+    public static string MissedBeats => Select("ضرب‌های ازدست‌رفته", "Missed beats");
+    public static string ExtraHits => Select("ضرب‌های اضافه", "Extra hits");
+    public static string AverageTimingError => Select("میانگین خطای زمانی", "Average timing error");
+    public static string TimingTendency => Select("گرایش زمانی", "Timing tendency");
+    public static string Millisecond => Select("میلی‌ثانیه", "ms");
+    public static string NoTimingData => Select("بدون داده", "No data");
     public static string AttemptResult => Select("نتیجه تلاش", "Attempt result");
     public static string AttemptSuccessful => Select("تلاش موفق", "Successful attempt");
     public static string AttemptFailed => Select("نیاز به تلاش دوباره", "Try again");
@@ -209,6 +264,21 @@ public static class UiText
         ExerciseType.MentalKeyboard => Select("کیبورد ذهنی", "Mental keyboard"),
         ExerciseType.Speed => Select("سرعت", "Speed"),
         _ => Unknown
+    };
+
+    public static string GetBpmLabel(int bpm) =>
+        $"{FormatNumber(bpm)} {BeatsPerMinute}";
+
+    public static string FormatTimingError(double? milliseconds) => milliseconds.HasValue
+        ? $"{FormatNumber((int)Math.Round(milliseconds.Value))} {Millisecond}"
+        : NoTimingData;
+
+    public static string GetRhythmTimingTendency(RhythmTimingTendency tendency) => tendency switch
+    {
+        RhythmTimingTendency.Early => Select("زودتر از ضرب", "Early"),
+        RhythmTimingTendency.OnTime => Select("هماهنگ با ضرب", "On time"),
+        RhythmTimingTendency.Late => Select("دیرتر از ضرب", "Late"),
+        _ => NoTimingData
     };
 
     public static string GetDifficulty(Difficulty difficulty) => difficulty switch

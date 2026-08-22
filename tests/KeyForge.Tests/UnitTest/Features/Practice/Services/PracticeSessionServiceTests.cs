@@ -1,904 +1,393 @@
 namespace KeyForge.Tests.UnitTest.Features.Practice.Services;
 
-/// <summary>
-/// Tests <see cref="PracticeSessionService"/> and <see cref="PracticeSession"/>
-/// using in-memory fakes to verify practice session behaviour.
-/// </summary>
 public sealed class PracticeSessionServiceTests
 {
-    private static readonly RhythmExerciseDefinition Exercise1 = new()
-    {
-        Id = "ex-01",
-        Title = "Quarter Notes",
-        Type = ExerciseType.Rhythm
-    };
-
-    private static readonly NoteReadingExerciseDefinition Exercise2 = new()
-    {
-        Id = "ex-02",
-        Title = "Treble Clef",
-        Type = ExerciseType.NoteReading
-    };
-
-    private static readonly SpeedExerciseDefinition Exercise3 = new()
-    {
-        Id = "ex-03",
-        Title = "Speed Drill",
-        Type = ExerciseType.Speed
-    };
-
-    private static ILessonCatalog CreateCatalog(params LessonDefinition[] lessons)
-    {
-        return new FakeLessonCatalog(lessons);
-    }
-
-    private static PracticeSessionService CreateService(
-        ILessonCatalog? catalog = null,
-        ILessonProgressionService? progression = null,
-        IExerciseEvaluator? evaluator = null,
-        IExerciseScorer? scorer = null,
-        IExerciseAttemptRecorder? recorder = null)
-    {
-        return new PracticeSessionService(
-            catalog ?? CreateCatalog(),
-            progression ?? new FakeProgressionService(),
-            evaluator ?? new ExerciseEvaluator(),
-            scorer ?? new ExerciseScorer(),
-            recorder ?? new FakeAttemptRecorder());
-    }
-
-    #region StartSession tests
-
     [Fact]
-    public void StartSession_ValidUnlockedLesson_ReturnsSession()
+    public void StartSession_ValidUnlockedLesson_PreservesExerciseOrder()
     {
-        var lesson = new LessonDefinition
-        {
-            Id = "lesson-01",
-            Title = "Test Lesson",
-            Exercises = [Exercise1, Exercise2]
-        };
-        var catalog = CreateCatalog(lesson);
-        var service = CreateService(catalog: catalog);
+        var lesson = Lesson(Note("ex-01", "C4-G4"), Note("ex-02", "D4-A4"));
+        var service = CreateService([lesson]);
 
-        var session = service.StartSession("lesson-01");
+        var session = service.StartSession(lesson.Id);
 
         Assert.NotNull(session);
-        Assert.Equal("lesson-01", session.LessonId);
-        Assert.Equal(2, session.Exercises.Count);
+        Assert.Equal(lesson.Id, session.LessonId);
+        Assert.Equal(["ex-01", "ex-02"], session.Exercises.Select(x => x.Id));
+        Assert.Equal("ex-01", session.GetCurrentExercise()!.Id);
     }
 
     [Fact]
     public void StartSession_UnknownLesson_ReturnsNull()
     {
-        var catalog = CreateCatalog();
-        var service = CreateService(catalog: catalog);
-
-        var session = service.StartSession("unknown");
-
-        Assert.Null(session);
+        Assert.Null(CreateService([]).StartSession("missing"));
     }
 
     [Fact]
     public void StartSession_LockedLesson_ThrowsInvalidOperationException()
     {
-        var lesson = new LessonDefinition
-        {
-            Id = "lesson-01",
-            Exercises = [Exercise1]
-        };
-        var catalog = CreateCatalog(lesson);
-        var progression = new FakeProgressionService(isUnlocked: false);
-        var service = CreateService(catalog: catalog, progression: progression);
+        var lesson = Lesson(Note());
+        var service = CreateService([lesson], isUnlocked: false);
 
-        var ex = Assert.Throws<InvalidOperationException>(() => service.StartSession("lesson-01"));
-        Assert.Contains("locked", ex.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Throws<InvalidOperationException>(() => service.StartSession(lesson.Id));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void StartSession_InvalidId_ThrowsArgumentException(string? lessonId)
+    {
+        Assert.ThrowsAny<ArgumentException>(() => CreateService([]).StartSession(lessonId!));
     }
 
     [Fact]
-    public void StartSession_ExerciseOrderPreserved()
+    public void StartSession_DoesNotMutateDefinition()
     {
-        var lesson = new LessonDefinition
-        {
-            Id = "lesson-01",
-            Exercises = [Exercise1, Exercise2, Exercise3]
-        };
-        var catalog = CreateCatalog(lesson);
-        var service = CreateService(catalog: catalog);
+        var exercise = Note();
+        var lesson = Lesson(exercise);
 
-        var session = service.StartSession("lesson-01")!;
+        CreateService([lesson]).StartSession(lesson.Id);
 
-        Assert.Equal("ex-01", session.Exercises[0].Id);
-        Assert.Equal("ex-02", session.Exercises[1].Id);
-        Assert.Equal("ex-03", session.Exercises[2].Id);
+        Assert.Equal("C4-G4", exercise.Range);
+        Assert.Same(exercise, Assert.Single(lesson.Exercises));
     }
 
     [Fact]
-    public void StartSession_FirstExerciseIsCurrent()
+    public void StartExercise_GeneratesChallengeForCurrentExercise()
     {
-        var lesson = new LessonDefinition
-        {
-            Id = "lesson-01",
-            Exercises = [Exercise1, Exercise2]
-        };
-        var catalog = CreateCatalog(lesson);
-        var service = CreateService(catalog: catalog);
-
+        var service = CreateService([Lesson(Note())]);
         var session = service.StartSession("lesson-01")!;
+
+        var runtime = service.StartExercise(session);
+
+        Assert.Same(session.GetCurrentExercise(), runtime.Definition);
+        Assert.Equal(NoteReadingChallengeGenerator.DefaultQuestionCount, runtime.Challenge.ExpectedInputs.Count);
+        Assert.Equal("C4", runtime.Challenge.ExpectedInputs[0].Value);
+        Assert.Empty(runtime.InputEvents);
+    }
+
+    [Fact]
+    public void StartExercise_FinishedSession_ThrowsInvalidOperationException()
+    {
+        var service = CreateService([Lesson(Note())]);
+        var session = service.StartSession("lesson-01")!;
+        session.Next();
+
+        Assert.Throws<InvalidOperationException>(() => service.StartExercise(session));
+    }
+
+    [Fact]
+    public void StartExercise_NullSession_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => CreateService([]).StartExercise(null!));
+    }
+
+    [Fact]
+    public void SubmitAttempt_CorrectInput_CreatesSystemGeneratedAttempt()
+    {
+        var recorder = new FakeAttemptRecorder();
+        var service = CreateService([Lesson(Note())], recorder: recorder);
+        var session = service.StartSession("lesson-01")!;
+        var runtime = service.StartExercise(session);
+        CaptureAnswerSet(runtime, "C4");
+        var completedAt = runtime.StartedAt.AddSeconds(1);
+
+        var result = service.SubmitAttempt(session, runtime, completedAt);
+
+        Assert.True(result.IsSuccessful);
+        Assert.Equal(100, result.Score);
+        Assert.Equal(100, result.Attempt.Score);
+        Assert.True(result.Attempt.IsSuccessful);
+        Assert.Equal(session.LessonId, result.Attempt.LessonId);
+        Assert.Equal("ex-01", result.Attempt.ExerciseId);
+        Assert.Equal(runtime.StartedAt, result.Attempt.StartedAt);
+        Assert.Equal(completedAt, result.Attempt.CompletedAt);
+        Assert.Same(result.Attempt, Assert.Single(recorder.Recorded));
+    }
+
+    [Fact]
+    public void SubmitAttempt_IncorrectInput_GeneratesFailedZeroScore()
+    {
+        var service = CreateService([Lesson(Note())]);
+        var session = service.StartSession("lesson-01")!;
+        var runtime = service.StartExercise(session);
+        CaptureAnswerSet(runtime, "D4");
+
+        var result = service.SubmitAttempt(session, runtime, runtime.StartedAt.AddSeconds(1));
+
+        Assert.False(result.IsSuccessful);
+        Assert.Equal(0, result.Score);
+        Assert.False(result.Attempt.IsSuccessful);
+        Assert.Equal(0, result.Attempt.Score);
+    }
+
+    [Fact]
+    public void SubmitAttempt_NoInput_RecordsFailedAttempt()
+    {
+        var recorder = new FakeAttemptRecorder();
+        var service = CreateService([Lesson(Note())], recorder: recorder);
+        var session = service.StartSession("lesson-01")!;
+        var runtime = service.StartExercise(session);
+
+        var result = service.SubmitAttempt(session, runtime, runtime.StartedAt.AddSeconds(1));
+
+        Assert.Equal(ExerciseEvaluationFeedback.NoInput, result.Evaluation.Feedback);
+        Assert.False(Assert.Single(recorder.Recorded).IsSuccessful);
+    }
+
+    [Fact]
+    public void SubmitAttempt_UsesScorerForFinalAttemptScore()
+    {
+        var evaluator = new FixedEvaluator(success: true, rawScore: 175);
+        var service = CreateService([Lesson(Note())], evaluator: evaluator);
+        var session = service.StartSession("lesson-01")!;
+        var runtime = service.StartExercise(session);
+
+        var result = service.SubmitAttempt(session, runtime, runtime.StartedAt.AddSeconds(1));
+
+        Assert.Equal(100, result.Score);
+        Assert.Equal(100, result.Attempt.Score);
+    }
+
+    [Fact]
+    public void SubmitAttempt_DoesNotAutomaticallyAdvance()
+    {
+        var service = CreateService([Lesson(Note(), Note("ex-02", "D4-A4"))]);
+        var session = service.StartSession("lesson-01")!;
+        var runtime = service.StartExercise(session);
+        CaptureAnswerSet(runtime, "C4");
+
+        service.SubmitAttempt(session, runtime, runtime.StartedAt.AddSeconds(1));
 
         Assert.Equal(0, session.CurrentExerciseIndex);
         Assert.Equal("ex-01", session.GetCurrentExercise()!.Id);
     }
 
     [Fact]
-    public void StartSession_NullLessonId_ThrowsArgumentNullException()
+    public void SubmitAttempt_RetryStaysCurrentAndRecordsEachAttempt()
     {
-        var service = CreateService();
-
-        Assert.Throws<ArgumentNullException>(() => service.StartSession(null!));
-    }
-
-    [Fact]
-    public void StartSession_EmptyLessonId_ThrowsArgumentException()
-    {
-        var service = CreateService();
-
-        Assert.Throws<ArgumentException>(() => service.StartSession(""));
-    }
-
-    [Fact]
-    public void StartSession_WhitespaceLessonId_ThrowsArgumentException()
-    {
-        var service = CreateService();
-
-        Assert.Throws<ArgumentException>(() => service.StartSession("   "));
-    }
-
-    [Fact]
-    public void StartSession_DoesNotMutateLesson()
-    {
-        var lesson = new LessonDefinition
-        {
-            Id = "lesson-01",
-            Title = "Original Title",
-            Exercises = [Exercise1]
-        };
-        var catalog = CreateCatalog(lesson);
-        var service = CreateService(catalog: catalog);
-
-        service.StartSession("lesson-01");
-
-        Assert.Equal("lesson-01", lesson.Id);
-        Assert.Equal("Original Title", lesson.Title);
-        Assert.Single(lesson.Exercises);
-    }
-
-    [Fact]
-    public void PracticeSession_ImplementsIPracticeSessionService()
-    {
-        IPracticeSessionService service = CreateService();
-
-        Assert.NotNull(service);
-    }
-
-    #endregion
-
-    #region Navigation tests
-
-    [Fact]
-    public void Next_MovesToNextExercise()
-    {
-        var lesson = new LessonDefinition
-        {
-            Id = "lesson-01",
-            Exercises = [Exercise1, Exercise2, Exercise3]
-        };
-        var catalog = CreateCatalog(lesson);
-        var service = CreateService(catalog: catalog);
-        var session = service.StartSession("lesson-01")!;
-
-        session.Next();
-
-        Assert.Equal(1, session.CurrentExerciseIndex);
-        Assert.Equal("ex-02", session.GetCurrentExercise()!.Id);
-    }
-
-    [Fact]
-    public void Next_AtLastExercise_SessionFinished()
-    {
-        var lesson = new LessonDefinition
-        {
-            Id = "lesson-01",
-            Exercises = [Exercise1, Exercise2]
-        };
-        var catalog = CreateCatalog(lesson);
-        var service = CreateService(catalog: catalog);
-        var session = service.StartSession("lesson-01")!;
-
-        session.Next();
-        session.Next();
-
-        Assert.True(session.IsFinished);
-        Assert.Null(session.GetCurrentExercise());
-    }
-
-    [Fact]
-    public void Next_PastEnd_DoesNotThrow()
-    {
-        var lesson = new LessonDefinition
-        {
-            Id = "lesson-01",
-            Exercises = [Exercise1]
-        };
-        var catalog = CreateCatalog(lesson);
-        var service = CreateService(catalog: catalog);
-        var session = service.StartSession("lesson-01")!;
-
-        session.Next();
-        session.Next();
-        session.Next();
-
-        Assert.True(session.IsFinished);
-    }
-
-    [Fact]
-    public void IsFinished_EmptyLesson_ReturnsTrue()
-    {
-        var lesson = new LessonDefinition
-        {
-            Id = "lesson-01",
-            Exercises = []
-        };
-        var catalog = CreateCatalog(lesson);
-        var service = CreateService(catalog: catalog);
-
-        var session = service.StartSession("lesson-01")!;
-
-        Assert.True(session.IsFinished);
-        Assert.Null(session.GetCurrentExercise());
-    }
-
-    #endregion
-
-    #region SubmitAttempt tests
-
-    [Fact]
-    public void SubmitAttempt_CompletedAttempt_ReturnsSuccessfulResult()
-    {
-        var lesson = new LessonDefinition
-        {
-            Id = "lesson-01",
-            Exercises = [Exercise1]
-        };
-        var catalog = CreateCatalog(lesson);
-        var service = CreateService(catalog: catalog);
-        var session = service.StartSession("lesson-01")!;
-
-        var attempt = new ExerciseAttempt
-        {
-            LessonId = "lesson-01",
-            ExerciseId = "ex-01",
-            StartedAt = DateTime.UtcNow,
-            CompletedAt = DateTime.UtcNow,
-            Score = 85
-        };
-
-        var result = service.SubmitAttempt(session, "ex-01", attempt);
-
-        Assert.NotNull(result);
-        Assert.True(result.IsSuccessful);
-        Assert.Equal(85, result.Score);
-        Assert.True(result.Evaluation.IsSuccessful);
-        Assert.Equal(85, result.Evaluation.Score);
-    }
-
-    [Fact]
-    public void SubmitAttempt_IncompleteAttempt_ReturnsUnsuccessfulWithZeroScore()
-    {
-        var lesson = new LessonDefinition
-        {
-            Id = "lesson-01",
-            Exercises = [Exercise1]
-        };
-        var catalog = CreateCatalog(lesson);
-        var service = CreateService(catalog: catalog);
-        var session = service.StartSession("lesson-01")!;
-
-        var attempt = new ExerciseAttempt
-        {
-            LessonId = "lesson-01",
-            ExerciseId = "ex-01",
-            StartedAt = DateTime.UtcNow,
-            CompletedAt = null,
-            Score = null
-        };
-
-        var result = service.SubmitAttempt(session, "ex-01", attempt);
-
-        Assert.NotNull(result);
-        Assert.False(result.IsSuccessful);
-        Assert.Equal(0, result.Score);
-    }
-
-    [Fact]
-    public void SubmitAttempt_EvaluatorIsCalled()
-    {
-        var lesson = new LessonDefinition
-        {
-            Id = "lesson-01",
-            Exercises = [Exercise1]
-        };
-        var catalog = CreateCatalog(lesson);
-        var evaluator = new FakeEvaluator();
-        var service = CreateService(catalog: catalog, evaluator: evaluator);
-        var session = service.StartSession("lesson-01")!;
-
-        var attempt = new ExerciseAttempt
-        {
-            LessonId = "lesson-01",
-            ExerciseId = "ex-01"
-        };
-
-        service.SubmitAttempt(session, "ex-01", attempt);
-
-        Assert.True(evaluator.EvaluateCalled);
-        Assert.Same(Exercise1, evaluator.LastExercise);
-        Assert.Same(attempt, evaluator.LastAttempt);
-    }
-
-    [Fact]
-    public void SubmitAttempt_ScorerIsCalled()
-    {
-        var lesson = new LessonDefinition
-        {
-            Id = "lesson-01",
-            Exercises = [Exercise1]
-        };
-        var catalog = CreateCatalog(lesson);
-        var scorer = new FakeScorer();
-        var service = CreateService(catalog: catalog, scorer: scorer);
-        var session = service.StartSession("lesson-01")!;
-
-        var attempt = new ExerciseAttempt
-        {
-            LessonId = "lesson-01",
-            ExerciseId = "ex-01",
-            CompletedAt = DateTime.UtcNow,
-            Score = 90
-        };
-
-        service.SubmitAttempt(session, "ex-01", attempt);
-
-        Assert.True(scorer.ScoreCalled);
-        Assert.NotNull(scorer.LastResult);
-    }
-
-    [Fact]
-    public void SubmitAttempt_RecorderIsCalled()
-    {
-        var lesson = new LessonDefinition
-        {
-            Id = "lesson-01",
-            Exercises = [Exercise1]
-        };
-        var catalog = CreateCatalog(lesson);
         var recorder = new FakeAttemptRecorder();
-        var service = CreateService(catalog: catalog, recorder: recorder);
+        var service = CreateService([Lesson(Note())], recorder: recorder);
         var session = service.StartSession("lesson-01")!;
 
-        var attempt = new ExerciseAttempt
-        {
-            LessonId = "lesson-01",
-            ExerciseId = "ex-01",
-            CompletedAt = DateTime.UtcNow,
-            Score = 70
-        };
+        var failedRuntime = service.StartExercise(session);
+        CaptureAnswerSet(failedRuntime, "D4");
+        service.SubmitAttempt(session, failedRuntime, failedRuntime.StartedAt.AddSeconds(1));
 
-        service.SubmitAttempt(session, "ex-01", attempt);
+        var retryRuntime = service.StartExercise(session);
+        CaptureAnswerSet(retryRuntime, "C4");
+        var result = service.SubmitAttempt(session, retryRuntime, retryRuntime.StartedAt.AddSeconds(1));
 
-        Assert.Single(recorder.Recorded);
-        Assert.Same(attempt, recorder.Recorded[0]);
+        Assert.True(result.IsSuccessful);
+        Assert.Equal(2, recorder.Recorded.Count);
+        Assert.Equal(0, session.CurrentExerciseIndex);
     }
 
     [Fact]
-    public void SubmitAttempt_WrongExerciseId_ThrowsArgumentException()
+    public void SubmitAttempt_FailedRetryAfterSuccess_RemainsCompleted()
     {
-        var lesson = new LessonDefinition
-        {
-            Id = "lesson-01",
-            Exercises = [Exercise1, Exercise2]
-        };
-        var catalog = CreateCatalog(lesson);
-        var service = CreateService(catalog: catalog);
+        var service = CreateService([Lesson(Note())]);
         var session = service.StartSession("lesson-01")!;
+        var success = service.StartExercise(session);
+        CaptureAnswerSet(success, "C4");
+        service.SubmitAttempt(session, success, success.StartedAt.AddSeconds(1));
 
-        var attempt = new ExerciseAttempt
-        {
-            LessonId = "lesson-01",
-            ExerciseId = "ex-02"
-        };
+        var failure = service.StartExercise(session);
+        CaptureAnswerSet(failure, "D4");
+        var result = service.SubmitAttempt(session, failure, failure.StartedAt.AddSeconds(1));
 
-        var ex = Assert.Throws<ArgumentException>(() =>
-            service.SubmitAttempt(session, "ex-02", attempt));
-        Assert.Contains("ex-01", ex.Message);
+        Assert.False(result.IsSuccessful);
+        Assert.True(result.IsExerciseCompleted);
     }
 
     [Fact]
-    public void SubmitAttempt_FinishedSession_ThrowsInvalidOperationException()
+    public void SubmitAttempt_RuntimeForDifferentExercise_ThrowsWithoutRecording()
     {
-        var lesson = new LessonDefinition
-        {
-            Id = "lesson-01",
-            Exercises = [Exercise1]
-        };
-        var catalog = CreateCatalog(lesson);
-        var service = CreateService(catalog: catalog);
+        var recorder = new FakeAttemptRecorder();
+        var service = CreateService([Lesson(Note(), Note("ex-02", "D4-A4"))], recorder: recorder);
         var session = service.StartSession("lesson-01")!;
+        var other = Note("ex-02", "D4-A4");
+        var runtime = new RuntimeExercise(
+            other,
+            new ExerciseChallengeGenerator().Create(other),
+            DateTime.UtcNow);
+
+        Assert.Throws<ArgumentException>(() =>
+            service.SubmitAttempt(session, runtime, runtime.StartedAt.AddSeconds(1)));
+        Assert.Empty(recorder.Recorded);
+    }
+
+    [Fact]
+    public void SubmitAttempt_CompletionBeforeStart_ThrowsWithoutRecording()
+    {
+        var recorder = new FakeAttemptRecorder();
+        var service = CreateService([Lesson(Note())], recorder: recorder);
+        var session = service.StartSession("lesson-01")!;
+        var runtime = service.StartExercise(session);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            service.SubmitAttempt(session, runtime, runtime.StartedAt.AddTicks(-1)));
+        Assert.Empty(recorder.Recorded);
+    }
+
+    [Fact]
+    public void SubmitAttempt_FinishedSession_ThrowsWithoutRecording()
+    {
+        var recorder = new FakeAttemptRecorder();
+        var service = CreateService([Lesson(Note())], recorder: recorder);
+        var session = service.StartSession("lesson-01")!;
+        var runtime = service.StartExercise(session);
         session.Next();
-
-        var attempt = new ExerciseAttempt
-        {
-            LessonId = "lesson-01",
-            ExerciseId = "ex-01"
-        };
 
         Assert.Throws<InvalidOperationException>(() =>
-            service.SubmitAttempt(session, "ex-01", attempt));
+            service.SubmitAttempt(session, runtime, runtime.StartedAt.AddSeconds(1)));
+        Assert.Empty(recorder.Recorded);
     }
 
     [Fact]
     public void SubmitAttempt_NullSession_ThrowsArgumentNullException()
     {
-        var service = CreateService();
-        var attempt = new ExerciseAttempt();
+        var exercise = Note();
+        var runtime = new RuntimeExercise(
+            exercise,
+            new ExerciseChallengeGenerator().Create(exercise),
+            DateTime.UtcNow);
 
         Assert.Throws<ArgumentNullException>(() =>
-            service.SubmitAttempt(null!, "ex-01", attempt));
+            CreateService([]).SubmitAttempt(null!, runtime, runtime.StartedAt));
     }
 
     [Fact]
-    public void SubmitAttempt_NullExerciseId_ThrowsArgumentNullException()
+    public void SubmitAttempt_NullRuntime_ThrowsArgumentNullException()
     {
-        var service = CreateService();
-        var session = new PracticeSession("lesson-01", [Exercise1]);
-        var attempt = new ExerciseAttempt();
+        var session = new PracticeSession("lesson-01", [Note()]);
 
         Assert.Throws<ArgumentNullException>(() =>
-            service.SubmitAttempt(session, null!, attempt));
+            CreateService([]).SubmitAttempt(session, null!, DateTime.UtcNow));
     }
 
     [Fact]
-    public void SubmitAttempt_EmptyExerciseId_ThrowsArgumentException()
+    public void FullLifecycle_SubmitNextAndFinish()
     {
-        var service = CreateService();
-        var session = new PracticeSession("lesson-01", [Exercise1]);
-        var attempt = new ExerciseAttempt();
-
-        Assert.Throws<ArgumentException>(() =>
-            service.SubmitAttempt(session, "", attempt));
-    }
-
-    [Fact]
-    public void SubmitAttempt_WhitespaceExerciseId_ThrowsArgumentException()
-    {
-        var service = CreateService();
-        var session = new PracticeSession("lesson-01", [Exercise1]);
-        var attempt = new ExerciseAttempt();
-
-        Assert.Throws<ArgumentException>(() =>
-            service.SubmitAttempt(session, "   ", attempt));
-    }
-
-    [Fact]
-    public void SubmitAttempt_NullAttempt_ThrowsArgumentNullException()
-    {
-        var service = CreateService();
-        var session = new PracticeSession("lesson-01", [Exercise1]);
-
-        Assert.Throws<ArgumentNullException>(() =>
-            service.SubmitAttempt(session, "ex-01", null!));
-    }
-
-    [Fact]
-    public void SubmitAttempt_DoesNotMutateLessonOrExercise()
-    {
-        var lesson = new LessonDefinition
-        {
-            Id = "lesson-01",
-            Title = "Original",
-            Exercises = [Exercise1]
-        };
-        var catalog = CreateCatalog(lesson);
-        var service = CreateService(catalog: catalog);
+        var recorder = new FakeAttemptRecorder();
+        var service = CreateService(
+            [Lesson(Note(), Note("ex-02", "D4-A4"))],
+            recorder: recorder);
         var session = service.StartSession("lesson-01")!;
 
-        var attempt = new ExerciseAttempt
-        {
-            LessonId = "lesson-01",
-            ExerciseId = "ex-01",
-            CompletedAt = DateTime.UtcNow,
-            Score = 80
-        };
-
-        service.SubmitAttempt(session, "ex-01", attempt);
-
-        Assert.Equal("lesson-01", lesson.Id);
-        Assert.Equal("Original", lesson.Title);
-        Assert.Single(lesson.Exercises);
-        Assert.Equal("ex-01", Exercise1.Id);
-        Assert.Equal("Quarter Notes", Exercise1.Title);
-    }
-
-    [Fact]
-    public void SubmitAttempt_ScoreIsClampedThroughScorer()
-    {
-        var lesson = new LessonDefinition
-        {
-            Id = "lesson-01",
-            Exercises = [Exercise1]
-        };
-        var catalog = CreateCatalog(lesson);
-        var service = CreateService(catalog: catalog);
-        var session = service.StartSession("lesson-01")!;
-
-        var attempt = new ExerciseAttempt
-        {
-            LessonId = "lesson-01",
-            ExerciseId = "ex-01",
-            CompletedAt = DateTime.UtcNow,
-            Score = 150
-        };
-
-        var result = service.SubmitAttempt(session, "ex-01", attempt);
-
-        Assert.Equal(100, result.Score);
-    }
-
-    [Fact]
-    public void SubmitAttempt_DoesNotAdvanceSession()
-    {
-        var lesson = new LessonDefinition
-        {
-            Id = "lesson-01",
-            Exercises = [Exercise1, Exercise2]
-        };
-        var catalog = CreateCatalog(lesson);
-        var service = CreateService(catalog: catalog);
-        var session = service.StartSession("lesson-01")!;
-
-        var attempt = new ExerciseAttempt
-        {
-            LessonId = "lesson-01",
-            ExerciseId = "ex-01",
-            CompletedAt = DateTime.UtcNow,
-            Score = 85
-        };
-
-        service.SubmitAttempt(session, "ex-01", attempt);
-
-        Assert.Equal(0, session.CurrentExerciseIndex);
-        Assert.Equal("ex-01", session.GetCurrentExercise()!.Id);
-        Assert.False(session.IsFinished);
-    }
-
-    [Fact]
-    public void SubmitAttempt_ThenNext_AdvancesToSecondExercise()
-    {
-        var lesson = new LessonDefinition
-        {
-            Id = "lesson-01",
-            Exercises = [Exercise1, Exercise2]
-        };
-        var catalog = CreateCatalog(lesson);
-        var service = CreateService(catalog: catalog);
-        var session = service.StartSession("lesson-01")!;
-
-        var attempt = new ExerciseAttempt
-        {
-            LessonId = "lesson-01",
-            ExerciseId = "ex-01",
-            CompletedAt = DateTime.UtcNow,
-            Score = 85
-        };
-
-        service.SubmitAttempt(session, "ex-01", attempt);
+        SubmitCorrect(service, session, "C4");
+        session.Next();
+        SubmitCorrect(service, session, "D4");
         session.Next();
 
-        Assert.Equal(1, session.CurrentExerciseIndex);
-        Assert.Equal("ex-02", session.GetCurrentExercise()!.Id);
-        Assert.False(session.IsFinished);
-    }
-
-    [Fact]
-    public void SubmitAttempt_MultipleRetriesOnSameExercise_AllRecorded()
-    {
-        var lesson = new LessonDefinition
-        {
-            Id = "lesson-01",
-            Exercises = [Exercise1]
-        };
-        var catalog = CreateCatalog(lesson);
-        var recorder = new FakeAttemptRecorder();
-        var service = CreateService(catalog: catalog, recorder: recorder);
-        var session = service.StartSession("lesson-01")!;
-
-        for (var i = 0; i < 3; i++)
-        {
-            var attempt = new ExerciseAttempt
-            {
-                LessonId = "lesson-01",
-                ExerciseId = "ex-01",
-                CompletedAt = DateTime.UtcNow,
-                Score = 50 + i * 10
-            };
-            service.SubmitAttempt(session, "ex-01", attempt);
-        }
-
-        Assert.Equal(3, recorder.Recorded.Count);
-        Assert.All(recorder.Recorded, a => Assert.Equal("ex-01", a.ExerciseId));
-        Assert.Equal(0, session.CurrentExerciseIndex);
-        Assert.False(session.IsFinished);
-    }
-
-    [Fact]
-    public void SubmitAttempt_WrongExerciseId_DoesNotRecordAttempt()
-    {
-        var lesson = new LessonDefinition
-        {
-            Id = "lesson-01",
-            Exercises = [Exercise1, Exercise2]
-        };
-        var catalog = CreateCatalog(lesson);
-        var recorder = new FakeAttemptRecorder();
-        var service = CreateService(catalog: catalog, recorder: recorder);
-        var session = service.StartSession("lesson-01")!;
-
-        var attempt = new ExerciseAttempt
-        {
-            LessonId = "lesson-01",
-            ExerciseId = "ex-02"
-        };
-
-        Assert.Throws<ArgumentException>(() =>
-            service.SubmitAttempt(session, "ex-02", attempt));
-        Assert.Empty(recorder.Recorded);
-    }
-
-    [Fact]
-    public void SubmitAttempt_FinishedSession_DoesNotRecordAttempt()
-    {
-        var lesson = new LessonDefinition
-        {
-            Id = "lesson-01",
-            Exercises = [Exercise1]
-        };
-        var catalog = CreateCatalog(lesson);
-        var recorder = new FakeAttemptRecorder();
-        var service = CreateService(catalog: catalog, recorder: recorder);
-        var session = service.StartSession("lesson-01")!;
-        session.Next();
-
-        var attempt = new ExerciseAttempt
-        {
-            LessonId = "lesson-01",
-            ExerciseId = "ex-01"
-        };
-
-        Assert.Throws<InvalidOperationException>(() =>
-            service.SubmitAttempt(session, "ex-01", attempt));
-        Assert.Empty(recorder.Recorded);
-    }
-
-    [Fact]
-    public void SubmitAttempt_CompletedAttempt_SetsIsExerciseCompletedTrue()
-    {
-        var lesson = new LessonDefinition
-        {
-            Id = "lesson-01",
-            Exercises = [Exercise1]
-        };
-        var catalog = CreateCatalog(lesson);
-        var service = CreateService(catalog: catalog);
-        var session = service.StartSession("lesson-01")!;
-
-        var attempt = new ExerciseAttempt
-        {
-            LessonId = "lesson-01",
-            ExerciseId = "ex-01",
-            CompletedAt = DateTime.UtcNow,
-            Score = 85
-        };
-
-        var result = service.SubmitAttempt(session, "ex-01", attempt);
-
-        Assert.True(result.IsExerciseCompleted);
-    }
-
-    [Fact]
-    public void SubmitAttempt_IncompleteAttempt_SetsIsExerciseCompletedFalse()
-    {
-        var lesson = new LessonDefinition
-        {
-            Id = "lesson-01",
-            Exercises = [Exercise1]
-        };
-        var catalog = CreateCatalog(lesson);
-        var service = CreateService(catalog: catalog);
-        var session = service.StartSession("lesson-01")!;
-
-        var attempt = new ExerciseAttempt
-        {
-            LessonId = "lesson-01",
-            ExerciseId = "ex-01",
-            CompletedAt = null,
-            Score = null
-        };
-
-        var result = service.SubmitAttempt(session, "ex-01", attempt);
-
-        Assert.False(result.IsExerciseCompleted);
-    }
-
-    [Fact]
-    public void SubmitAttempt_FailedRetryAfterSuccess_RemainsExerciseCompleted()
-    {
-        var lesson = new LessonDefinition
-        {
-            Id = "lesson-01",
-            Exercises = [Exercise1]
-        };
-        var catalog = CreateCatalog(lesson);
-        var service = CreateService(catalog: catalog);
-        var session = service.StartSession("lesson-01")!;
-
-        var successAttempt = new ExerciseAttempt
-        {
-            LessonId = "lesson-01",
-            ExerciseId = "ex-01",
-            CompletedAt = DateTime.UtcNow,
-            Score = 85
-        };
-        service.SubmitAttempt(session, "ex-01", successAttempt);
-
-        var failedAttempt = new ExerciseAttempt
-        {
-            LessonId = "lesson-01",
-            ExerciseId = "ex-01",
-            CompletedAt = null,
-            Score = null
-        };
-        var result = service.SubmitAttempt(session, "ex-01", failedAttempt);
-
-        Assert.False(result.IsSuccessful);
-        Assert.True(result.IsExerciseCompleted);
-    }
-
-    [Fact]
-    public void FullLifecycle_SubmitAdvanceSubmitFinish()
-    {
-        var lesson = new LessonDefinition
-        {
-            Id = "lesson-01",
-            Exercises = [Exercise1, Exercise2]
-        };
-        var catalog = CreateCatalog(lesson);
-        var recorder = new FakeAttemptRecorder();
-        var service = CreateService(catalog: catalog, recorder: recorder);
-        var session = service.StartSession("lesson-01")!;
-
-        Assert.Equal("ex-01", session.GetCurrentExercise()!.Id);
-        Assert.False(session.IsFinished);
-
-        var attempt1 = new ExerciseAttempt
-        {
-            LessonId = "lesson-01",
-            ExerciseId = "ex-01",
-            CompletedAt = DateTime.UtcNow,
-            Score = 80
-        };
-        service.SubmitAttempt(session, "ex-01", attempt1);
-        session.Next();
-
-        Assert.Equal("ex-02", session.GetCurrentExercise()!.Id);
-        Assert.False(session.IsFinished);
-
-        var attempt2 = new ExerciseAttempt
-        {
-            LessonId = "lesson-01",
-            ExerciseId = "ex-02",
-            CompletedAt = DateTime.UtcNow,
-            Score = 90
-        };
-        service.SubmitAttempt(session, "ex-02", attempt2);
-        session.Next();
-
-        Assert.Null(session.GetCurrentExercise());
         Assert.True(session.IsFinished);
-
+        Assert.Null(session.GetCurrentExercise());
         Assert.Equal(2, recorder.Recorded.Count);
-        Assert.Throws<InvalidOperationException>(() =>
-            service.SubmitAttempt(session, "ex-02", attempt2));
-        Assert.Equal(2, recorder.Recorded.Count);
+        Assert.Throws<InvalidOperationException>(() => service.StartExercise(session));
     }
 
-    #endregion
-
-    #region Fakes
-
-    private sealed class FakeLessonCatalog : ILessonCatalog
+    [Fact]
+    public void PracticeSessionService_ImplementsContract()
     {
-        private readonly Dictionary<string, LessonDefinition> _lessons;
-
-        public FakeLessonCatalog(LessonDefinition[] lessons)
-        {
-            _lessons = lessons.ToDictionary(l => l.Id, StringComparer.OrdinalIgnoreCase);
-        }
-
-        public IReadOnlyList<LessonDefinition> GetAll() => _lessons.Values.ToList().AsReadOnly();
-
-        public LessonDefinition? GetById(string id) =>
-            _lessons.TryGetValue(id, out var lesson) ? lesson : null;
+        IPracticeSessionService service = CreateService([]);
+        Assert.IsType<PracticeSessionService>(service);
     }
 
-    private sealed class FakeProgressionService : ILessonProgressionService
+    private static void SubmitCorrect(
+        PracticeSessionService service,
+        PracticeSession session,
+        string note)
     {
-        private readonly bool _isUnlocked;
+        var runtime = service.StartExercise(session);
+        CaptureAnswerSet(runtime, note);
+        service.SubmitAttempt(session, runtime, runtime.StartedAt.AddSeconds(1));
+    }
 
-        public FakeProgressionService(bool isUnlocked = true)
+    private static PracticeSessionService CreateService(
+        IReadOnlyList<LessonDefinition> lessons,
+        bool isUnlocked = true,
+        IExerciseEvaluator? evaluator = null,
+        IExerciseAttemptRecorder? recorder = null) => new(
+            new FakeLessonCatalog(lessons),
+            new FakeProgressionService(isUnlocked),
+            new ExerciseChallengeGenerator(),
+            evaluator ?? new ExerciseEvaluator(),
+            new ExerciseScorer(),
+            recorder ?? new FakeAttemptRecorder());
+
+    private static LessonDefinition Lesson(params ExerciseDefinition[] exercises) => new()
+    {
+        Id = "lesson-01",
+        Title = "Runtime lesson",
+        Exercises = exercises.ToList()
+    };
+
+    private static NoteReadingExerciseDefinition Note(
+        string id = "ex-01",
+        string range = "C4-G4") => new()
+    {
+        Id = id,
+        Title = "Read the note",
+        Range = range
+    };
+
+    private static ExerciseInputEvent Input(RuntimeExercise runtime, string value) => new()
+    {
+        Timestamp = runtime.StartedAt.AddMilliseconds(250),
+        Source = InputSource.ComputerKeyboard,
+        Type = InputEventType.Note,
+        Value = value
+    };
+
+    private static void CaptureAnswerSet(RuntimeExercise runtime, string answer)
+    {
+        var isCorrectAttempt = string.Equals(
+            answer,
+            runtime.Challenge.ExpectedInputs[0].Value,
+            StringComparison.OrdinalIgnoreCase);
+
+        foreach (var expected in runtime.Challenge.ExpectedInputs)
         {
-            _isUnlocked = isUnlocked;
+            runtime.CaptureInput(Input(runtime, isCorrectAttempt ? expected.Value : "C8"));
         }
+    }
 
-        public bool IsUnlocked(string lessonId) => _isUnlocked;
+    private sealed class FakeLessonCatalog(IReadOnlyList<LessonDefinition> lessons) : ILessonCatalog
+    {
+        public IReadOnlyList<LessonDefinition> GetAll() => lessons;
+
+        public LessonDefinition? GetById(string id) => lessons.FirstOrDefault(
+            lesson => string.Equals(lesson.Id, id, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private sealed class FakeProgressionService(bool isUnlocked) : ILessonProgressionService
+    {
+        public bool IsUnlocked(string lessonId) => isUnlocked;
         public bool IsCompleted(string lessonId) => false;
     }
 
-    private sealed class FakeEvaluator : IExerciseEvaluator
+    private sealed class FixedEvaluator(bool success, int rawScore) : IExerciseEvaluator
     {
-        public bool EvaluateCalled { get; private set; }
-        public ExerciseDefinition? LastExercise { get; private set; }
-        public ExerciseAttempt? LastAttempt { get; private set; }
-
-        public ExerciseEvaluationResult Evaluate(ExerciseDefinition exercise, ExerciseAttempt attempt)
+        public ExerciseEvaluationResult Evaluate(
+            ExerciseChallenge challenge,
+            IReadOnlyList<ExerciseInputEvent> inputEvents) => new()
         {
-            EvaluateCalled = true;
-            LastExercise = exercise;
-            LastAttempt = attempt;
-
-            return new ExerciseEvaluationResult
-            {
-                IsSuccessful = attempt.CompletedAt.HasValue && attempt.Score.HasValue,
-                Score = attempt.Score
-            };
-        }
-    }
-
-    private sealed class FakeScorer : IExerciseScorer
-    {
-        public bool ScoreCalled { get; private set; }
-        public ExerciseEvaluationResult? LastResult { get; private set; }
-
-        public int Score(ExerciseEvaluationResult evaluationResult)
-        {
-            ScoreCalled = true;
-            LastResult = evaluationResult;
-            return evaluationResult.Score ?? 0;
-        }
+            IsSuccessful = success,
+            Score = rawScore,
+            Feedback = success
+                ? ExerciseEvaluationFeedback.Correct
+                : ExerciseEvaluationFeedback.Incorrect
+        };
     }
 
     private sealed class FakeAttemptRecorder : IExerciseAttemptRecorder
     {
         public List<ExerciseAttempt> Recorded { get; } = [];
 
-        public void Record(ExerciseAttempt attempt)
-        {
-            Recorded.Add(attempt);
-        }
+        public void Record(ExerciseAttempt attempt) => Recorded.Add(attempt);
 
-        public IReadOnlyList<ExerciseAttempt> GetAttemptsByLesson(string lessonId) =>
-            Recorded.Where(a => string.Equals(a.LessonId, lessonId, StringComparison.Ordinal))
-                .ToList().AsReadOnly();
+        public IReadOnlyList<ExerciseAttempt> GetAttemptsByLesson(string lessonId) => Recorded
+            .Where(attempt => string.Equals(attempt.LessonId, lessonId, StringComparison.Ordinal))
+            .ToList();
     }
-
-    #endregion
 }

@@ -1,382 +1,291 @@
 namespace KeyForge.Tests.ProcessTest.Features.Practice;
 
-/// <summary>
-/// Process-level tests that verify the complete backend practice workflow
-/// when real service implementations are wired together.
-/// <para>
-/// These tests use real implementations for all backend services
-/// (<see cref="PracticeSessionService"/>, <see cref="ProgressUpdateService"/>,
-/// <see cref="LessonProgressionService"/>, <see cref="ExerciseCompletionEvaluator"/>,
-/// <see cref="ExerciseEvaluator"/>, <see cref="ExerciseScorer"/>)
-/// backed by in-memory stores. Only the lesson catalog is faked.
-/// </para>
-/// </summary>
+using KeyForge.Components.Practice;
+
+/// <summary>Exercises the runtime practice pipeline with real services and in-memory stores.</summary>
 public sealed class PracticeFlowProcessTests
 {
-    private static RhythmExerciseDefinition Exercise(string id, string title) => new()
+    [Fact]
+    public void NoteReadingChallengeToPianoInputAndProgressUpdate_EndToEnd()
     {
-        Id = id,
-        Title = title,
-        Type = ExerciseType.Rhythm
-    };
+        var lesson = Lesson(Note("note-01", "C4-G4"));
+        var flow = CreateFlow(lesson);
+        var session = flow.Session.StartSession(lesson.Id)!;
+        var runtime = flow.Session.StartExercise(session);
 
-    private static ExerciseAttempt MakeAttempt(
-        string lessonId,
-        string exerciseId,
-        int score,
-        bool completed = true) => new()
+        for (var index = 0; index < runtime.Challenge.ExpectedInputs.Count; index++)
+        {
+            var expected = runtime.Challenge.ExpectedInputs[index];
+            var occurredAt = runtime.StartedAt.AddMilliseconds(100 + (index * 100));
+            runtime.CaptureInput(VirtualPianoInputAdapter.Create(
+                MusicalNote.Parse(expected.Value),
+                runtime.StartedAt,
+                occurredAt));
+        }
+
+        var result = flow.Session.SubmitAttempt(
+            session,
+            runtime,
+            runtime.StartedAt.AddSeconds(1));
+        flow.Progress.UpdateProgress(lesson.Id, result);
+
+        Assert.True(result.IsSuccessful);
+        Assert.Equal(100, result.Score);
+        Assert.Equal(NoteReadingChallengeGenerator.DefaultQuestionCount,
+            result.Evaluation.NoteReading!.CorrectAnswerCount);
+        var attempt = Assert.Single(flow.Recorder.GetAttemptsByLesson(lesson.Id));
+        Assert.Equal(result.Score, attempt.Score);
+        Assert.Equal(result.IsSuccessful, attempt.IsSuccessful);
+        Assert.Equal(100, flow.Store.GetProgress(lesson.Id)!.BestScore);
+    }
+
+    [Fact]
+    public void RuntimeChallengeToAttemptRecordingAndProgressUpdate_EndToEnd()
     {
-        LessonId = lessonId,
-        ExerciseId = exerciseId,
-        StartedAt = DateTime.UtcNow,
-        CompletedAt = completed ? DateTime.UtcNow : null,
-        Score = completed ? score : null,
-        IsSuccessful = false
-    };
+        var lesson = Lesson(Rhythm("ex-01", tempo: 120, patternCount: 1));
+        var flow = CreateFlow(lesson);
+        var session = flow.Session.StartSession(lesson.Id)!;
+        var runtime = flow.Session.StartExercise(session);
 
-    /// <summary>
-    /// Wires up all real services with shared in-memory stores.
-    /// </summary>
-    private static (PracticeSessionService session, ProgressUpdateService progress, InMemoryProgressStore store, InMemoryExerciseAttemptRecorder recorder) CreateFlow(
-        params LessonDefinition[] lessons)
+        foreach (var expected in runtime.Challenge.ExpectedInputs)
+        {
+            var offset = expected.ExpectedOffset!.Value;
+            runtime.CaptureInput(new ExerciseInputEvent
+            {
+                Timestamp = runtime.StartedAt + offset,
+                Offset = offset,
+                Source = InputSource.ComputerKeyboard,
+                Type = InputEventType.Beat,
+                Value = "beat"
+            });
+        }
+
+        var result = flow.Session.SubmitAttempt(session, runtime, runtime.StartedAt.AddSeconds(2));
+        flow.Progress.UpdateProgress(lesson.Id, result);
+
+        Assert.True(result.IsSuccessful);
+        Assert.Equal(100, result.Score);
+        Assert.Equal(4, result.Evaluation.Rhythm!.SuccessfulHitCount);
+        var attempt = Assert.Single(flow.Recorder.GetAttemptsByLesson(lesson.Id));
+        Assert.Equal(100, attempt.Score);
+        Assert.True(attempt.IsSuccessful);
+        var progress = flow.Store.GetProgress(lesson.Id);
+        Assert.NotNull(progress);
+        Assert.Equal(1, progress.AttemptCount);
+        Assert.Equal(100, progress.BestScore);
+        Assert.False(progress.IsCompleted);
+    }
+
+    [Fact]
+    public void FailedInput_DoesNotCompleteExerciseOrLesson()
+    {
+        var lesson = Lesson(Note("ex-01", "C4-G4"));
+        var flow = CreateFlow(lesson);
+        var session = flow.Session.StartSession(lesson.Id)!;
+
+        var result = Submit(flow, session, "D4", updateProgress: true);
+
+        Assert.False(result.IsSuccessful);
+        Assert.False(result.IsExerciseCompleted);
+        Assert.False(flow.Store.GetProgress(lesson.Id)!.IsCompleted);
+        Assert.False(Assert.Single(flow.Recorder.GetAttemptsByLesson(lesson.Id)).IsSuccessful);
+    }
+
+    [Fact]
+    public void FailedThenSuccessfulRetry_CompletesCurrentExerciseWithoutAdvancing()
+    {
+        var lesson = Lesson(Note("ex-01", "C4-G4"));
+        var flow = CreateFlow(lesson);
+        var session = flow.Session.StartSession(lesson.Id)!;
+
+        var failed = Submit(flow, session, "D4", updateProgress: true);
+        var successful = Submit(flow, session, "C4", updateProgress: true);
+
+        Assert.False(failed.IsSuccessful);
+        Assert.True(successful.IsSuccessful);
+        Assert.True(successful.IsExerciseCompleted);
+        Assert.Equal(0, session.CurrentExerciseIndex);
+        Assert.True(flow.Store.GetProgress(lesson.Id)!.IsCompleted);
+        Assert.Equal(2, flow.Recorder.GetAttemptsByLesson(lesson.Id).Count);
+    }
+
+    [Fact]
+    public void PartialCompletion_DoesNotCompleteMultiExerciseLesson()
+    {
+        var lesson = Lesson(
+            Note("ex-01", "C4-G4"),
+            Note("ex-02", "D4-A4"));
+        var flow = CreateFlow(lesson);
+        var session = flow.Session.StartSession(lesson.Id)!;
+
+        Submit(flow, session, "C4", updateProgress: true);
+        session.Next();
+
+        Assert.False(session.IsFinished);
+        Assert.False(flow.Store.GetProgress(lesson.Id)!.IsCompleted);
+        Assert.Single(flow.Recorder.GetAttemptsByLesson(lesson.Id));
+    }
+
+    [Fact]
+    public void RuntimeForNonCurrentExercise_DoesNotEnterPersistenceFlow()
+    {
+        var lesson = Lesson(
+            Note("ex-01", "C4-G4"),
+            Note("ex-02", "D4-A4"));
+        var flow = CreateFlow(lesson);
+        var session = flow.Session.StartSession(lesson.Id)!;
+        var other = lesson.Exercises[1];
+        var runtime = new RuntimeExercise(
+            other,
+            new ExerciseChallengeGenerator().Create(other),
+            DateTime.UtcNow);
+
+        Assert.Throws<ArgumentException>(() =>
+            flow.Session.SubmitAttempt(session, runtime, runtime.StartedAt.AddSeconds(1)));
+        Assert.Empty(flow.Recorder.GetAttemptsByLesson(lesson.Id));
+        Assert.Null(flow.Store.GetProgress(lesson.Id));
+    }
+
+    [Fact]
+    public void RetryThenExplicitNext_CompletesSessionWithCorrectStateTransitions()
+    {
+        var lesson = Lesson(
+            Note("ex-01", "C4-G4"),
+            Note("ex-02", "D4-A4"));
+        var flow = CreateFlow(lesson);
+        var session = flow.Session.StartSession(lesson.Id)!;
+
+        Submit(flow, session, "D4", updateProgress: true);
+        Assert.Equal("ex-01", session.GetCurrentExercise()!.Id);
+        Submit(flow, session, "C4", updateProgress: true);
+        Assert.Equal("ex-01", session.GetCurrentExercise()!.Id);
+
+        session.Next();
+        Assert.Equal("ex-02", session.GetCurrentExercise()!.Id);
+        Submit(flow, session, "D4", updateProgress: true);
+        Assert.False(session.IsFinished);
+
+        session.Next();
+        Assert.True(session.IsFinished);
+        Assert.True(flow.Store.GetProgress(lesson.Id)!.IsCompleted);
+        Assert.Equal(3, flow.Recorder.GetAttemptsByLesson(lesson.Id).Count);
+    }
+
+    [Fact]
+    public void SuccessfulAttemptFollowedByFailedRetry_DoesNotUndoCompletion()
+    {
+        var lesson = Lesson(Note("ex-01", "C4-G4"));
+        var flow = CreateFlow(lesson);
+        var session = flow.Session.StartSession(lesson.Id)!;
+
+        Submit(flow, session, "C4", updateProgress: true);
+        var retry = Submit(flow, session, "D4", updateProgress: true);
+
+        Assert.False(retry.IsSuccessful);
+        Assert.True(retry.IsExerciseCompleted);
+        Assert.True(flow.Store.GetProgress(lesson.Id)!.IsCompleted);
+    }
+
+    private static SessionResult Submit(
+        Flow flow,
+        PracticeSession session,
+        string answer,
+        bool updateProgress)
+    {
+        var runtime = flow.Session.StartExercise(session);
+        var isCorrectAttempt = string.Equals(
+            answer,
+            runtime.Challenge.ExpectedInputs[0].Value,
+            StringComparison.OrdinalIgnoreCase);
+        foreach (var expected in runtime.Challenge.ExpectedInputs)
+        {
+            runtime.CaptureInput(Input(
+                runtime,
+                isCorrectAttempt ? expected.Value : answer,
+                InputSource.ComputerKeyboard));
+        }
+        var result = flow.Session.SubmitAttempt(session, runtime, runtime.StartedAt.AddSeconds(1));
+        if (updateProgress)
+        {
+            flow.Progress.UpdateProgress(session.LessonId, result);
+        }
+
+        return result;
+    }
+
+    private static Flow CreateFlow(params LessonDefinition[] lessons)
     {
         var catalog = new FakeLessonCatalog(lessons);
         var store = new InMemoryProgressStore();
         var recorder = new InMemoryExerciseAttemptRecorder();
-        var evaluator = new ExerciseEvaluator();
-        var scorer = new ExerciseScorer();
         var completionEvaluator = new ExerciseCompletionEvaluator(recorder);
         var progression = new LessonProgressionService(catalog, store, completionEvaluator);
+        var session = new PracticeSessionService(
+            catalog,
+            progression,
+            new ExerciseChallengeGenerator(),
+            new ExerciseEvaluator(),
+            new ExerciseScorer(),
+            recorder);
 
-        var sessionService = new PracticeSessionService(catalog, progression, evaluator, scorer, recorder);
-        var progressService = new ProgressUpdateService(store, catalog, progression);
-
-        return (sessionService, progressService, store, recorder);
+        return new Flow(
+            session,
+            new ProgressUpdateService(store, catalog, progression),
+            store,
+            recorder);
     }
 
-    private static void SubmitExercise(
-        PracticeSessionService sessionService,
-        ProgressUpdateService progressService,
-        PracticeSession session,
-        string lessonId,
-        string exerciseId,
-        int score)
+    private static LessonDefinition Lesson(params ExerciseDefinition[] exercises) => new()
     {
-        var attempt = MakeAttempt(lessonId, exerciseId, score);
-        var result = sessionService.SubmitAttempt(session, exerciseId, attempt);
-        progressService.UpdateProgress(lessonId, result);
-        session.Next();
-    }
+        Id = "lesson-01",
+        Title = "Runtime lesson",
+        Order = 1,
+        Unlock = new UnlockRule { Mode = UnlockMode.Immediate },
+        Completion = new CompletionRule { RequireAllExercises = true },
+        Exercises = exercises.ToList()
+    };
 
-    [Fact]
-    public void CompleteLesson_EndToEnd()
+    private static NoteReadingExerciseDefinition Note(string id, string range) => new()
     {
-        var ex1 = Exercise("ex-01", "Quarter Notes");
-        var ex2 = Exercise("ex-02", "Half Notes");
-        var ex3 = Exercise("ex-03", "Whole Notes");
+        Id = id,
+        Title = "Read note",
+        Range = range
+    };
 
-        var lesson = new LessonDefinition
-        {
-            Id = "lesson-01",
-            Title = "Rhythm Basics",
-            Order = 1,
-            Unlock = new UnlockRule { Mode = UnlockMode.Immediate },
-            Completion = new CompletionRule { RequireAllExercises = true },
-            Exercises = [ex1, ex2, ex3]
-        };
-
-        var (sessionService, progressService, store, recorder) = CreateFlow(lesson);
-
-        var session = sessionService.StartSession("lesson-01");
-        Assert.NotNull(session);
-        Assert.Equal("lesson-01", session.LessonId);
-        Assert.Equal(3, session.Exercises.Count);
-
-        SubmitExercise(sessionService, progressService, session, "lesson-01", "ex-01", 85);
-        SubmitExercise(sessionService, progressService, session, "lesson-01", "ex-02", 90);
-        SubmitExercise(sessionService, progressService, session, "lesson-01", "ex-03", 75);
-
-        Assert.True(session.IsFinished);
-
-        var attempts = recorder.GetAttemptsByLesson("lesson-01");
-        Assert.Equal(3, attempts.Count);
-        Assert.All(attempts, a => Assert.True(a.IsSuccessful));
-
-        var progress = store.GetProgress("lesson-01");
-        Assert.NotNull(progress);
-        Assert.Equal(3, progress.AttemptCount);
-        Assert.Equal(90, progress.BestScore);
-        Assert.True(progress.IsCompleted);
-    }
-
-    [Fact]
-    public void FailedAttempt_DoesNotCompleteExerciseOrLesson()
+    private static RhythmExerciseDefinition Rhythm(string id, int tempo, int patternCount) => new()
     {
-        var ex1 = Exercise("ex-01", "Quarter Notes");
+        Id = id,
+        Title = "Keep the beat",
+        Tempo = tempo,
+        TimeSignature = "4/4",
+        PatternCount = patternCount,
+        NoteValues = ["quarter"]
+    };
 
-        var lesson = new LessonDefinition
-        {
-            Id = "lesson-01",
-            Title = "Single Exercise",
-            Order = 1,
-            Unlock = new UnlockRule { Mode = UnlockMode.Immediate },
-            Completion = new CompletionRule { RequireAllExercises = true },
-            Exercises = [ex1]
-        };
-
-        var (sessionService, progressService, store, recorder) = CreateFlow(lesson);
-
-        var session = sessionService.StartSession("lesson-01");
-        Assert.NotNull(session);
-
-        var attempt = MakeAttempt("lesson-01", "ex-01", 0, completed: false);
-        var result = sessionService.SubmitAttempt(session, "ex-01", attempt);
-
-        Assert.False(result.IsSuccessful);
-        Assert.Equal(0, result.Score);
-
-        progressService.UpdateProgress("lesson-01", result);
-
-        var attempts = recorder.GetAttemptsByLesson("lesson-01");
-        Assert.Single(attempts);
-        Assert.False(attempts[0].IsSuccessful);
-
-        var progress = store.GetProgress("lesson-01");
-        Assert.NotNull(progress);
-        Assert.False(progress.IsCompleted);
-    }
-
-    [Fact]
-    public void FailedThenSuccessfulAttempt_CompletesExercise()
+    private static ExerciseInputEvent Input(
+        RuntimeExercise runtime,
+        string answer,
+        InputSource source) => new()
     {
-        var ex1 = Exercise("ex-01", "Quarter Notes");
+        Timestamp = runtime.StartedAt.AddMilliseconds(350),
+        Source = source,
+        Type = InputEventType.Note,
+        Value = answer
+    };
 
-        var lesson = new LessonDefinition
-        {
-            Id = "lesson-01",
-            Title = "Retry Lesson",
-            Order = 1,
-            Unlock = new UnlockRule { Mode = UnlockMode.Immediate },
-            Completion = new CompletionRule { RequireAllExercises = true },
-            Exercises = [ex1]
-        };
+    private sealed record Flow(
+        PracticeSessionService Session,
+        ProgressUpdateService Progress,
+        InMemoryProgressStore Store,
+        InMemoryExerciseAttemptRecorder Recorder);
 
-        var (sessionService, progressService, store, recorder) = CreateFlow(lesson);
-
-        var session = sessionService.StartSession("lesson-01");
-        Assert.NotNull(session);
-
-        var failedAttempt = MakeAttempt("lesson-01", "ex-01", 0, completed: false);
-        var failedResult = sessionService.SubmitAttempt(session, "ex-01", failedAttempt);
-        progressService.UpdateProgress("lesson-01", failedResult);
-
-        var progressAfterFail = store.GetProgress("lesson-01");
-        Assert.NotNull(progressAfterFail);
-        Assert.False(progressAfterFail.IsCompleted);
-
-        var successfulAttempt = MakeAttempt("lesson-01", "ex-01", 85, completed: true);
-        var result = sessionService.SubmitAttempt(session, "ex-01", successfulAttempt);
-        progressService.UpdateProgress("lesson-01", result);
-
-        var attempts = recorder.GetAttemptsByLesson("lesson-01");
-        Assert.Equal(2, attempts.Count);
-        Assert.False(attempts[0].IsSuccessful);
-        Assert.True(attempts[1].IsSuccessful);
-
-        var progress = store.GetProgress("lesson-01");
-        Assert.NotNull(progress);
-        Assert.True(progress.IsCompleted);
-    }
-
-    [Fact]
-    public void PartialCompletion_DoesNotCompleteLesson()
+    private sealed class FakeLessonCatalog(IEnumerable<LessonDefinition> lessons) : ILessonCatalog
     {
-        var ex1 = Exercise("ex-01", "Quarter Notes");
-        var ex2 = Exercise("ex-02", "Half Notes");
-        var ex3 = Exercise("ex-03", "Whole Notes");
+        private readonly IReadOnlyList<LessonDefinition> _lessons = lessons.ToList();
 
-        var lesson = new LessonDefinition
-        {
-            Id = "lesson-01",
-            Title = "Three Exercises",
-            Order = 1,
-            Unlock = new UnlockRule { Mode = UnlockMode.Immediate },
-            Completion = new CompletionRule { RequireAllExercises = true },
-            Exercises = [ex1, ex2, ex3]
-        };
+        public IReadOnlyList<LessonDefinition> GetAll() => _lessons;
 
-        var (sessionService, progressService, store, recorder) = CreateFlow(lesson);
-
-        var session = sessionService.StartSession("lesson-01");
-        Assert.NotNull(session);
-
-        SubmitExercise(sessionService, progressService, session, "lesson-01", "ex-01", 85);
-        SubmitExercise(sessionService, progressService, session, "lesson-01", "ex-02", 90);
-
-        Assert.False(session.IsFinished);
-
-        var progress = store.GetProgress("lesson-01");
-        Assert.NotNull(progress);
-        Assert.False(progress.IsCompleted);
-
-        var attempts = recorder.GetAttemptsByLesson("lesson-01");
-        Assert.Equal(2, attempts.Count);
-        Assert.All(attempts, a => Assert.True(a.IsSuccessful));
+        public LessonDefinition? GetById(string id) => _lessons.FirstOrDefault(
+            lesson => string.Equals(lesson.Id, id, StringComparison.OrdinalIgnoreCase));
     }
-
-    [Fact]
-    public void InvalidAttempt_DoesNotEnterFlow()
-    {
-        var ex1 = Exercise("ex-01", "Quarter Notes");
-        var ex2 = Exercise("ex-02", "Half Notes");
-
-        var lesson = new LessonDefinition
-        {
-            Id = "lesson-01",
-            Title = "Two Exercises",
-            Order = 1,
-            Unlock = new UnlockRule { Mode = UnlockMode.Immediate },
-            Completion = new CompletionRule { RequireAllExercises = true },
-            Exercises = [ex1, ex2]
-        };
-
-        var (sessionService, progressService, store, recorder) = CreateFlow(lesson);
-
-        var session = sessionService.StartSession("lesson-01");
-        Assert.NotNull(session);
-
-        var invalidAttempt = MakeAttempt("lesson-01", "ex-02", 50);
-
-        Assert.Throws<ArgumentException>(() =>
-            sessionService.SubmitAttempt(session, "ex-02", invalidAttempt));
-
-        Assert.Empty(recorder.GetAttemptsByLesson("lesson-01"));
-        Assert.Null(store.GetProgress("lesson-01"));
-    }
-
-    [Fact]
-    public void RetryThenAdvance_SessionStateTransitionsCorrectly()
-    {
-        var ex1 = Exercise("ex-01", "Quarter Notes");
-        var ex2 = Exercise("ex-02", "Half Notes");
-
-        var lesson = new LessonDefinition
-        {
-            Id = "lesson-01",
-            Title = "Two Exercises",
-            Order = 1,
-            Unlock = new UnlockRule { Mode = UnlockMode.Immediate },
-            Completion = new CompletionRule { RequireAllExercises = true },
-            Exercises = [ex1, ex2]
-        };
-
-        var (sessionService, progressService, store, recorder) = CreateFlow(lesson);
-
-        var session = sessionService.StartSession("lesson-01");
-        Assert.NotNull(session);
-
-        Assert.Equal(0, session.CurrentExerciseIndex);
-        Assert.Equal("ex-01", session.GetCurrentExercise()!.Id);
-        Assert.False(session.IsFinished);
-
-        var failedAttempt = MakeAttempt("lesson-01", "ex-01", 0, completed: false);
-        var failedResult = sessionService.SubmitAttempt(session, "ex-01", failedAttempt);
-        Assert.False(failedResult.IsSuccessful);
-        Assert.Equal(0, session.CurrentExerciseIndex);
-        Assert.Equal("ex-01", session.GetCurrentExercise()!.Id);
-
-        progressService.UpdateProgress("lesson-01", failedResult);
-        Assert.False(store.GetProgress("lesson-01")!.IsCompleted);
-
-        var successAttempt = MakeAttempt("lesson-01", "ex-01", 85, completed: true);
-        var successResult = sessionService.SubmitAttempt(session, "ex-01", successAttempt);
-        Assert.True(successResult.IsSuccessful);
-        Assert.Equal(0, session.CurrentExerciseIndex);
-
-        progressService.UpdateProgress("lesson-01", successResult);
-        Assert.False(store.GetProgress("lesson-01")!.IsCompleted);
-
-        session.Next();
-        Assert.Equal(1, session.CurrentExerciseIndex);
-        Assert.Equal("ex-02", session.GetCurrentExercise()!.Id);
-        Assert.False(session.IsFinished);
-
-        var ex2Attempt = MakeAttempt("lesson-01", "ex-02", 90, completed: true);
-        var ex2Result = sessionService.SubmitAttempt(session, "ex-02", ex2Attempt);
-        Assert.True(ex2Result.IsSuccessful);
-
-        progressService.UpdateProgress("lesson-01", ex2Result);
-        session.Next();
-
-        Assert.Null(session.GetCurrentExercise());
-        Assert.True(session.IsFinished);
-        Assert.True(store.GetProgress("lesson-01")!.IsCompleted);
-        var allAttempts = recorder.GetAttemptsByLesson("lesson-01");
-        Assert.Equal(3, allAttempts.Count);
-        Assert.False(allAttempts[0].IsSuccessful);
-        Assert.True(allAttempts[1].IsSuccessful);
-        Assert.True(allAttempts[2].IsSuccessful);
-    }
-
-    [Fact]
-    public void ExerciseCompletion_FlowReflectsState()
-    {
-        var ex1 = Exercise("ex-01", "Quarter Notes");
-        var ex2 = Exercise("ex-02", "Half Notes");
-
-        var lesson = new LessonDefinition
-        {
-            Id = "lesson-01",
-            Title = "Two Exercises",
-            Order = 1,
-            Unlock = new UnlockRule { Mode = UnlockMode.Immediate },
-            Completion = new CompletionRule { RequireAllExercises = true },
-            Exercises = [ex1, ex2]
-        };
-
-        var (sessionService, progressService, store, recorder) = CreateFlow(lesson);
-        var session = sessionService.StartSession("lesson-01");
-        Assert.NotNull(session);
-
-        var failedAttempt = MakeAttempt("lesson-01", "ex-01", 0, completed: false);
-        var failedResult = sessionService.SubmitAttempt(session, "ex-01", failedAttempt);
-        Assert.False(failedResult.IsExerciseCompleted);
-        Assert.Null(store.GetProgress("lesson-01"));
-
-        var successAttempt = MakeAttempt("lesson-01", "ex-01", 85, completed: true);
-        var successResult = sessionService.SubmitAttempt(session, "ex-01", successAttempt);
-        Assert.True(successResult.IsExerciseCompleted);
-
-        progressService.UpdateProgress("lesson-01", successResult);
-        Assert.False(store.GetProgress("lesson-01")!.IsCompleted);
-
-        session.Next();
-
-        var ex2Attempt = MakeAttempt("lesson-01", "ex-02", 90, completed: true);
-        var ex2Result = sessionService.SubmitAttempt(session, "ex-02", ex2Attempt);
-        Assert.True(ex2Result.IsExerciseCompleted);
-
-        progressService.UpdateProgress("lesson-01", ex2Result);
-        Assert.True(store.GetProgress("lesson-01")!.IsCompleted);
-    }
-
-    #region Fakes
-
-    private sealed class FakeLessonCatalog : ILessonCatalog
-    {
-        private readonly Dictionary<string, LessonDefinition> _lessons;
-
-        public FakeLessonCatalog(params LessonDefinition[] lessons)
-        {
-            _lessons = lessons.ToDictionary(l => l.Id, StringComparer.OrdinalIgnoreCase);
-        }
-
-        public IReadOnlyList<LessonDefinition> GetAll() =>
-            _lessons.Values.ToList().AsReadOnly();
-
-        public LessonDefinition? GetById(string id) =>
-            _lessons.GetValueOrDefault(id);
-    }
-
-    #endregion
 }

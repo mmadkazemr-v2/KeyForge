@@ -21,6 +21,13 @@ public sealed class UiTextTests
         Assert.Equal("جلسه تمرین", UiText.PracticeSession);
         Assert.Equal("تمرین ۲ از ۵", UiText.GetExercisePosition(2, 5));
         Assert.Equal("هر دو دست", UiText.GetPracticeHand(PracticeHand.Both));
+        Assert.Equal("شروع ریتم", UiText.StartRhythm);
+        Assert.Equal("ضرب‌های ازدست‌رفته", UiText.MissedBeats);
+        Assert.Equal("زودتر از ضرب", UiText.GetRhythmTimingTendency(RhythmTimingTendency.Early));
+        Assert.Equal("تمرین نت‌خوانی", UiText.NoteReadingPractice);
+        Assert.Equal("پرسش ۲ از ۵", UiText.GetQuestionPosition(2, 5));
+        Assert.Equal("پیانوی مجازی", UiText.VirtualPiano);
+        Assert.Equal("درست", UiText.CorrectAnswer);
     }
 
     [Fact]
@@ -38,6 +45,13 @@ public sealed class UiTextTests
         Assert.Equal("Practice session", UiText.PracticeSession);
         Assert.Equal("Exercise 2 of 5", UiText.GetExercisePosition(2, 5));
         Assert.Equal("Both hands", UiText.GetPracticeHand(PracticeHand.Both));
+        Assert.Equal("Start rhythm", UiText.StartRhythm);
+        Assert.Equal("Missed beats", UiText.MissedBeats);
+        Assert.Equal("Late", UiText.GetRhythmTimingTendency(RhythmTimingTendency.Late));
+        Assert.Equal("Note-reading practice", UiText.NoteReadingPractice);
+        Assert.Equal("Question 2 of 5", UiText.GetQuestionPosition(2, 5));
+        Assert.Equal("Virtual piano", UiText.VirtualPiano);
+        Assert.Equal("Incorrect", UiText.IncorrectAnswer);
     }
 
     [Theory]

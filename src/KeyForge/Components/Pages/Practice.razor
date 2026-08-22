@@ -1,6 +1,7 @@
 @page "/practice/{LessonId}"
 @rendermode InteractiveServer
 @using KeyForge.Components.Exercises
+@using KeyForge.Components.Practice
 @using KeyForge.Features.Exercises.Models
 @using KeyForge.Features.Lessons.Models
 @using KeyForge.Features.Lessons.Services
@@ -109,42 +110,35 @@ else if (CurrentExercise is { } exercise)
 
         @if (_result is null)
         {
-            <section class="kf-card" aria-labelledby="attempt-form-title">
+            <section class="kf-card" aria-labelledby="@(HasInteractiveChallenge ? null : "attempt-form-title")">
                 <div class="kf-card__body">
-                    <h2 id="attempt-form-title" class="kf-card__title">@UiText.AttemptDetails</h2>
-                    <p class="kf-card__description practice-form-description">@UiText.AttemptInstructions</p>
-
-                    <form class="practice-form" @onsubmit="SubmitCurrentAttempt" @onsubmit:preventDefault>
-                        <div class="practice-checkbox-field">
-                            <input id="attempt-completed" type="checkbox" @bind="_attemptCompleted" />
-                            <div>
-                                <label for="attempt-completed" class="practice-label">@UiText.AttemptCompleted</label>
-                                <p class="practice-field-hint">@UiText.AttemptCompletedHint</p>
-                            </div>
+                    @if (IsRhythmChallenge)
+                    {
+                        <RhythmWorkspace @key="_runtimeExercise"
+                                         RuntimeExercise="_runtimeExercise!"
+                                         OnCompleted="CompleteInteractiveAttempt" />
+                    }
+                    else if (IsNoteReadingChallenge)
+                    {
+                        <NoteReadingWorkspace @key="_runtimeExercise"
+                                              RuntimeExercise="_runtimeExercise!"
+                                              OnCompleted="CompleteInteractiveAttempt" />
+                    }
+                    else
+                    {
+                        <h2 id="attempt-form-title" class="kf-card__title">@UiText.RuntimeUnavailable</h2>
+                        <p class="kf-card__description practice-form-description">@UiText.RuntimeUnavailableDescription</p>
+                        <div class="practice-actions practice-actions--inline">
+                            <button class="kf-button kf-button--primary" type="button" @onclick="AdvanceUnsupportedExercise">
+                                @(IsFinalExercise ? UiText.FinishSession : UiText.NextExercise)
+                            </button>
                         </div>
+                    }
 
-                        <div class="practice-field">
-                            <label for="attempt-score" class="practice-label">@UiText.AttemptScore</label>
-                            <input id="attempt-score"
-                                   class="practice-input"
-                                   type="number"
-                                   min="0"
-                                   max="100"
-                                   required="@_attemptCompleted"
-                                   aria-describedby="attempt-score-hint"
-                                   @bind="_attemptScore" />
-                            <p id="attempt-score-hint" class="practice-field-hint">@UiText.AttemptScoreHint</p>
-                        </div>
-
-                        @if (_submissionError)
-                        {
-                            <p class="practice-error" role="alert">@UiText.AttemptSubmissionError</p>
-                        }
-
-                        <button class="kf-button kf-button--primary" type="submit" disabled="@_isSubmitting">
-                            @UiText.SubmitAttempt
-                        </button>
-                    </form>
+                    @if (_submissionError && HasInteractiveChallenge)
+                    {
+                        <p class="practice-error" role="alert">@UiText.AttemptSubmissionError</p>
+                    }
                 </div>
             </section>
         }
@@ -168,6 +162,52 @@ else if (CurrentExercise is { } exercise)
                         <li>@UiText.ExerciseCompleted</li>
                     }
                 </ul>
+                @if (_result.Evaluation.Rhythm is { } rhythm)
+                {
+                    <dl class="practice-result-summary">
+                        <div>
+                            <dt>@UiText.ExpectedBeats</dt>
+                            <dd>@UiText.FormatNumber(rhythm.ExpectedBeatCount)</dd>
+                        </div>
+                        <div>
+                            <dt>@UiText.SuccessfulHits</dt>
+                            <dd>@UiText.FormatNumber(rhythm.SuccessfulHitCount)</dd>
+                        </div>
+                        <div>
+                            <dt>@UiText.MissedBeats</dt>
+                            <dd>@UiText.FormatNumber(rhythm.MissedBeatCount)</dd>
+                        </div>
+                        <div>
+                            <dt>@UiText.ExtraHits</dt>
+                            <dd>@UiText.FormatNumber(rhythm.ExtraHitCount)</dd>
+                        </div>
+                        <div>
+                            <dt>@UiText.AverageTimingError</dt>
+                            <dd>@UiText.FormatTimingError(rhythm.AverageAbsoluteTimingErrorMilliseconds)</dd>
+                        </div>
+                        <div>
+                            <dt>@UiText.TimingTendency</dt>
+                            <dd>@UiText.GetRhythmTimingTendency(rhythm.TimingTendency)</dd>
+                        </div>
+                    </dl>
+                }
+                @if (_result.Evaluation.NoteReading is { } noteReading)
+                {
+                    <dl class="practice-result-summary">
+                        <div>
+                            <dt>@UiText.QuestionProgress</dt>
+                            <dd>@UiText.FormatNumber(noteReading.QuestionCount)</dd>
+                        </div>
+                        <div>
+                            <dt>@UiText.CorrectAnswers</dt>
+                            <dd>@UiText.FormatNumber(noteReading.CorrectAnswerCount)</dd>
+                        </div>
+                        <div>
+                            <dt>@UiText.IncorrectAnswers</dt>
+                            <dd>@UiText.FormatNumber(noteReading.IncorrectAnswerCount)</dd>
+                        </div>
+                    </dl>
+                }
                 <div class="practice-actions">
                     <button class="kf-button kf-button--secondary" type="button" @onclick="RetryCurrentExercise">
                         @UiText.RetryExercise
@@ -189,15 +229,18 @@ else if (CurrentExercise is { } exercise)
     private LessonDefinition? _lesson;
     private LessonListItem? _lessonState;
     private PracticeSession? _session;
+    private RuntimeExercise? _runtimeExercise;
     private SessionResult? _result;
     private SessionResult? _lastResult;
-    private DateTime _attemptStartedAt;
-    private int? _attemptScore;
-    private bool _attemptCompleted = true;
     private bool _isSubmitting;
     private bool _submissionError;
 
     private ExerciseDefinition? CurrentExercise => _session?.GetCurrentExercise();
+    private bool HasInteractiveChallenge => _runtimeExercise?.Challenge.ExpectedInputs.Count > 0;
+    private bool IsRhythmChallenge =>
+        _runtimeExercise?.Definition is RhythmExerciseDefinition && HasInteractiveChallenge;
+    private bool IsNoteReadingChallenge =>
+        _runtimeExercise?.Definition is NoteReadingExerciseDefinition && HasInteractiveChallenge;
     private int CurrentExerciseNumber => (_session?.CurrentExerciseIndex ?? 0) + 1;
     private int SessionProgressPercent => _session?.Exercises.Count > 0
         ? (int)Math.Round(CurrentExerciseNumber * 100d / _session.Exercises.Count)
@@ -244,9 +287,9 @@ else if (CurrentExercise is { } exercise)
         }
     }
 
-    private void SubmitCurrentAttempt()
+    private void CompleteInteractiveAttempt(DateTime completedAt)
     {
-        if (_isSubmitting || _session is null || CurrentExercise is not { } exercise)
+        if (_isSubmitting || _session is null || _runtimeExercise is null || !HasInteractiveChallenge)
         {
             return;
         }
@@ -256,17 +299,7 @@ else if (CurrentExercise is { } exercise)
 
         try
         {
-            DateTime? completedAt = _attemptCompleted ? DateTime.UtcNow : null;
-            var attempt = new ExerciseAttempt
-            {
-                LessonId = _session.LessonId,
-                ExerciseId = exercise.Id,
-                StartedAt = _attemptStartedAt,
-                CompletedAt = completedAt,
-                Score = _attemptScore
-            };
-
-            _result = PracticeSessionService.SubmitAttempt(_session, exercise.Id, attempt);
+            _result = PracticeSessionService.SubmitAttempt(_session, _runtimeExercise, completedAt);
             _lastResult = _result;
             ProgressUpdateService.UpdateProgress(_session.LessonId, _result);
             RefreshLessonState();
@@ -300,6 +333,18 @@ else if (CurrentExercise is { } exercise)
         RefreshLessonState();
     }
 
+    private void AdvanceUnsupportedExercise()
+    {
+        if (_session is null || HasInteractiveChallenge)
+        {
+            return;
+        }
+
+        _session.Next();
+        ResetAttemptForm();
+        RefreshLessonState();
+    }
+
     private void RefreshLessonState()
     {
         _lessonState = LessonQuery.GetLessons().FirstOrDefault(lesson =>
@@ -312,6 +357,7 @@ else if (CurrentExercise is { } exercise)
         _lesson = null;
         _lessonState = null;
         _session = null;
+        _runtimeExercise = null;
         _result = null;
         _lastResult = null;
         _submissionError = false;
@@ -319,9 +365,9 @@ else if (CurrentExercise is { } exercise)
 
     private void ResetAttemptForm()
     {
-        _attemptStartedAt = DateTime.UtcNow;
-        _attemptScore = null;
-        _attemptCompleted = true;
+        _runtimeExercise = _session is { IsFinished: false }
+            ? PracticeSessionService.StartExercise(_session)
+            : null;
         _submissionError = false;
     }
 

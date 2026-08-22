@@ -29,32 +29,29 @@ public interface IPracticeSessionService
     /// </exception>
     PracticeSession? StartSession(string lessonId);
 
-    /// <summary>
-    /// Submits an exercise attempt for evaluation, scoring, and recording.
-    /// </summary>
+    /// <summary>Creates a runtime and challenge for the current exercise.</summary>
+    RuntimeExercise StartExercise(PracticeSession session);
+
+    /// <summary>Evaluates captured runtime input and records the generated attempt.</summary>
     /// <param name="session">
     /// The active practice session. Must not be <c>null</c>.
     /// </param>
-    /// <param name="exerciseId">
-    /// The identifier of the exercise being attempted.
-    /// Must match the exercise at the session's current position.
-    /// </param>
-    /// <param name="attempt">
-    /// The recorded attempt data. Must not be <c>null</c>.
-    /// </param>
+    /// <param name="runtimeExercise">The active runtime for the current exercise.</param>
+    /// <param name="completedAt">UTC time at which input capture finished.</param>
     /// <returns>
     /// A <see cref="SessionResult"/> containing the evaluation outcome and score.
     /// </returns>
     /// <exception cref="ArgumentNullException">
-    /// Thrown when <paramref name="session"/>, <paramref name="exerciseId"/>,
-    /// or <paramref name="attempt"/> is <c>null</c>.
+    /// Thrown when <paramref name="session"/> or <paramref name="runtimeExercise"/> is <c>null</c>.
     /// </exception>
     /// <exception cref="ArgumentException">
-    /// Thrown when <paramref name="exerciseId"/> does not match the current
-    /// exercise in the session.
+    /// Thrown when the runtime does not match the current exercise.
     /// </exception>
     /// <exception cref="InvalidOperationException">
     /// Thrown when the session has already finished.
     /// </exception>
-    SessionResult SubmitAttempt(PracticeSession session, string exerciseId, ExerciseAttempt attempt);
+    SessionResult SubmitAttempt(
+        PracticeSession session,
+        RuntimeExercise runtimeExercise,
+        DateTime completedAt);
 }

@@ -12,6 +12,7 @@ public sealed class PracticeSessionService : IPracticeSessionService
 {
     private readonly ILessonCatalog _lessonCatalog;
     private readonly ILessonProgressionService _progressionService;
+    private readonly IExerciseChallengeGenerator _challengeGenerator;
     private readonly IExerciseEvaluator _evaluator;
     private readonly IExerciseScorer _scorer;
     private readonly IExerciseAttemptRecorder _recorder;
@@ -22,18 +23,21 @@ public sealed class PracticeSessionService : IPracticeSessionService
     public PracticeSessionService(
         ILessonCatalog lessonCatalog,
         ILessonProgressionService progressionService,
+        IExerciseChallengeGenerator challengeGenerator,
         IExerciseEvaluator evaluator,
         IExerciseScorer scorer,
         IExerciseAttemptRecorder recorder)
     {
         ArgumentNullException.ThrowIfNull(lessonCatalog);
         ArgumentNullException.ThrowIfNull(progressionService);
+        ArgumentNullException.ThrowIfNull(challengeGenerator);
         ArgumentNullException.ThrowIfNull(evaluator);
         ArgumentNullException.ThrowIfNull(scorer);
         ArgumentNullException.ThrowIfNull(recorder);
 
         _lessonCatalog = lessonCatalog;
         _progressionService = progressionService;
+        _challengeGenerator = challengeGenerator;
         _evaluator = evaluator;
         _scorer = scorer;
         _recorder = recorder;
@@ -60,11 +64,36 @@ public sealed class PracticeSessionService : IPracticeSessionService
     }
 
     /// <inheritdoc />
-    public SessionResult SubmitAttempt(PracticeSession session, string exerciseId, ExerciseAttempt attempt)
+    public RuntimeExercise StartExercise(PracticeSession session)
     {
         ArgumentNullException.ThrowIfNull(session);
-        ArgumentException.ThrowIfNullOrWhiteSpace(exerciseId);
-        ArgumentNullException.ThrowIfNull(attempt);
+
+        if (session.IsFinished)
+        {
+            throw new InvalidOperationException(
+                "Cannot start an exercise for a session that has already finished.");
+        }
+
+        var currentExercise = session.GetCurrentExercise();
+        if (currentExercise is null)
+        {
+            throw new InvalidOperationException("The session has no current exercise.");
+        }
+
+        return new RuntimeExercise(
+            currentExercise,
+            _challengeGenerator.Create(currentExercise),
+            DateTime.UtcNow);
+    }
+
+    /// <inheritdoc />
+    public SessionResult SubmitAttempt(
+        PracticeSession session,
+        RuntimeExercise runtimeExercise,
+        DateTime completedAt)
+    {
+        ArgumentNullException.ThrowIfNull(session);
+        ArgumentNullException.ThrowIfNull(runtimeExercise);
 
         if (session.IsFinished)
         {
@@ -73,24 +102,44 @@ public sealed class PracticeSessionService : IPracticeSessionService
         }
 
         var currentExercise = session.GetCurrentExercise();
-        if (currentExercise is null || !string.Equals(currentExercise.Id, exerciseId, StringComparison.Ordinal))
+        if (currentExercise is null ||
+            !string.Equals(currentExercise.Id, runtimeExercise.Definition.Id, StringComparison.Ordinal))
         {
             throw new ArgumentException(
-                $"Exercise '{exerciseId}' does not match the current exercise '{currentExercise?.Id}' in the session.",
-                nameof(exerciseId));
+                $"Runtime exercise '{runtimeExercise.Definition.Id}' does not match the current exercise '{currentExercise?.Id}'.",
+                nameof(runtimeExercise));
         }
 
-        var evaluation = _evaluator.Evaluate(currentExercise, attempt);
+        if (completedAt < runtimeExercise.StartedAt)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(completedAt),
+                "An attempt cannot complete before its runtime starts.");
+        }
+
+        var evaluation = _evaluator.Evaluate(
+            runtimeExercise.Challenge,
+            runtimeExercise.InputEvents);
         var score = _scorer.Score(evaluation);
 
-        attempt.IsSuccessful = evaluation.IsSuccessful;
+        var attempt = new ExerciseAttempt
+        {
+            LessonId = session.LessonId,
+            ExerciseId = currentExercise.Id,
+            StartedAt = runtimeExercise.StartedAt,
+            CompletedAt = completedAt,
+            Score = score,
+            IsSuccessful = evaluation.IsSuccessful
+        };
+
         _recorder.Record(attempt);
 
         var isExerciseCompleted = _recorder.GetAttemptsByLesson(session.LessonId)
-            .Any(a => a.ExerciseId == exerciseId && a.IsSuccessful);
+            .Any(a => a.ExerciseId == currentExercise.Id && a.IsSuccessful);
 
         return new SessionResult
         {
+            Attempt = attempt,
             Evaluation = evaluation,
             Score = score,
             IsExerciseCompleted = isExerciseCompleted

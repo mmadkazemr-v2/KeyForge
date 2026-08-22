@@ -1,0 +1,172 @@
+@namespace KeyForge.Components.Practice
+
+<div class="note-reading-workspace"
+     tabindex="0"
+     @onkeydown="HandleKeyDown"
+     aria-labelledby="note-reading-title">
+    <header class="note-reading-workspace__header">
+        <div>
+            <p class="kf-meta">@UiText.NoteReadingPractice</p>
+            <h2 id="note-reading-title" class="kf-card__title">@UiText.ReadTheNote</h2>
+            <p class="kf-card__description">@UiText.NoteReadingInstructions</p>
+        </div>
+        <span class="kf-status-badge kf-status-badge--available">
+            @UiText.GetQuestionPosition(CurrentQuestionNumber, QuestionCount)
+        </span>
+    </header>
+
+    <div class="note-reading-workspace__progress">
+        <span class="kf-meta">@UiText.QuestionProgress</span>
+        <div class="kf-progress"
+             role="progressbar"
+             aria-label="@UiText.QuestionProgress"
+             aria-valuemin="0"
+             aria-valuemax="@QuestionCount"
+             aria-valuenow="@CurrentQuestionNumber">
+            <div class="kf-progress__value" style="@($"--kf-progress-value: {QuestionProgressPercent}%")"></div>
+        </div>
+    </div>
+
+    <MusicStaff Note="CurrentNote" Clef="CurrentClef" />
+
+    <section class="note-reading-workspace__piano" aria-labelledby="piano-title">
+        <div class="note-reading-workspace__piano-header">
+            <div>
+                <h3 id="piano-title" class="kf-section-title">@UiText.VirtualPiano</h3>
+                <p class="kf-text-secondary">@UiText.SelectPianoNote</p>
+            </div>
+            <p class="kf-meta">@UiText.ComputerKeyboardHint</p>
+        </div>
+        <PianoKeyboard FirstNote="FirstPianoNote"
+                       LastNote="LastPianoNote"
+                       SelectedNote="_selectedNote"
+                       ExpectedNote="CurrentNote"
+                       RevealAnswer="IsAnswered"
+                       Disabled="IsAnswered"
+                       OnNoteSelected="HandlePianoNote" />
+    </section>
+
+    @if (IsAnswered)
+    {
+        <section class="@FeedbackClass" role="status" aria-live="polite">
+            <div>
+                <p class="kf-meta">@UiText.AttemptResult</p>
+                <h3 class="kf-section-title">@(IsCurrentAnswerCorrect ? UiText.CorrectAnswer : UiText.IncorrectAnswer)</h3>
+            </div>
+            <dl class="note-reading-feedback__values">
+                <div>
+                    <dt>@UiText.ExpectedNote</dt>
+                    <dd><bdi>@CurrentNote.Value</bdi></dd>
+                </div>
+                <div>
+                    <dt>@UiText.YourNote</dt>
+                    <dd><bdi>@_selectedNote?.Value</bdi></dd>
+                </div>
+            </dl>
+            <div class="note-reading-feedback__actions">
+                @if (!IsCurrentAnswerCorrect)
+                {
+                    <button class="kf-button kf-button--secondary" type="button" @onclick="RetryQuestion">
+                        @UiText.RetryQuestion
+                    </button>
+                }
+                <button class="kf-button kf-button--primary" type="button" @onclick="AcceptAnswer">
+                    @UiText.ContinueQuestions
+                </button>
+            </div>
+        </section>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public RuntimeExercise RuntimeExercise { get; set; } = null!;
+
+    [Parameter]
+    public EventCallback<DateTime> OnCompleted { get; set; }
+
+    private int _questionIndex;
+    private ExerciseInputEvent? _pendingInput;
+    private MusicalNote? _selectedNote;
+
+    private NoteReadingExerciseDefinition Definition =>
+        (NoteReadingExerciseDefinition)RuntimeExercise.Definition;
+    private int QuestionCount => RuntimeExercise.Challenge.ExpectedInputs.Count;
+    private int CurrentQuestionNumber => _questionIndex + 1;
+    private ExpectedInput CurrentExpectedInput => RuntimeExercise.Challenge.ExpectedInputs[_questionIndex];
+    private MusicalNote CurrentNote => MusicalNote.Parse(CurrentExpectedInput.Value);
+    private IReadOnlyList<MusicalNote> ConfiguredNotes => NoteReadingChallengeGenerator.ParseRange(Definition);
+    private MusicalNote FirstPianoNote => ConfiguredNotes[0];
+    private MusicalNote LastPianoNote => ConfiguredNotes[^1];
+    private bool IsAnswered => _pendingInput is not null;
+    private bool IsCurrentAnswerCorrect => _pendingInput is not null &&
+        NoteReadingExerciseEvaluator.IsCorrect(CurrentExpectedInput, _pendingInput);
+    private int QuestionProgressPercent => (int)Math.Round(
+        CurrentQuestionNumber * 100d / QuestionCount);
+    private ClefType CurrentClef => Definition.Clef == ClefType.Grand
+        ? CurrentNote.MidiNumber < MusicalNote.Parse("C4").MidiNumber
+            ? ClefType.Bass
+            : ClefType.Treble
+        : Definition.Clef;
+    private string FeedbackClass => IsCurrentAnswerCorrect
+        ? "note-reading-feedback note-reading-feedback--correct"
+        : "note-reading-feedback note-reading-feedback--incorrect";
+
+    private void HandlePianoNote(MusicalNote note)
+    {
+        if (IsAnswered)
+        {
+            return;
+        }
+
+        var occurredAt = DateTime.UtcNow;
+        SetPendingInput(VirtualPianoInputAdapter.Create(note, RuntimeExercise.StartedAt, occurredAt));
+    }
+
+    private void HandleKeyDown(KeyboardEventArgs args)
+    {
+        var occurredAt = DateTime.UtcNow;
+        var input = NoteReadingKeyboardInputAdapter.TryCreate(
+            args.Code,
+            args.Repeat,
+            !IsAnswered,
+            RuntimeExercise.StartedAt,
+            occurredAt);
+
+        if (input is not null)
+        {
+            SetPendingInput(input);
+        }
+    }
+
+    private void SetPendingInput(ExerciseInputEvent input)
+    {
+        _pendingInput = input;
+        _selectedNote = MusicalNote.Parse(input.Value);
+    }
+
+    private void RetryQuestion()
+    {
+        _pendingInput = null;
+        _selectedNote = null;
+    }
+
+    private async Task AcceptAnswer()
+    {
+        if (_pendingInput is null)
+        {
+            return;
+        }
+
+        RuntimeExercise.CaptureInput(_pendingInput);
+        if (_questionIndex == QuestionCount - 1)
+        {
+            await OnCompleted.InvokeAsync(DateTime.UtcNow);
+            return;
+        }
+
+        _questionIndex++;
+        _pendingInput = null;
+        _selectedNote = null;
+    }
+}
