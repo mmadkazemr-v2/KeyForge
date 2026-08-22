@@ -1,41 +1,11 @@
 @namespace KeyForge.Components.Music
 
-<div class="music-staff"
-     dir="ltr"
-     role="img"
-     aria-label="@UiText.GetStaffAriaLabel(Clef)">
-    <svg viewBox="0 0 440 220" aria-hidden="true" focusable="false">
-        @foreach (var lineY in StaffLineYs)
-        {
-            <line class="music-staff__line" x1="44" y1="@lineY" x2="402" y2="@lineY" />
-        }
-
-        <text class="music-staff__clef"
-              x="60"
-              y="@(Layout.Clef == ClefType.Bass ? 132 : 143)">
-            @(Layout.Clef == ClefType.Bass ? "𝄢" : "𝄞")
-        </text>
-
-        @foreach (var ledgerY in Layout.LedgerLineYs)
-        {
-            <line class="music-staff__ledger" x1="228" y1="@ledgerY" x2="278" y2="@ledgerY" />
-        }
-
-        <g class="music-staff__note">
-            <ellipse cx="253" cy="@Layout.NoteY" rx="13" ry="9" transform="rotate(-14 253 @Layout.NoteY)" />
-            <line x1="265" y1="@Layout.NoteY" x2="265" y2="@(Layout.NoteY - 52)" />
-        </g>
-    </svg>
-</div>
+<VexFlowStaff Note="@Note" Clef="@Clef" />
 
 @code {
-    private static readonly double[] StaffLineYs = [80, 95, 110, 125, 140];
-
     [Parameter, EditorRequired]
     public MusicalNote Note { get; set; } = null!;
 
     [Parameter]
     public ClefType Clef { get; set; } = ClefType.Treble;
-
-    private StaffNoteLayout Layout => MusicStaffLayout.Create(Note, Clef);
 }

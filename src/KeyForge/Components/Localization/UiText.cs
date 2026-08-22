@@ -30,6 +30,9 @@ public static class UiText
         "درس‌های ساختاریافته را دنبال کنید، تمرین‌ها را انجام دهید و پیشرفت خود را ببینید.",
         "Follow structured lessons, complete exercises, and see your progress.");
     public static string BrowseLessons => Select("مشاهده درس‌ها", "Browse lessons");
+    public static string NotationUnavailable => Select(
+        "نمایش نت برای این ورودی در دسترس نیست.",
+        "Notation is unavailable for this input.");
 
     public static string LearningPath => Select("مسیر یادگیری", "Learning path");
     public static string LessonsDescription => Select(

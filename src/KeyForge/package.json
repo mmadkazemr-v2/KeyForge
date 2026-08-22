@@ -1,0 +1,10 @@
+{
+  "name": "keyforge-ui",
+  "private": true,
+  "scripts": {
+    "vendor:vexflow": "node scripts/vendor-vexflow.mjs"
+  },
+  "dependencies": {
+    "vexflow": "5.0.0"
+  }
+}

@@ -51,3 +51,7 @@ Status selection belongs to presentation mapping; lesson unlocking and completio
 - Keep one clear primary action per section; use secondary buttons for alternatives.
 - Never rely on color alone: pair statuses with visible text and preserve focus outlines.
 - The card grid uses auto-fit columns for desktop and tablet, then naturally collapses on narrow screens. The application shell switches between mobile navigation and a fixed sidebar at one 48rem breakpoint.
+
+## Music notation
+
+VexFlow is the standard renderer for new music-notation UI. Keep it isolated behind the reusable KeyForge `VexFlowStaff` component and its small JavaScript interop module; domain and application services must not depend on VexFlow. Do not introduce new custom staff renderers. Musical notation always renders LTR, independently of the surrounding Persian/RTL or English/LTR interface.

@@ -1,0 +1,108 @@
+@namespace KeyForge.Components.Music
+@implements IAsyncDisposable
+@inject IJSRuntime JavaScript
+
+<div class="vexflow-staff"
+     dir="ltr"
+     role="img"
+     aria-label="@UiText.GetStaffAriaLabel(Clef)">
+    @if (_renderRequest is not null && !_renderFailed)
+    {
+        <div class="vexflow-staff__canvas" @ref="_container"></div>
+    }
+    else
+    {
+        <p class="vexflow-staff__fallback" role="status">@UiText.NotationUnavailable</p>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public MusicalNote Note { get; set; } = null!;
+
+    [Parameter]
+    public ClefType Clef { get; set; } = ClefType.Treble;
+
+    private ElementReference _container;
+    private IJSObjectReference? _module;
+    private VexFlowStaffRenderRequest? _renderRequest;
+    private string? _lastRenderSignature;
+    private bool _renderFailed;
+    private bool _disposed;
+
+    protected override void OnParametersSet()
+    {
+        VexFlowNotationMapper.TryMap(Clef, Note, out _renderRequest);
+        if (_renderRequest is null)
+        {
+            _lastRenderSignature = null;
+        }
+
+        var signature = GetRenderSignature();
+        if (!string.Equals(signature, _lastRenderSignature, StringComparison.Ordinal))
+        {
+            _renderFailed = false;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_disposed || _renderFailed || _renderRequest is null)
+        {
+            return;
+        }
+
+        var signature = GetRenderSignature();
+        if (string.Equals(signature, _lastRenderSignature, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        try
+        {
+            _module ??= await JavaScript.InvokeAsync<IJSObjectReference>(
+                "import",
+                "./Components/Music/VexFlowStaff.razor.js");
+
+            if (_disposed)
+            {
+                return;
+            }
+
+            await _module.InvokeVoidAsync("renderStaff", _container, _renderRequest);
+            _lastRenderSignature = signature;
+        }
+        catch (JSDisconnectedException)
+        {
+            // The circuit is already gone; disposal has nothing left to render.
+        }
+        catch (JSException)
+        {
+            _renderFailed = true;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _disposed = true;
+        if (_module is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await _module.InvokeVoidAsync("clearStaff", _container);
+            await _module.DisposeAsync();
+        }
+        catch (JSDisconnectedException)
+        {
+            // Expected when an interactive server circuit closes first.
+        }
+    }
+
+    private string? GetRenderSignature() => _renderRequest is null
+        ? null
+        : $"{_renderRequest.Clef}:{_renderRequest.NoteKey}";
+}
