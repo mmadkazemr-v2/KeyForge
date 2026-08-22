@@ -1,0 +1,79 @@
+@page "/lessons"
+@using KeyForge.Features.Lessons.Models
+@using KeyForge.Features.Lessons.Services
+@inject ILessonProgressQueryService LessonQuery
+
+<PageTitle>Lessons - KeyForge</PageTitle>
+
+<header class="kf-page-header">
+    <div>
+        <p class="kf-meta">Learning path</p>
+        <h1 class="kf-page-title">Lessons</h1>
+        <p class="kf-page-header__description">Build your piano skills one focused session at a time.</p>
+    </div>
+</header>
+
+@if (_lessons.Count == 0)
+{
+    <div class="kf-card">
+        <div class="kf-card__body">
+            <p class="kf-card__description kf-text-muted">No lessons are available yet.</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="kf-card-grid">
+        @foreach (var lesson in _lessons)
+        {
+            <article class="kf-card @GetCardStatusCssClass(lesson)">
+                <div class="kf-card__body">
+                    <div class="kf-card__header">
+                        <h2 class="kf-card__title">@lesson.Title</h2>
+                        <span class="kf-status-badge @GetStatusBadgeCssClass(lesson)">@GetStatusLabel(lesson)</span>
+                    </div>
+
+                    <p class="kf-card__description">@lesson.Description</p>
+                </div>
+                <ul class="kf-card__meta">
+                    <li>Level: @lesson.Level</li>
+                    <li>Estimated time: @lesson.EstimatedMinutes min</li>
+                    @if (lesson.BestScore is { } bestScore)
+                    {
+                        <li>Best score: @bestScore</li>
+                    }
+                </ul>
+            </article>
+        }
+    </div>
+}
+
+@code {
+    private IReadOnlyList<LessonListItem> _lessons = [];
+
+    protected override void OnInitialized()
+    {
+        _lessons = LessonQuery.GetLessons();
+    }
+
+    private static string GetStatusLabel(LessonListItem lesson) => lesson switch
+    {
+        { IsCompleted: true } => "Completed",
+        { IsUnlocked: true } => "Available",
+        _ => "Locked"
+    };
+
+    private static string GetStatusBadgeCssClass(LessonListItem lesson) => lesson switch
+    {
+        { IsCompleted: true } => "kf-status-badge--completed",
+        { IsUnlocked: true } => "kf-status-badge--available",
+        _ => "kf-status-badge--locked"
+    };
+
+    private static string GetCardStatusCssClass(LessonListItem lesson) => lesson switch
+    {
+        { IsCompleted: true } => "kf-card--completed",
+        { IsUnlocked: true } => "kf-card--available",
+        _ => "kf-card--locked"
+    };
+}
