@@ -35,4 +35,10 @@ public sealed class ExerciseEvaluationResult
 
     /// <summary>Question-by-question feedback when the challenge is Note Reading.</summary>
     public NoteReadingEvaluationDetails? NoteReading { get; init; }
+
+    /// <summary>Question-by-question feedback when the challenge is Interval.</summary>
+    public NoteTargetEvaluationDetails? Interval { get; init; }
+
+    /// <summary>Question-by-question feedback when the challenge is Octave.</summary>
+    public NoteTargetEvaluationDetails? Octave { get; init; }
 }

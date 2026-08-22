@@ -25,6 +25,11 @@ public sealed class ExerciseEvaluator : IExerciseEvaluator
             return new NoteReadingExerciseEvaluator().Evaluate(challenge, inputEvents);
         }
 
+        if (challenge.ExerciseType is ExerciseType.Interval or ExerciseType.Octave)
+        {
+            return new NoteTargetExerciseEvaluator().Evaluate(challenge, inputEvents, challenge.ExerciseType);
+        }
+
         var expected = challenge.ExpectedInputs.FirstOrDefault();
         if (expected is null)
         {

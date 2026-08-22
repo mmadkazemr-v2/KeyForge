@@ -124,6 +124,12 @@ else if (CurrentExercise is { } exercise)
                                               RuntimeExercise="_runtimeExercise!"
                                               OnCompleted="CompleteInteractiveAttempt" />
                     }
+                    else if (IsIntervalOrOctaveChallenge)
+                    {
+                        <IntervalOctaveWorkspace @key="_runtimeExercise"
+                                                 RuntimeExercise="_runtimeExercise!"
+                                                 OnCompleted="CompleteInteractiveAttempt" />
+                    }
                     else
                     {
                         <h2 id="attempt-form-title" class="kf-card__title">@UiText.RuntimeUnavailable</h2>
@@ -208,6 +214,14 @@ else if (CurrentExercise is { } exercise)
                         </div>
                     </dl>
                 }
+                @if (NoteTargetResult is { } noteTarget)
+                {
+                    <dl class="practice-result-summary">
+                        <div><dt>@UiText.QuestionProgress</dt><dd>@UiText.FormatNumber(noteTarget.QuestionCount)</dd></div>
+                        <div><dt>@UiText.CorrectAnswers</dt><dd>@UiText.FormatNumber(noteTarget.CorrectAnswerCount)</dd></div>
+                        <div><dt>@UiText.IncorrectAnswers</dt><dd>@UiText.FormatNumber(noteTarget.IncorrectAnswerCount)</dd></div>
+                    </dl>
+                }
                 <div class="practice-actions">
                     <button class="kf-button kf-button--secondary" type="button" @onclick="RetryCurrentExercise">
                         @UiText.RetryExercise
@@ -241,6 +255,9 @@ else if (CurrentExercise is { } exercise)
         _runtimeExercise?.Definition is RhythmExerciseDefinition && HasInteractiveChallenge;
     private bool IsNoteReadingChallenge =>
         _runtimeExercise?.Definition is NoteReadingExerciseDefinition && HasInteractiveChallenge;
+    private bool IsIntervalOrOctaveChallenge =>
+        _runtimeExercise?.Definition is IntervalExerciseDefinition or OctaveExerciseDefinition && HasInteractiveChallenge;
+    private NoteTargetEvaluationDetails? NoteTargetResult => _result?.Evaluation.Interval ?? _result?.Evaluation.Octave;
     private int CurrentExerciseNumber => (_session?.CurrentExerciseIndex ?? 0) + 1;
     private int SessionProgressPercent => _session?.Exercises.Count > 0
         ? (int)Math.Round(CurrentExerciseNumber * 100d / _session.Exercises.Count)

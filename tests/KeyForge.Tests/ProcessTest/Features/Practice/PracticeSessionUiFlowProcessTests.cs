@@ -3,6 +3,58 @@ namespace KeyForge.Tests.ProcessTest.Features.Practice;
 /// <summary>Verifies the service composition consumed by the practice page.</summary>
 public sealed class PracticeSessionUiFlowProcessTests
 {
+    [Theory]
+    [InlineData(ExerciseType.Interval)]
+    [InlineData(ExerciseType.Octave)]
+    public void PracticePageContracts_RecordAutomaticIntervalAndOctaveAttempts(ExerciseType exerciseType)
+    {
+        ExerciseDefinition exercise = exerciseType == ExerciseType.Interval
+            ? new IntervalExerciseDefinition
+            {
+                Id = "target-exercise", StartingNote = "C4", Intervals = ["M3"],
+                Direction = ExerciseDirection.Ascending
+            }
+            : new OctaveExerciseDefinition
+            {
+                Id = "target-exercise", StartingNote = "C3", Octaves = 2,
+                Direction = ExerciseDirection.Ascending
+            };
+        var lesson = new LessonDefinition
+        {
+            Id = "target-lesson", Title = "Target lesson", Order = 1,
+            Unlock = new UnlockRule { Mode = UnlockMode.Immediate },
+            Completion = new CompletionRule { RequireAllExercises = true }, Exercises = [exercise]
+        };
+        var catalog = new FakeLessonCatalog(lesson);
+        var progressStore = new InMemoryProgressStore();
+        var attempts = new InMemoryExerciseAttemptRecorder();
+        var completion = new ExerciseCompletionEvaluator(attempts);
+        var progression = new LessonProgressionService(catalog, progressStore, completion);
+        var service = new PracticeSessionService(catalog, progression, new ExerciseChallengeGenerator(),
+            new ExerciseEvaluator(), new ExerciseScorer(), attempts);
+        var progress = new ProgressUpdateService(progressStore, catalog, progression);
+        var session = service.StartSession(lesson.Id)!;
+        var runtime = service.StartExercise(session);
+
+        foreach (var expected in runtime.Challenge.ExpectedInputs)
+        {
+            runtime.CaptureInput(new ExerciseInputEvent
+            {
+                Timestamp = runtime.StartedAt.AddMilliseconds(200), Source = InputSource.VirtualPiano,
+                Type = InputEventType.Note, Value = expected.Value
+            });
+        }
+
+        var result = service.SubmitAttempt(session, runtime, runtime.StartedAt.AddSeconds(1));
+        progress.UpdateProgress(lesson.Id, result);
+
+        Assert.True(result.IsSuccessful);
+        Assert.Equal(100, result.Score);
+        Assert.Equal(0, session.CurrentExerciseIndex);
+        Assert.True(Assert.Single(attempts.GetAllAttempts()).IsSuccessful);
+        Assert.Equal(100, Assert.Single(progressStore.GetAllProgress()).BestScore);
+    }
+
     [Fact]
     public void PracticePageContracts_SupportRetryExplicitAdvanceAndFinalProgress()
     {

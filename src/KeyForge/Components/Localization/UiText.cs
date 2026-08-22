@@ -113,6 +113,18 @@ public static class UiText
     public static string NoteReadingInstructions => Select(
         "نت نمایش‌داده‌شده را روی پیانو انتخاب کنید. نام نت پس از پاسخ نمایش داده می‌شود.",
         "Select the displayed note on the piano. The note name is revealed after you answer.");
+    public static string IntervalPractice => Select("تمرین فاصله", "Interval practice");
+    public static string OctavePractice => Select("تمرین اکتاو", "Octave practice");
+    public static string PlayTheTargetNote => Select("نت هدف را روی پیانو بنوازید یا انتخاب کنید.", "Play or select the target note on the piano.");
+    public static string SourceNote => Select("نت آغاز", "Source note");
+    public static string TargetInterval => Select("فاصلهٔ هدف", "Target interval");
+    public static string TargetOctaves => Select("فاصلهٔ اکتاو", "Octave span");
+    public static string GetIntervalInstruction(string interval, ExerciseDirection direction) => Select(
+        $"یک فاصلهٔ {interval} به‌صورت {GetExerciseDirection(direction)} از نت آغاز بنوازید.",
+        $"Play a {GetExerciseDirection(direction).ToLowerInvariant()} {interval} from the source note.");
+    public static string GetOctaveInstruction(int octaves, ExerciseDirection direction) => Select(
+        $"نتی را {FormatNumber(octaves)} اکتاو به‌صورت {GetExerciseDirection(direction)} از نت آغاز بنوازید.",
+        $"Play the note {octaves} octave(s) {GetExerciseDirection(direction).ToLowerInvariant()} from the source note.");
     public static string QuestionProgress => Select("پیشرفت پرسش‌ها", "Question progress");
     public static string GetQuestionPosition(int current, int total) => Select(
         $"پرسش {FormatNumber(current)} از {FormatNumber(total)}",

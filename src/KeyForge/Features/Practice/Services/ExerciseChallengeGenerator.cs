@@ -19,6 +19,16 @@ public sealed class ExerciseChallengeGenerator : IExerciseChallengeGenerator
             return new NoteReadingChallengeGenerator().Create(noteReading);
         }
 
+        if (exercise is IntervalExerciseDefinition interval)
+        {
+            return new IntervalChallengeGenerator().Create(interval);
+        }
+
+        if (exercise is OctaveExerciseDefinition octave)
+        {
+            return new OctaveChallengeGenerator().Create(octave);
+        }
+
         return new ExerciseChallenge
         {
             ExerciseId = exercise.Id,
