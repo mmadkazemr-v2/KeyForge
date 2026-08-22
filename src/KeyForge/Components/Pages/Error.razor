@@ -1,30 +1,24 @@
-﻿@page "/Error"
+@page "/Error"
 @using System.Diagnostics
 
-<PageTitle>Error</PageTitle>
+<PageTitle>@UiText.ErrorTitle - @UiText.ProductName</PageTitle>
 
-<h1 class="text-danger">Error.</h1>
-<h2 class="text-danger">An error occurred while processing your request.</h2>
+<header class="kf-page-header">
+    <div>
+        <h1 class="kf-page-title">@UiText.ErrorTitle</h1>
+        <p class="kf-page-header__description">@UiText.ErrorDescription</p>
+    </div>
+    <a class="kf-button kf-button--secondary" href="/">@UiText.Home</a>
+</header>
 
 @if (ShowRequestId)
 {
-    <p>
-        <strong>Request ID:</strong> <code>@RequestId</code>
+    <p class="kf-text-secondary">
+        <strong>@UiText.RequestId:</strong> <code dir="ltr">@RequestId</code>
     </p>
 }
 
-<h3>Development Mode</h3>
-<p>
-    Swapping to <strong>Development</strong> environment will display more detailed information about the error that occurred.
-</p>
-<p>
-    <strong>The Development environment shouldn't be enabled for deployed applications.</strong>
-    It can result in displaying sensitive information from exceptions to end users.
-    For local debugging, enable the <strong>Development</strong> environment by setting the <strong>ASPNETCORE_ENVIRONMENT</strong> environment variable to <strong>Development</strong>
-    and restarting the app.
-</p>
-
-@code{
+@code {
     [CascadingParameter]
     private HttpContext? HttpContext { get; set; }
 

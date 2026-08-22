@@ -1,0 +1,112 @@
+.practice-progress {
+    display: grid;
+    gap: var(--kf-space-3);
+    padding-block: var(--kf-space-4);
+    padding-inline: var(--kf-space-5);
+    background: var(--kf-color-surface);
+    border: 1px solid var(--kf-color-border);
+    border-radius: var(--kf-radius-card);
+}
+
+.practice-progress__header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--kf-space-3);
+}
+
+.practice-form-description {
+    margin-block-start: var(--kf-space-3);
+}
+
+.practice-form {
+    display: grid;
+    gap: var(--kf-space-5);
+    margin-block-start: var(--kf-space-5);
+}
+
+.practice-field {
+    display: grid;
+    gap: var(--kf-space-2);
+}
+
+.practice-label {
+    color: var(--kf-color-text-primary);
+    font-weight: 650;
+}
+
+.practice-input {
+    width: 100%;
+    min-height: 2.75rem;
+    padding-block: var(--kf-space-2);
+    padding-inline: var(--kf-space-3);
+    background: var(--kf-color-surface-elevated);
+    border: 1px solid var(--kf-color-border-strong);
+    border-radius: var(--kf-radius-control);
+    color: var(--kf-color-text-primary);
+    font: inherit;
+}
+
+.practice-input:focus {
+    border-color: var(--kf-color-primary);
+}
+
+.practice-checkbox-field {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--kf-space-3);
+}
+
+.practice-checkbox-field input {
+    width: var(--kf-space-5);
+    height: var(--kf-space-5);
+    flex: 0 0 var(--kf-space-5);
+    margin-block-start: var(--kf-space-1);
+    accent-color: var(--kf-color-primary);
+}
+
+.practice-field-hint {
+    margin: 0;
+    color: var(--kf-color-text-muted);
+    font-size: var(--kf-font-size-small);
+}
+
+.practice-error {
+    margin: 0;
+    padding-block: var(--kf-space-3);
+    padding-inline: var(--kf-space-4);
+    background: var(--kf-color-error-soft);
+    border: 1px solid var(--kf-color-error);
+    border-radius: var(--kf-radius-control);
+    color: var(--kf-color-text-primary);
+}
+
+.practice-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: var(--kf-space-3);
+    padding-block: var(--kf-space-4);
+    padding-inline: var(--kf-space-5);
+    border-top: 1px solid var(--kf-color-border);
+}
+
+.practice-result--success {
+    border-color: var(--kf-color-success);
+}
+
+.practice-result--failed {
+    border-color: var(--kf-color-warning);
+}
+
+@media (max-width: 47.99rem) {
+    .practice-actions {
+        display: grid;
+    }
+
+    .practice-actions .kf-button,
+    .practice-form .kf-button {
+        width: 100%;
+    }
+}

@@ -1,7 +1,12 @@
-﻿@page "/"
+@page "/"
 
-<PageTitle>Home</PageTitle>
+<PageTitle>@UiText.Home - @UiText.ProductName</PageTitle>
 
-<h1>Hello, world!</h1>
-
-Welcome to your new app.
+<header class="kf-page-header">
+    <div>
+        <p class="kf-meta">@UiText.HomeEyebrow</p>
+        <h1 class="kf-page-title">@UiText.HomeTitle</h1>
+        <p class="kf-page-header__description">@UiText.HomeDescription</p>
+    </div>
+    <a class="kf-button kf-button--primary" href="/lessons">@UiText.BrowseLessons</a>
+</header>

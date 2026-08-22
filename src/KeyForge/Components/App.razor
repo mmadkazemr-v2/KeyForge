@@ -1,18 +1,20 @@
 ﻿<!DOCTYPE html>
-<html lang="en" data-bs-theme="dark">
+<html lang="@UiText.LanguageCode" dir="@UiText.Direction" data-bs-theme="dark">
 
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="/" />
     <ResourcePreloader />
-    <link rel="stylesheet" href="@Assets["lib/bootstrap/dist/css/bootstrap.min.css"]" />
+    <link rel="stylesheet" href="@(UiText.IsPersian
+        ? Assets["lib/bootstrap/dist/css/bootstrap.rtl.min.css"]
+        : Assets["lib/bootstrap/dist/css/bootstrap.min.css"])" />
     <link rel="stylesheet" href="@Assets["app.css"]" />
     <link rel="stylesheet" href="@Assets["KeyForge.styles.css"]" />
     <ImportMap />
     <link rel="icon" type="image/png" href="favicon.png" />
     <HeadOutlet />
-    <title>Key Forge</title>
+    <title>@UiText.ProductName</title>
 </head>
 
 <body>

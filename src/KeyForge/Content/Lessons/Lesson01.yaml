@@ -1,6 +1,6 @@
 id: lesson-01
-title: "Keyboard Foundations"
-description: "Introduction to keyboard geography, rhythm, and basic note reading."
+title: "مبانی کیبورد"
+description: "آشنایی با جغرافیای کیبورد، ریتم و نت‌خوانی پایه."
 level: beginner
 order: 1
 estimatedMinutes: 30
@@ -15,8 +15,8 @@ completion:
 exercises:
   - type: rhythm
     id: ex-01
-    title: "Steady Quarter Notes"
-    description: "Clap and play steady quarter notes at a comfortable tempo."
+    title: "ضرب‌های سیاه یکنواخت"
+    description: "در سرعتی راحت، نت‌های سیاه را با ضربی یکنواخت دست بزنید و بنوازید."
     duration: 5
     tempo: 80
     difficulty: easy
@@ -26,8 +26,8 @@ exercises:
 
   - type: noteReading
     id: ex-02
-    title: "Find the Notes"
-    description: "Identify notes on the staff and locate them on the keyboard."
+    title: "نت‌ها را پیدا کنید"
+    description: "نت‌ها را روی حامل تشخیص دهید و جای آن‌ها را روی کیبورد پیدا کنید."
     duration: 5
     tempo: 60
     difficulty: easy
@@ -37,8 +37,8 @@ exercises:
 
   - type: earTraining
     id: ex-03
-    title: "High or Low"
-    description: "Listen and decide whether the second note is higher or lower."
+    title: "زیر یا بم"
+    description: "گوش دهید و مشخص کنید نت دوم زیرتر است یا بم‌تر."
     duration: 4
     difficulty: easy
     taskType: pitchMatching
@@ -47,8 +47,8 @@ exercises:
 
   - type: interval
     id: ex-04
-    title: "Step or Skip"
-    description: "Recognise whether two notes move by step or by skip."
+    title: "حرکت پله‌ای یا پرشی"
+    description: "تشخیص دهید حرکت میان دو نت پله‌ای است یا پرشی."
     duration: 4
     tempo: 70
     difficulty: easy
@@ -58,8 +58,8 @@ exercises:
 
   - type: octave
     id: ex-05
-    title: "Octave Leaps"
-    description: "Play and recognise octave leaps across the keyboard."
+    title: "پرش‌های اکتاو"
+    description: "پرش‌های اکتاو را در گستره کیبورد بنوازید و تشخیص دهید."
     duration: 4
     tempo: 70
     difficulty: easy
@@ -69,8 +69,8 @@ exercises:
 
   - type: fingerIndependence
     id: ex-06
-    title: "Quiet Neighbours"
-    description: "Hold each finger down while its neighbours stay still."
+    title: "همسایه‌های آرام"
+    description: "هر انگشت را پایین نگه دارید و انگشتان کناری را بی‌حرکت حفظ کنید."
     duration: 4
     tempo: 60
     difficulty: easy
@@ -79,8 +79,8 @@ exercises:
 
   - type: mentalKeyboard
     id: ex-07
-    title: "Keyboard Geography"
-    description: "Visualise note positions mentally without looking at the keys."
+    title: "جغرافیای کیبورد"
+    description: "بدون نگاه‌کردن به کلیدها، جای نت‌ها را در ذهن مجسم کنید."
     duration: 3
     difficulty: easy
     startingNote: "C4"
@@ -89,8 +89,8 @@ exercises:
 
   - type: speed
     id: ex-08
-    title: "Five-Finger Run"
-    description: "Play a five-finger pattern gradually faster."
+    title: "حرکت پنج‌انگشتی"
+    description: "یک الگوی پنج‌انگشتی را به‌تدریج سریع‌تر بنوازید."
     duration: 3
     tempo: 70
     difficulty: easy

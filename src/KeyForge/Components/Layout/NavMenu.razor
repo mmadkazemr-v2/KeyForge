@@ -1,24 +1,52 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+@inject NavigationManager Navigation
+
+<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
-        <a class="navbar-brand" href="">KeyForge</a>
+        <a class="navbar-brand" href="">@UiText.ProductName</a>
     </div>
 </div>
 
-<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+<input type="checkbox" title="@UiText.NavigationMenu" class="navbar-toggler" />
 
 <div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
     <nav class="nav flex-column">
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
+                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> @UiText.Home
             </NavLink>
         </div>
 
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="lessons">
-                <span class="bi bi-journal-text-nav-menu" aria-hidden="true"></span> Lessons
+                <span class="bi bi-journal-text-nav-menu" aria-hidden="true"></span> @UiText.Lessons
             </NavLink>
         </div>
     </nav>
+
+    <div class="language-switcher" role="group" aria-label="@UiText.LanguageSelector">
+        <a class="language-option @(UiText.IsPersian ? "active" : null)"
+           href="@GetLanguageUrl("fa")"
+           lang="fa"
+           dir="rtl"
+           hreflang="fa"
+           aria-current="@(UiText.IsPersian ? "true" : null)"
+           data-enhance-nav="false">@UiText.PersianLanguage</a>
+        <a class="language-option @(!UiText.IsPersian ? "active" : null)"
+           href="@GetLanguageUrl("en")"
+           lang="en"
+           dir="ltr"
+           hreflang="en"
+           aria-current="@(!UiText.IsPersian ? "true" : null)"
+           data-enhance-nav="false">@UiText.EnglishLanguage</a>
+    </div>
 </div>
 
+@code {
+    private string GetLanguageUrl(string language)
+    {
+        var relativeUrl = Navigation.ToBaseRelativePath(Navigation.Uri);
+        var returnUrl = string.IsNullOrEmpty(relativeUrl) ? "/" : $"/{relativeUrl}";
+
+        return $"/language/{language}?returnUrl={Uri.EscapeDataString(returnUrl)}";
+    }
+}

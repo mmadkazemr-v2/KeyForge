@@ -1,5 +1,12 @@
-﻿@page "/not-found"
+@page "/not-found"
 @layout MainLayout
 
-<h3>Not Found</h3>
-<p>Sorry, the content you are looking for does not exist.</p>
+<PageTitle>@UiText.ContentNotFound - @UiText.ProductName</PageTitle>
+
+<header class="kf-page-header">
+    <div>
+        <h1 class="kf-page-title">@UiText.ContentNotFound</h1>
+        <p class="kf-page-header__description">@UiText.ContentNotFoundDescription</p>
+    </div>
+    <a class="kf-button kf-button--secondary" href="/">@UiText.Home</a>
+</header>

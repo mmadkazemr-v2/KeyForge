@@ -1,0 +1,39 @@
+.exercise-presentation__eyebrow {
+    margin-block-end: var(--kf-space-2);
+}
+
+.exercise-presentation__configuration {
+    padding-block: var(--kf-space-4);
+    padding-inline: var(--kf-space-5);
+    background: var(--kf-color-surface-elevated);
+    border-top: 1px solid var(--kf-color-border);
+}
+
+.exercise-presentation__configuration-title {
+    margin-block-end: var(--kf-space-3);
+}
+
+.exercise-presentation__metadata {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+    gap: var(--kf-space-3);
+    margin: 0;
+}
+
+.exercise-presentation__metadata-item {
+    display: grid;
+    align-content: start;
+    gap: var(--kf-space-1);
+    min-width: 0;
+    padding-block: var(--kf-space-3);
+    padding-inline: var(--kf-space-3);
+    background: var(--kf-color-surface);
+    border: 1px solid var(--kf-color-border);
+    border-radius: var(--kf-radius-control);
+}
+
+.exercise-presentation__metadata-item dd {
+    margin: 0;
+    color: var(--kf-color-text-secondary);
+    overflow-wrap: anywhere;
+}

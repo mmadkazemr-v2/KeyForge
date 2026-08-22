@@ -37,12 +37,19 @@
     --kf-radius-container: 1rem;
 
     /* Typography tokens */
-    --kf-font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --kf-font-system: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --kf-font-persian: "Vazir", Tahoma, var(--kf-font-system);
+    --kf-font-sans: var(--kf-font-persian);
     --kf-font-size-meta: 0.75rem;
     --kf-font-size-small: 0.875rem;
     --kf-font-size-body: 1rem;
     --kf-font-size-section: clamp(1.25rem, 2vw, 1.5rem);
     --kf-font-size-page: clamp(1.75rem, 4vw, 2.5rem);
+    --kf-line-height-body: 1.75;
+}
+
+:root:lang(en) {
+    --kf-font-sans: var(--kf-font-system);
     --kf-line-height-body: 1.6;
 }
 
@@ -68,6 +75,7 @@ body {
     font-family: var(--kf-font-sans);
     font-size: var(--kf-font-size-body);
     line-height: var(--kf-line-height-body);
+    text-align: start;
     -webkit-font-smoothing: antialiased;
 }
 
@@ -96,7 +104,8 @@ h1:focus {
     width: 100%;
     max-width: 80rem;
     margin-inline: auto;
-    padding: var(--kf-space-6);
+    padding-block: var(--kf-space-6);
+    padding-inline: var(--kf-space-6);
 }
 
 .kf-page-header {
@@ -118,7 +127,7 @@ h1:focus {
     color: var(--kf-color-text-primary);
     font-size: var(--kf-font-size-page);
     font-weight: 700;
-    letter-spacing: -0.03em;
+    letter-spacing: normal;
     line-height: 1.15;
 }
 
@@ -148,7 +157,7 @@ h1:focus {
     color: var(--kf-color-text-muted);
     font-size: var(--kf-font-size-meta);
     font-weight: 650;
-    letter-spacing: 0.08em;
+    letter-spacing: normal;
     line-height: 1.4;
     text-transform: uppercase;
 }
@@ -156,7 +165,12 @@ h1:focus {
 .kf-card-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
-    gap: var(--kf-space-4);
+    gap: var(--kf-space-5);
+}
+
+.kf-content-stack {
+    display: grid;
+    gap: var(--kf-space-6);
 }
 
 /* Cards */
@@ -170,15 +184,17 @@ h1:focus {
 }
 
 .kf-card__body {
-    padding: var(--kf-space-5);
+    padding-block: var(--kf-space-5);
+    padding-inline: var(--kf-space-5);
 }
 
 .kf-card__header {
     display: flex;
+    flex-wrap: wrap;
     align-items: flex-start;
     justify-content: space-between;
-    gap: var(--kf-space-3);
-    margin-bottom: var(--kf-space-3);
+    gap: var(--kf-space-4);
+    margin-bottom: var(--kf-space-4);
 }
 
 .kf-card__title {
@@ -192,13 +208,15 @@ h1:focus {
 .kf-card__description {
     margin-bottom: 0;
     color: var(--kf-color-text-secondary);
+    line-height: var(--kf-line-height-body);
 }
 
 .kf-card__meta {
     display: grid;
-    gap: var(--kf-space-2);
+    gap: var(--kf-space-3);
     margin: auto 0 0;
-    padding: var(--kf-space-4) var(--kf-space-5);
+    padding-block: var(--kf-space-4);
+    padding-inline: var(--kf-space-5);
     background: var(--kf-color-surface-elevated);
     border-top: 1px solid var(--kf-color-border);
     color: var(--kf-color-text-secondary);
@@ -213,7 +231,8 @@ h1:focus {
     align-items: center;
     justify-content: center;
     gap: var(--kf-space-2);
-    padding: var(--kf-space-2) var(--kf-space-4);
+    padding-block: var(--kf-space-2);
+    padding-inline: var(--kf-space-5);
     border: 1px solid transparent;
     border-radius: var(--kf-radius-control);
     font: inherit;
@@ -268,7 +287,8 @@ textarea:focus-visible {
     flex-shrink: 0;
     align-items: center;
     min-height: 1.75rem;
-    padding: var(--kf-space-1) var(--kf-space-3);
+    padding-block: var(--kf-space-1);
+    padding-inline: var(--kf-space-3);
     border: 1px solid transparent;
     border-radius: 999px;
     font-size: var(--kf-font-size-meta);
@@ -348,13 +368,10 @@ textarea:focus-visible {
     color: var(--kf-color-text-primary);
 }
 
-.blazor-error-boundary::after {
-    content: "An error has occurred.";
-}
-
 @media (max-width: 47.99rem) {
     .kf-page-container {
-        padding: var(--kf-space-5) var(--kf-space-4);
+        padding-block: var(--kf-space-5);
+        padding-inline: var(--kf-space-4);
     }
 
     .kf-page-header {

@@ -1,0 +1,51 @@
+@using KeyForge.Features.Exercises.Models
+
+<section class="kf-card" aria-labelledby="current-exercise-title">
+    <div class="kf-card__body">
+        <div class="kf-card__header">
+            <div>
+                <p class="kf-meta exercise-presentation__eyebrow">@UiText.CurrentExercise</p>
+                <h2 id="current-exercise-title" class="kf-card__title">@Exercise.Title</h2>
+            </div>
+            <span class="kf-status-badge kf-status-badge--available">@UiText.GetExerciseType(Exercise.Type)</span>
+        </div>
+        <p class="kf-card__description">@Exercise.Description</p>
+    </div>
+
+    @if (_items.Count > 0)
+    {
+        <div class="exercise-presentation__configuration">
+            <h3 class="kf-meta exercise-presentation__configuration-title">@UiText.ExerciseConfiguration</h3>
+            <dl class="exercise-presentation__metadata">
+                @foreach (var item in _items)
+                {
+                    <div class="exercise-presentation__metadata-item">
+                        <dt class="kf-meta">@item.Label</dt>
+                        <dd>
+                            @if (item.IsTechnical)
+                            {
+                                <bdi dir="ltr">@item.Value</bdi>
+                            }
+                            else
+                            {
+                                @item.Value
+                            }
+                        </dd>
+                    </div>
+                }
+            </dl>
+        </div>
+    }
+</section>
+
+@code {
+    [Parameter, EditorRequired]
+    public ExerciseDefinition Exercise { get; set; } = default!;
+
+    private IReadOnlyList<ExercisePresentationItem> _items = [];
+
+    protected override void OnParametersSet()
+    {
+        _items = ExercisePresentationMapper.Map(Exercise);
+    }
+}

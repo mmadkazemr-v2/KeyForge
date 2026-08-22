@@ -1,0 +1,140 @@
+@page "/lessons/{LessonId}"
+@using KeyForge.Features.Lessons.Models
+@using KeyForge.Features.Lessons.Services
+@inject ILessonCatalog LessonCatalog
+@inject ILessonProgressQueryService LessonQuery
+
+<PageTitle>@(_lesson is null ? $"{UiText.LessonNotFound} - {UiText.ProductName}" : $"{_lesson.Title} - {UiText.ProductName}")</PageTitle>
+
+@if (_lesson is null)
+{
+    <header class="kf-page-header">
+        <div>
+            <p class="kf-meta">@UiText.LessonDetails</p>
+            <h1 class="kf-page-title">@UiText.LessonNotFound</h1>
+            <p class="kf-page-header__description">@UiText.LessonNotFoundDescription</p>
+        </div>
+        <a class="kf-button kf-button--secondary" href="/lessons">@UiText.BackToLessons</a>
+    </header>
+}
+else
+{
+    <header class="kf-page-header">
+        <div>
+            <p class="kf-meta"><a href="/lessons">@UiText.Lessons</a> / @UiText.LessonDetails</p>
+            <h1 class="kf-page-title">@_lesson.Title</h1>
+            <p class="kf-page-header__description">@_lesson.Description</p>
+        </div>
+        @if (CanStartPractice)
+        {
+            <a class="kf-button kf-button--primary" href="@GetPracticeUrl(_lesson.Id)">@UiText.StartPractice</a>
+        }
+    </header>
+
+    <div class="kf-content-stack">
+        @if (!CanStartPractice)
+        {
+            <section class="kf-card" role="status" aria-labelledby="locked-lesson-title">
+                <div class="kf-card__body">
+                    <div class="kf-card__header">
+                        <h2 id="locked-lesson-title" class="kf-card__title">@UiText.LockedLessonTitle</h2>
+                        <span class="kf-status-badge kf-status-badge--locked">@UiText.Locked</span>
+                    </div>
+                    <p class="kf-card__description">@UiText.LockedLessonDescription</p>
+                </div>
+            </section>
+        }
+
+        <section class="kf-card" aria-labelledby="lesson-overview-title">
+            <div class="kf-card__body">
+                <div class="kf-card__header">
+                    <h2 id="lesson-overview-title" class="kf-card__title">@UiText.LessonOverview</h2>
+                    <span class="kf-status-badge @GetStatusBadgeCssClass()">@GetStatusLabel()</span>
+                </div>
+            </div>
+            <ul class="kf-card__meta">
+                <li>@UiText.Level: @UiText.GetLessonLevel(_lesson.Level)</li>
+                <li>@UiText.EstimatedTime: @_lesson.EstimatedMinutes @UiText.Minute</li>
+                <li>@UiText.ExerciseCount: @_lesson.Exercises.Count</li>
+                @if (_lessonState?.BestScore is { } bestScore)
+                {
+                    <li>@UiText.BestScore: <bdi>@bestScore%</bdi></li>
+                }
+            </ul>
+        </section>
+
+        <section aria-labelledby="lesson-exercises-title">
+            <h2 id="lesson-exercises-title" class="kf-section-title">@UiText.Exercises</h2>
+
+            @if (_lesson.Exercises.Count == 0)
+            {
+                <div class="kf-card">
+                    <div class="kf-card__body">
+                        <p class="kf-card__description kf-text-muted">@UiText.NoExercises</p>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="kf-card-grid">
+                    @foreach (var exercise in _lesson.Exercises)
+                    {
+                        <article class="kf-card">
+                            <div class="kf-card__body">
+                                <div class="kf-card__header">
+                                    <h3 class="kf-card__title">@exercise.Title</h3>
+                                    <span class="kf-meta">@UiText.GetExerciseType(exercise.Type)</span>
+                                </div>
+                                <p class="kf-card__description">@exercise.Description</p>
+                            </div>
+                            <ul class="kf-card__meta">
+                                <li>@UiText.DifficultyLabel: @UiText.GetDifficulty(exercise.Difficulty)</li>
+                                @if (exercise.Duration > 0)
+                                {
+                                    <li>@UiText.Duration: @exercise.Duration @UiText.Minute</li>
+                                }
+                                @if (exercise.Tempo > 0)
+                                {
+                                    <li>@UiText.Tempo: @exercise.Tempo @UiText.BeatsPerMinute</li>
+                                }
+                            </ul>
+                        </article>
+                    }
+                </div>
+            }
+        </section>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public string LessonId { get; set; } = string.Empty;
+
+    private LessonDefinition? _lesson;
+    private LessonListItem? _lessonState;
+
+    private bool CanStartPractice => _lessonState?.IsUnlocked == true;
+
+    protected override void OnParametersSet()
+    {
+        _lesson = LessonCatalog.GetById(LessonId);
+        _lessonState = _lesson is null
+            ? null
+            : LessonQuery.GetLessons().FirstOrDefault(item =>
+                string.Equals(item.Id, _lesson.Id, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private string GetStatusLabel() => UiText.GetLessonStatus(
+        _lessonState?.IsUnlocked == true,
+        _lessonState?.IsCompleted == true);
+
+    private string GetStatusBadgeCssClass() => _lessonState switch
+    {
+        { IsCompleted: true } => "kf-status-badge--completed",
+        { IsUnlocked: true } => "kf-status-badge--available",
+        _ => "kf-status-badge--locked"
+    };
+
+    private static string GetPracticeUrl(string lessonId) =>
+        $"/practice/{Uri.EscapeDataString(lessonId)}";
+}

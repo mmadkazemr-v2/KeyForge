@@ -7,25 +7,25 @@
             <div></div>
         </div>
         <p class="components-reconnect-first-attempt-visible">
-            Rejoining the server...
+            @UiText.RejoiningServer
         </p>
         <p class="components-reconnect-repeated-attempt-visible">
-            Rejoin failed... trying again in <span id="components-seconds-to-next-attempt"></span> seconds.
+            @UiText.RejoinRetryPrefix <span id="components-seconds-to-next-attempt"></span> @UiText.SecondsLater
         </p>
         <p class="components-reconnect-failed-visible">
-            Failed to rejoin.<br />Please retry or reload the page.
+            @UiText.RejoinFailed
         </p>
         <button id="components-reconnect-button" class="components-reconnect-failed-visible">
-            Retry
+            @UiText.Retry
         </button>
         <p class="components-pause-visible">
-            The session has been paused by the server.
+            @UiText.SessionPaused
         </p>
         <p class="components-resume-failed-visible">
-            Failed to resume the session.<br />Please retry or reload the page.
+            @UiText.ResumeFailed
         </p>
         <button id="components-resume-button" class="components-pause-visible components-resume-failed-visible">
-            Resume
+            @UiText.Resume
         </button>
     </div>
 </dialog>

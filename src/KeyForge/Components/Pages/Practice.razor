@@ -1,0 +1,361 @@
+@page "/practice/{LessonId}"
+@rendermode InteractiveServer
+@using KeyForge.Components.Exercises
+@using KeyForge.Features.Exercises.Models
+@using KeyForge.Features.Lessons.Models
+@using KeyForge.Features.Lessons.Services
+@using KeyForge.Features.Practice.Models
+@using KeyForge.Features.Practice.Services
+@using KeyForge.Features.Progress.Services
+@inject IPracticeSessionService PracticeSessionService
+@inject ILessonCatalog LessonCatalog
+@inject ILessonProgressQueryService LessonQuery
+@inject IProgressUpdateService ProgressUpdateService
+
+<PageTitle>@(_lesson is null ? UiText.PracticeSession : _lesson.Title) - @UiText.ProductName</PageTitle>
+
+@if (_startState is PracticeStartState.NotFound)
+{
+    <header class="kf-page-header">
+        <div>
+            <p class="kf-meta">@UiText.PracticeSession</p>
+            <h1 class="kf-page-title">@UiText.PracticeNotFound</h1>
+            <p class="kf-page-header__description">@UiText.PracticeNotFoundDescription</p>
+        </div>
+        <a class="kf-button kf-button--secondary" href="/lessons">@UiText.ReturnToLessons</a>
+    </header>
+}
+else if (_startState is PracticeStartState.Locked)
+{
+    <header class="kf-page-header">
+        <div>
+            <p class="kf-meta">@UiText.PracticeSession</p>
+            <h1 class="kf-page-title">@UiText.PracticeLocked</h1>
+            <p class="kf-page-header__description">@UiText.PracticeLockedDescription</p>
+        </div>
+        <a class="kf-button kf-button--secondary" href="/lessons">@UiText.ReturnToLessons</a>
+    </header>
+}
+else if (_startState is PracticeStartState.Error)
+{
+    <header class="kf-page-header">
+        <div>
+            <p class="kf-meta">@UiText.PracticeSession</p>
+            <h1 class="kf-page-title">@UiText.PracticeStartError</h1>
+            <p class="kf-page-header__description">@UiText.PracticeStartErrorDescription</p>
+        </div>
+        <a class="kf-button kf-button--secondary" href="/lessons">@UiText.ReturnToLessons</a>
+    </header>
+}
+else if (_session?.IsFinished == true)
+{
+    <header class="kf-page-header">
+        <div>
+            <p class="kf-meta">@UiText.PracticeSession</p>
+            <h1 class="kf-page-title">@UiText.SessionComplete</h1>
+            <p class="kf-page-header__description">@UiText.SessionCompleteDescription</p>
+        </div>
+        <a class="kf-button kf-button--primary" href="/lessons">@UiText.ReturnToLessons</a>
+    </header>
+
+    <section class="kf-card" role="status" aria-labelledby="session-summary-title">
+        <div class="kf-card__body">
+            <div class="kf-card__header">
+                <h2 id="session-summary-title" class="kf-card__title">@_lesson?.Title</h2>
+                <span class="kf-status-badge @GetLessonCompletionBadgeClass()">@GetLessonCompletionLabel()</span>
+            </div>
+            <p class="kf-card__description">@UiText.LessonCompletionStatus: @GetLessonCompletionLabel()</p>
+        </div>
+        <ul class="kf-card__meta">
+            @if (_lastResult is not null)
+            {
+                <li>@UiText.Score: <bdi>@_lastResult.Score%</bdi></li>
+            }
+            @if (_lessonState?.BestScore is { } bestScore)
+            {
+                <li>@UiText.BestScore: <bdi>@bestScore%</bdi></li>
+            }
+        </ul>
+    </section>
+}
+else if (CurrentExercise is { } exercise)
+{
+    <header class="kf-page-header">
+        <div>
+            <p class="kf-meta">@UiText.PracticeSession</p>
+            <h1 class="kf-page-title">@_lesson?.Title</h1>
+            <p class="kf-page-header__description">@UiText.PracticeSessionDescription</p>
+        </div>
+        <a class="kf-button kf-button--secondary" href="/lessons">@UiText.ReturnToLessons</a>
+    </header>
+
+    <div class="kf-content-stack">
+        <section class="practice-progress" aria-labelledby="session-progress-label">
+            <div class="practice-progress__header">
+                <span id="session-progress-label" class="kf-meta">@UiText.SessionProgress</span>
+                <span class="kf-text-secondary">@UiText.GetExercisePosition(CurrentExerciseNumber, _session!.Exercises.Count)</span>
+            </div>
+            <div class="kf-progress"
+                 role="progressbar"
+                 aria-labelledby="session-progress-label"
+                 aria-valuemin="0"
+                 aria-valuemax="100"
+                 aria-valuenow="@SessionProgressPercent">
+                <div class="kf-progress__value" style="@($"--kf-progress-value: {SessionProgressPercent}%")"></div>
+            </div>
+        </section>
+
+        <ExercisePresentation Exercise="exercise" />
+
+        @if (_result is null)
+        {
+            <section class="kf-card" aria-labelledby="attempt-form-title">
+                <div class="kf-card__body">
+                    <h2 id="attempt-form-title" class="kf-card__title">@UiText.AttemptDetails</h2>
+                    <p class="kf-card__description practice-form-description">@UiText.AttemptInstructions</p>
+
+                    <form class="practice-form" @onsubmit="SubmitCurrentAttempt" @onsubmit:preventDefault>
+                        <div class="practice-checkbox-field">
+                            <input id="attempt-completed" type="checkbox" @bind="_attemptCompleted" />
+                            <div>
+                                <label for="attempt-completed" class="practice-label">@UiText.AttemptCompleted</label>
+                                <p class="practice-field-hint">@UiText.AttemptCompletedHint</p>
+                            </div>
+                        </div>
+
+                        <div class="practice-field">
+                            <label for="attempt-score" class="practice-label">@UiText.AttemptScore</label>
+                            <input id="attempt-score"
+                                   class="practice-input"
+                                   type="number"
+                                   min="0"
+                                   max="100"
+                                   required="@_attemptCompleted"
+                                   aria-describedby="attempt-score-hint"
+                                   @bind="_attemptScore" />
+                            <p id="attempt-score-hint" class="practice-field-hint">@UiText.AttemptScoreHint</p>
+                        </div>
+
+                        @if (_submissionError)
+                        {
+                            <p class="practice-error" role="alert">@UiText.AttemptSubmissionError</p>
+                        }
+
+                        <button class="kf-button kf-button--primary" type="submit" disabled="@_isSubmitting">
+                            @UiText.SubmitAttempt
+                        </button>
+                    </form>
+                </div>
+            </section>
+        }
+        else
+        {
+            <section class="kf-card @GetResultCardClass()" role="status" aria-labelledby="attempt-result-title">
+                <div class="kf-card__body">
+                    <div class="kf-card__header">
+                        <div>
+                            <p class="kf-meta">@UiText.AttemptResult</p>
+                            <h2 id="attempt-result-title" class="kf-card__title">@GetAttemptResultTitle()</h2>
+                        </div>
+                        <span class="kf-status-badge @GetAttemptResultBadgeClass()">@GetAttemptResultTitle()</span>
+                    </div>
+                    <p class="kf-card__description">@GetAttemptResultDescription()</p>
+                </div>
+                <ul class="kf-card__meta">
+                    <li>@UiText.Score: <bdi>@_result.Score%</bdi></li>
+                    @if (_result.IsExerciseCompleted)
+                    {
+                        <li>@UiText.ExerciseCompleted</li>
+                    }
+                </ul>
+                <div class="practice-actions">
+                    <button class="kf-button kf-button--secondary" type="button" @onclick="RetryCurrentExercise">
+                        @UiText.RetryExercise
+                    </button>
+                    <button class="kf-button kf-button--primary" type="button" @onclick="AdvanceSession">
+                        @(IsFinalExercise ? UiText.FinishSession : UiText.NextExercise)
+                    </button>
+                </div>
+            </section>
+        }
+    </div>
+}
+
+@code {
+    [Parameter]
+    public string LessonId { get; set; } = string.Empty;
+
+    private PracticeStartState _startState;
+    private LessonDefinition? _lesson;
+    private LessonListItem? _lessonState;
+    private PracticeSession? _session;
+    private SessionResult? _result;
+    private SessionResult? _lastResult;
+    private DateTime _attemptStartedAt;
+    private int? _attemptScore;
+    private bool _attemptCompleted = true;
+    private bool _isSubmitting;
+    private bool _submissionError;
+
+    private ExerciseDefinition? CurrentExercise => _session?.GetCurrentExercise();
+    private int CurrentExerciseNumber => (_session?.CurrentExerciseIndex ?? 0) + 1;
+    private int SessionProgressPercent => _session?.Exercises.Count > 0
+        ? (int)Math.Round(CurrentExerciseNumber * 100d / _session.Exercises.Count)
+        : 100;
+    private bool IsFinalExercise =>
+        _session is not null && _session.CurrentExerciseIndex == _session.Exercises.Count - 1;
+
+    protected override void OnParametersSet()
+    {
+        ResetPageState();
+
+        if (string.IsNullOrWhiteSpace(LessonId))
+        {
+            _startState = PracticeStartState.NotFound;
+            return;
+        }
+
+        try
+        {
+            _lesson = LessonCatalog.GetById(LessonId);
+            _session = PracticeSessionService.StartSession(LessonId);
+
+            if (_session is null)
+            {
+                _startState = PracticeStartState.NotFound;
+                return;
+            }
+
+            _startState = PracticeStartState.Ready;
+            ResetAttemptForm();
+            RefreshLessonState();
+        }
+        catch (InvalidOperationException)
+        {
+            _startState = PracticeStartState.Locked;
+        }
+        catch (ArgumentException)
+        {
+            _startState = PracticeStartState.NotFound;
+        }
+        catch (Exception)
+        {
+            _startState = PracticeStartState.Error;
+        }
+    }
+
+    private void SubmitCurrentAttempt()
+    {
+        if (_isSubmitting || _session is null || CurrentExercise is not { } exercise)
+        {
+            return;
+        }
+
+        _isSubmitting = true;
+        _submissionError = false;
+
+        try
+        {
+            DateTime? completedAt = _attemptCompleted ? DateTime.UtcNow : null;
+            var attempt = new ExerciseAttempt
+            {
+                LessonId = _session.LessonId,
+                ExerciseId = exercise.Id,
+                StartedAt = _attemptStartedAt,
+                CompletedAt = completedAt,
+                Score = _attemptScore
+            };
+
+            _result = PracticeSessionService.SubmitAttempt(_session, exercise.Id, attempt);
+            _lastResult = _result;
+            ProgressUpdateService.UpdateProgress(_session.LessonId, _result);
+            RefreshLessonState();
+        }
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
+        {
+            _submissionError = true;
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private void RetryCurrentExercise()
+    {
+        _result = null;
+        ResetAttemptForm();
+    }
+
+    private void AdvanceSession()
+    {
+        if (_session is null || _result is null)
+        {
+            return;
+        }
+
+        _session.Next();
+        _result = null;
+        ResetAttemptForm();
+        RefreshLessonState();
+    }
+
+    private void RefreshLessonState()
+    {
+        _lessonState = LessonQuery.GetLessons().FirstOrDefault(lesson =>
+            string.Equals(lesson.Id, LessonId, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private void ResetPageState()
+    {
+        _startState = PracticeStartState.Ready;
+        _lesson = null;
+        _lessonState = null;
+        _session = null;
+        _result = null;
+        _lastResult = null;
+        _submissionError = false;
+    }
+
+    private void ResetAttemptForm()
+    {
+        _attemptStartedAt = DateTime.UtcNow;
+        _attemptScore = null;
+        _attemptCompleted = true;
+        _submissionError = false;
+    }
+
+    private string GetAttemptResultTitle() =>
+        _result?.IsSuccessful == true ? UiText.AttemptSuccessful : UiText.AttemptFailed;
+
+    private string GetAttemptResultDescription() =>
+        _result?.IsSuccessful == true
+            ? UiText.AttemptSuccessfulDescription
+            : UiText.AttemptFailedDescription;
+
+    private string GetAttemptResultBadgeClass() =>
+        _result?.IsSuccessful == true
+            ? "kf-status-badge--completed"
+            : "kf-status-badge--locked";
+
+    private string GetResultCardClass() =>
+        _result?.IsSuccessful == true
+            ? "practice-result--success"
+            : "practice-result--failed";
+
+    private string GetLessonCompletionLabel() =>
+        _lessonState?.IsCompleted == true ? UiText.LessonCompleted : UiText.LessonIncomplete;
+
+    private string GetLessonCompletionBadgeClass() =>
+        _lessonState?.IsCompleted == true
+            ? "kf-status-badge--completed"
+            : "kf-status-badge--locked";
+
+    private enum PracticeStartState
+    {
+        Ready,
+        NotFound,
+        Locked,
+        Error
+    }
+}

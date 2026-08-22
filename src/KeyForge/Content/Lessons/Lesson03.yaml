@@ -1,6 +1,6 @@
 id: lesson-03
-title: "Melodic Ear and Independence"
-description: "Ear training, finger independence, and octave work for both hands."
+title: "گوش ملودیک و استقلال انگشتان"
+description: "تربیت شنوایی، استقلال انگشتان و تمرین اکتاو برای هر دو دست."
 level: elementary
 order: 3
 estimatedMinutes: 35
@@ -18,8 +18,8 @@ completion:
 exercises:
   - type: earTraining
     id: ex-01
-    title: "Major or Minor Chord"
-    description: "Listen and identify whether a chord sounds major or minor."
+    title: "آکورد ماژور یا مینور"
+    description: "گوش دهید و تشخیص دهید آکورد ماژور است یا مینور."
     duration: 6
     difficulty: easy
     taskType: chordRecognition
@@ -28,8 +28,8 @@ exercises:
 
   - type: interval
     id: ex-02
-    title: "Matching Melodies"
-    description: "Recognise intervals within short melodic phrases."
+    title: "تطبیق ملودی‌ها"
+    description: "فاصله‌ها را در عبارت‌های ملودیک کوتاه تشخیص دهید."
     duration: 5
     tempo: 72
     difficulty: easy
@@ -39,8 +39,8 @@ exercises:
 
   - type: fingerIndependence
     id: ex-03
-    title: "Three and Four"
-    description: "Drill fingers 3 and 4 independently in each hand."
+    title: "انگشت سوم و چهارم"
+    description: "انگشتان سوم و چهارم هر دست را به‌صورت مستقل تمرین دهید."
     duration: 5
     tempo: 60
     difficulty: easy
@@ -49,8 +49,8 @@ exercises:
 
   - type: octave
     id: ex-04
-    title: "Octave Leaps in Both Hands"
-    description: "Play octave leaps with both hands together."
+    title: "پرش اکتاو با هر دو دست"
+    description: "پرش‌های اکتاو را با هر دو دست به‌طور هم‌زمان بنوازید."
     duration: 5
     tempo: 76
     difficulty: easy
@@ -60,8 +60,8 @@ exercises:
 
   - type: mentalKeyboard
     id: ex-05
-    title: "Key Positions"
-    description: "Visualise scale positions mentally before playing them."
+    title: "جایگاه نت‌ها"
+    description: "پیش از نواختن، جایگاه نت‌های گام را در ذهن مجسم کنید."
     duration: 4
     difficulty: easy
     startingNote: "G3"
@@ -70,8 +70,8 @@ exercises:
 
   - type: speed
     id: ex-06
-    title: "Fast Octave Run"
-    description: "Play octave leaps at a steady, controlled tempo."
+    title: "حرکت سریع اکتاو"
+    description: "پرش‌های اکتاو را با سرعتی یکنواخت و کنترل‌شده بنوازید."
     duration: 4
     tempo: 84
     difficulty: medium

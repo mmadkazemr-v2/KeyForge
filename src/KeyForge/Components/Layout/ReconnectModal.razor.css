@@ -81,7 +81,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1rem;
+    gap: var(--kf-space-4);
 }
 
 #components-reconnect-modal p {
@@ -130,7 +130,7 @@
 @keyframes components-rejoining-animation {
     0% {
         top: 40px;
-        left: 40px;
+        inset-inline-start: 40px;
         width: 0;
         height: 0;
         opacity: 0;
@@ -138,7 +138,7 @@
 
     4.9% {
         top: 40px;
-        left: 40px;
+        inset-inline-start: 40px;
         width: 0;
         height: 0;
         opacity: 0;
@@ -146,7 +146,7 @@
 
     5% {
         top: 40px;
-        left: 40px;
+        inset-inline-start: 40px;
         width: 0;
         height: 0;
         opacity: 1;
@@ -154,7 +154,7 @@
 
     100% {
         top: 0px;
-        left: 0px;
+        inset-inline-start: 0;
         width: 80px;
         height: 80px;
         opacity: 0;

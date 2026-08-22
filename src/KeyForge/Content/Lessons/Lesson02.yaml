@@ -1,6 +1,6 @@
 id: lesson-02
-title: "Rhythm and Reading"
-description: "Build rhythm accuracy and note-reading confidence."
+title: "ریتم و نت‌خوانی"
+description: "دقت ریتم و اعتمادبه‌نفس در نت‌خوانی را تقویت کنید."
 level: beginner
 order: 2
 estimatedMinutes: 25
@@ -14,8 +14,8 @@ completion:
 exercises:
   - type: rhythm
     id: ex-01
-    title: "Eighth Note Pairs"
-    description: "Clap and play paired eighth notes against a steady beat."
+    title: "جفت‌های نت چنگ"
+    description: "جفت‌های نت چنگ را روی ضربی یکنواخت دست بزنید و بنوازید."
     duration: 5
     tempo: 84
     difficulty: easy
@@ -25,8 +25,8 @@ exercises:
 
   - type: noteReading
     id: ex-02
-    title: "Treble and Bass"
-    description: "Read notes in treble and bass clefs and find them on the keyboard."
+    title: "کلید سل و فا"
+    description: "نت‌های کلید سل و فا را بخوانید و آن‌ها را روی کیبورد پیدا کنید."
     duration: 6
     tempo: 60
     difficulty: easy
@@ -36,8 +36,8 @@ exercises:
 
   - type: interval
     id: ex-03
-    title: "Skip Recognition"
-    description: "Recognise thirds and fifths by ear and on the page."
+    title: "تشخیص حرکت پرشی"
+    description: "فاصله‌های سوم و پنجم را با گوش و روی نت تشخیص دهید."
     duration: 4
     tempo: 70
     difficulty: easy
@@ -47,8 +47,8 @@ exercises:
 
   - type: mentalKeyboard
     id: ex-04
-    title: "Black Key Landmarks"
-    description: "Use black-key groups to visualise note positions mentally."
+    title: "نشانه‌های کلیدهای سیاه"
+    description: "با کمک گروه‌های کلید سیاه، جای نت‌ها را در ذهن مجسم کنید."
     duration: 3
     difficulty: easy
     startingNote: "F4"
@@ -57,8 +57,8 @@ exercises:
 
   - type: speed
     id: ex-05
-    title: "Faster Five-Finger Run"
-    description: "Increase the tempo of the five-finger pattern."
+    title: "حرکت پنج‌انگشتی سریع‌تر"
+    description: "سرعت اجرای الگوی پنج‌انگشتی را افزایش دهید."
     duration: 3
     tempo: 80
     difficulty: easy

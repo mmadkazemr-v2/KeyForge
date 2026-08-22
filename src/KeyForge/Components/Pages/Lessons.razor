@@ -3,13 +3,13 @@
 @using KeyForge.Features.Lessons.Services
 @inject ILessonProgressQueryService LessonQuery
 
-<PageTitle>Lessons - KeyForge</PageTitle>
+<PageTitle>@UiText.Lessons - @UiText.ProductName</PageTitle>
 
 <header class="kf-page-header">
     <div>
-        <p class="kf-meta">Learning path</p>
-        <h1 id="lesson-catalog-title" class="kf-page-title">Lessons</h1>
-        <p class="kf-page-header__description">Build your piano skills one focused session at a time.</p>
+        <p class="kf-meta">@UiText.LearningPath</p>
+        <h1 id="lesson-catalog-title" class="kf-page-title">@UiText.Lessons</h1>
+        <p class="kf-page-header__description">@UiText.LessonsDescription</p>
     </div>
 </header>
 
@@ -17,8 +17,8 @@
 {
     <section class="kf-card" role="status" aria-labelledby="empty-lessons-title">
         <div class="kf-card__body">
-            <h2 id="empty-lessons-title" class="kf-card__title">No lessons available</h2>
-            <p class="kf-card__description kf-text-muted">New lessons will appear here when they are added.</p>
+            <h2 id="empty-lessons-title" class="kf-card__title">@UiText.NoLessonsTitle</h2>
+            <p class="kf-card__description kf-text-muted">@UiText.NoLessonsDescription</p>
         </div>
     </section>
 }
@@ -38,11 +38,21 @@ else
                     <p class="kf-card__description">@lesson.Description</p>
                 </div>
                 <ul class="kf-card__meta">
-                    <li>Level: @lesson.Level</li>
-                    <li>Estimated time: @lesson.EstimatedMinutes min</li>
+                    <li>@UiText.Level: @UiText.GetLessonLevel(lesson.Level)</li>
+                    <li>@UiText.EstimatedTime: @lesson.EstimatedMinutes @UiText.Minute</li>
                     @if (lesson.BestScore is { } bestScore)
                     {
-                        <li>Best score: @bestScore%</li>
+                        <li>@UiText.BestScore: <bdi>@bestScore%</bdi></li>
+                    }
+                    @if (CanOpenLesson(lesson))
+                    {
+                        <li>
+                            <a class="kf-button kf-button--secondary"
+                               href="@GetLessonUrl(lesson.Id)"
+                               aria-label="@($"{UiText.ViewLesson}: {lesson.Title}")">
+                                @UiText.ViewLesson
+                            </a>
+                        </li>
                     }
                 </ul>
             </article>
@@ -58,12 +68,8 @@ else
         _lessons = LessonQuery.GetLessons();
     }
 
-    private static string GetStatusLabel(LessonListItem lesson) => lesson switch
-    {
-        { IsCompleted: true } => "Completed",
-        { IsUnlocked: true } => "Available",
-        _ => "Locked"
-    };
+    private static string GetStatusLabel(LessonListItem lesson) =>
+        UiText.GetLessonStatus(lesson.IsUnlocked, lesson.IsCompleted);
 
     private static string GetStatusBadgeCssClass(LessonListItem lesson) => lesson switch
     {
@@ -80,5 +86,11 @@ else
     };
 
     private static string? GetAriaDisabled(LessonListItem lesson) =>
-        lesson.IsUnlocked ? null : "true";
+        CanOpenLesson(lesson) ? null : "true";
+
+    private static bool CanOpenLesson(LessonListItem lesson) =>
+        lesson.IsUnlocked || lesson.IsCompleted;
+
+    private static string GetLessonUrl(string lessonId) =>
+        $"/lessons/{Uri.EscapeDataString(lessonId)}";
 }

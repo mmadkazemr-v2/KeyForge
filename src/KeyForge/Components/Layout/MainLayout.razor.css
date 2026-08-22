@@ -19,11 +19,11 @@ main {
 #blazor-error-ui {
     display: none;
     position: fixed;
-    right: var(--kf-space-4);
-    bottom: var(--kf-space-4);
-    left: var(--kf-space-4);
+    inset-inline: var(--kf-space-4);
+    inset-block-end: var(--kf-space-4);
     z-index: 1000;
-    padding: var(--kf-space-3) var(--kf-space-6) var(--kf-space-3) var(--kf-space-4);
+    padding-block: var(--kf-space-3);
+    padding-inline: var(--kf-space-4) var(--kf-space-6);
     background: var(--kf-color-error-soft);
     border: 1px solid var(--kf-color-error);
     border-radius: var(--kf-radius-control);
@@ -32,13 +32,13 @@ main {
 }
 
 #blazor-error-ui ::deep .reload {
-    margin-left: var(--kf-space-2);
+    margin-inline-start: var(--kf-space-2);
 }
 
 #blazor-error-ui .dismiss {
     position: absolute;
     top: 50%;
-    right: var(--kf-space-3);
+    inset-inline-end: var(--kf-space-3);
     cursor: pointer;
     transform: translateY(-50%);
 }
@@ -54,7 +54,7 @@ main {
         width: 16rem;
         height: 100vh;
         flex: 0 0 16rem;
-        border-right: 1px solid var(--kf-color-border);
+        border-inline-end: 1px solid var(--kf-color-border);
         border-bottom: 0;
     }
 }
