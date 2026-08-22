@@ -299,7 +299,7 @@ textarea:focus-visible {
 }
 
 .kf-card--available {
-    border-color: var(--kf-color-border-strong);
+    border-color: var(--kf-color-primary);
 }
 
 .kf-card--completed {

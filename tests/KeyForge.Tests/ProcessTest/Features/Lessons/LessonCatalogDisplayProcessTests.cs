@@ -57,7 +57,11 @@ public sealed class LessonCatalogDisplayProcessTests
 
         Assert.Equal(3, items.Count);
 
-        // Completed lesson: unlocked, completed, best score shown
+        // Completed lesson: all catalog metadata plus progress state are available to the UI.
+        Assert.Equal("Keyboard Foundations", items[0].Title);
+        Assert.Equal("Introduction to keyboard geography.", items[0].Description);
+        Assert.Equal(LessonLevel.Beginner, items[0].Level);
+        Assert.Equal(30, items[0].EstimatedMinutes);
         Assert.True(items[0].IsUnlocked);
         Assert.True(items[0].IsCompleted);
         Assert.Equal(90, items[0].BestScore);

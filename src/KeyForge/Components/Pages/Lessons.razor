@@ -8,25 +8,27 @@
 <header class="kf-page-header">
     <div>
         <p class="kf-meta">Learning path</p>
-        <h1 class="kf-page-title">Lessons</h1>
+        <h1 id="lesson-catalog-title" class="kf-page-title">Lessons</h1>
         <p class="kf-page-header__description">Build your piano skills one focused session at a time.</p>
     </div>
 </header>
 
 @if (_lessons.Count == 0)
 {
-    <div class="kf-card">
+    <section class="kf-card" role="status" aria-labelledby="empty-lessons-title">
         <div class="kf-card__body">
-            <p class="kf-card__description kf-text-muted">No lessons are available yet.</p>
+            <h2 id="empty-lessons-title" class="kf-card__title">No lessons available</h2>
+            <p class="kf-card__description kf-text-muted">New lessons will appear here when they are added.</p>
         </div>
-    </div>
+    </section>
 }
 else
 {
-    <div class="kf-card-grid">
+    <section class="kf-card-grid" aria-labelledby="lesson-catalog-title">
         @foreach (var lesson in _lessons)
         {
-            <article class="kf-card @GetCardStatusCssClass(lesson)">
+            <article class="kf-card @GetCardStatusCssClass(lesson)"
+                     aria-disabled="@GetAriaDisabled(lesson)">
                 <div class="kf-card__body">
                     <div class="kf-card__header">
                         <h2 class="kf-card__title">@lesson.Title</h2>
@@ -40,12 +42,12 @@ else
                     <li>Estimated time: @lesson.EstimatedMinutes min</li>
                     @if (lesson.BestScore is { } bestScore)
                     {
-                        <li>Best score: @bestScore</li>
+                        <li>Best score: @bestScore%</li>
                     }
                 </ul>
             </article>
         }
-    </div>
+    </section>
 }
 
 @code {
@@ -76,4 +78,7 @@ else
         { IsUnlocked: true } => "kf-card--available",
         _ => "kf-card--locked"
     };
+
+    private static string? GetAriaDisabled(LessonListItem lesson) =>
+        lesson.IsUnlocked ? null : "true";
 }
