@@ -91,6 +91,12 @@
     box-shadow: inset 0 0 0 3px var(--kf-color-error);
 }
 
+.piano-keyboard__key--midi-active {
+    outline: 3px solid var(--kf-color-primary);
+    outline-offset: -3px;
+    box-shadow: inset 0 -0.5rem 0 color-mix(in srgb, var(--kf-color-primary) 34%, transparent);
+}
+
 .piano-keyboard__label {
     font-family: var(--kf-font-sans);
     font-size: var(--kf-font-size-small);

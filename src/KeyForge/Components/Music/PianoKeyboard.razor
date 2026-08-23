@@ -1,4 +1,7 @@
 @namespace KeyForge.Components.Music
+@using KeyForge.Components.Practice
+@implements IDisposable
+@inject MidiPracticeInputState MidiState
 
 <div class="piano-keyboard__viewport" dir="ltr">
     <div class="piano-keyboard" style="@KeyboardStyle" role="group" aria-label="@UiText.VirtualPiano">
@@ -9,7 +12,7 @@
                         class="@GetKeyClass(key.Note, false)"
                         disabled="@Disabled"
                         aria-label="@UiText.GetPianoKeyAriaLabel(key.Note.Value)"
-                        aria-pressed="@(IsSelected(key.Note) ? "true" : "false")"
+                        aria-pressed="@(IsSelected(key.Note) || IsMidiActive(key.Note) ? "true" : "false")"
                         @onclick="() => SelectNote(key.Note)">
                     @if (!HideNoteLabels || RevealAnswer)
                     {
@@ -30,7 +33,7 @@
                     style="@($"--kf-piano-key-position: {key.PositionPercent.ToString(CultureInfo.InvariantCulture)}%")"
                     disabled="@Disabled"
                     aria-label="@UiText.GetPianoKeyAriaLabel(key.Note.Value)"
-                    aria-pressed="@(IsSelected(key.Note) ? "true" : "false")"
+                    aria-pressed="@(IsSelected(key.Note) || IsMidiActive(key.Note) ? "true" : "false")"
                     @onclick="() => SelectNote(key.Note)">
                 @if (!HideNoteLabels || RevealAnswer)
                 {
@@ -75,9 +78,13 @@
     private int WhiteKeyCount => Keys.Count(key => !key.Note.IsBlackKey);
     private string KeyboardStyle => $"--kf-piano-white-key-count: {WhiteKeyCount}";
 
+    protected override void OnInitialized() => MidiState.Changed += HandleMidiStateChanged;
+
     private Task SelectNote(MusicalNote note) => OnNoteSelected.InvokeAsync(note);
 
     private bool IsSelected(MusicalNote note) => SelectedNote == note;
+
+    private bool IsMidiActive(MusicalNote note) => MidiState.ActiveNotes.Contains(note);
 
     private bool IsExpected(MusicalNote note) => RevealAnswer && ExpectedNote == note;
 
@@ -102,6 +109,11 @@
             classes.Add("piano-keyboard__key--expected");
         }
 
+        if (IsMidiActive(note))
+        {
+            classes.Add("piano-keyboard__key--midi-active");
+        }
+
         return string.Join(' ', classes);
     }
 
@@ -114,4 +126,8 @@
 
         return IsExpected(note) ? "✓" : null;
     }
+
+    private void HandleMidiStateChanged() => _ = InvokeAsync(StateHasChanged);
+
+    public void Dispose() => MidiState.Changed -= HandleMidiStateChanged;
 }

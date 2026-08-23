@@ -80,7 +80,7 @@ function handleMidiMessage(event) {
 }
 
 function notifyDevicesChanged() {
-    if (selectedDeviceId && !midiAccess.inputs.has(selectedDeviceId)) {
+    if (selectedDeviceId && (!midiAccess.inputs.has(selectedDeviceId) || selectedInput?.state !== 'connected')) {
         if (selectedInput) {
             selectedInput.onmidimessage = null;
         }

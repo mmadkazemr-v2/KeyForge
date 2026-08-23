@@ -23,6 +23,29 @@
     gap: var(--kf-space-1);
 }
 
+.midi-input-control__diagnostics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+    gap: var(--kf-space-2);
+    margin: 0;
+}
+
+.midi-input-control__diagnostics div {
+    display: grid;
+    gap: var(--kf-space-1);
+}
+
+.midi-input-control__diagnostics dt {
+    color: var(--kf-color-text-muted);
+    font-size: var(--kf-font-size-small);
+}
+
+.midi-input-control__diagnostics dd {
+    margin: 0;
+    color: var(--kf-color-text-primary);
+    font-size: var(--kf-font-size-small);
+}
+
 .midi-input-control select {
     inline-size: 100%;
     min-block-size: 2.75rem;

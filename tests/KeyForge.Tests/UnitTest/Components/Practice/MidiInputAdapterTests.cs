@@ -47,6 +47,31 @@ public sealed class MidiInputAdapterTests
         Assert.Equal(TimeSpan.FromMilliseconds(100), input.Offset);
     }
 
+    [Theory]
+    [InlineData(63, false)]
+    [InlineData(64, true)]
+    [InlineData(127, true)]
+    public void SustainControlChange_MapsPedalThreshold(int value, bool expectedDown)
+    {
+        var midiEvent = MidiInputAdapter.TryCreatePresentationEvent(Message(0xB0, 64, value));
+
+        Assert.NotNull(midiEvent);
+        Assert.Equal(MidiPresentationEventType.SustainChanged, midiEvent.Type);
+        Assert.Equal(expectedDown, midiEvent.IsSustainDown);
+    }
+
+    [Fact]
+    public void NoteOnAndNoteOff_CreatePresentationEventsButOnlyNoteOnCreatesEvaluationInput()
+    {
+        var noteOn = Message(0x90, 60, 100);
+        var noteOff = Message(0x80, 60, 64);
+
+        Assert.Equal(MidiPresentationEventType.NoteOn, MidiInputAdapter.TryCreatePresentationEvent(noteOn)!.Type);
+        Assert.Equal(MidiPresentationEventType.NoteOff, MidiInputAdapter.TryCreatePresentationEvent(noteOff)!.Type);
+        Assert.NotNull(MidiInputAdapter.TryCreate(noteOn, StartedAt, StartedAt.AddMilliseconds(50)));
+        Assert.Null(MidiInputAdapter.TryCreate(noteOff, StartedAt, StartedAt.AddMilliseconds(50)));
+    }
+
     [Fact]
     public async Task Router_OnlyDispatchesToLatestActiveWorkspaceAndStopsAfterDisposal()
     {

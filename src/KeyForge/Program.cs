@@ -28,6 +28,7 @@ builder.Services.AddSingleton<IPracticeSessionService, PracticeSessionService>()
 builder.Services.AddSingleton<IProgressUpdateService, ProgressUpdateService>();
 builder.Services.AddScoped<IAudioPlaybackService, AudioPlaybackService>();
 builder.Services.AddScoped<MidiInputRouter>();
+builder.Services.AddScoped<MidiPracticeInputState>();
 
 // ── Blazor ─────────────────────────────────────────────────────────
 

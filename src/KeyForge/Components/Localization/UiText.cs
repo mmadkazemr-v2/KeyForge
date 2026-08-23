@@ -1,3 +1,5 @@
+using KeyForge.Components.Practice;
+
 namespace KeyForge.Components.Localization;
 
 /// <summary>
@@ -50,6 +52,21 @@ public static class UiText
     public static string MidiNotSupported => Select("میدی در این مرورگر پشتیبانی نمی‌شود", "MIDI is not supported in this browser");
     public static string MidiDisabled => Select("میدی غیرفعال است", "MIDI is disabled");
     public static string MidiConnectionError => Select("اتصال میدی ممکن نشد", "MIDI could not be connected");
+    public static string SelectedMidiDevice => Select("دستگاه انتخاب‌شده", "Selected device");
+    public static string MidiInputStatus => Select("وضعیت ورودی", "Input status");
+    public static string MidiInputActive => Select("ورودی میدی فعال است", "MIDI input active");
+    public static string LastMidiNote => Select("آخرین نت میدی", "Last MIDI note");
+    public static string NoMidiActivity => Select("بدون فعالیت", "No activity");
+    public static string Velocity => Select("شدت نواختن", "Velocity");
+    public static string Sustain => Select("پدال نگه‌دارنده", "Sustain");
+    public static string PedalDown => Select("پدال فشرده است", "Pedal down");
+    public static string PedalUp => Select("پدال رها است", "Pedal up");
+    public static string GetMidiVelocityLevel(MidiVelocityLevel velocity) => velocity switch
+    {
+        MidiVelocityLevel.Soft => Select("آرام", "Soft"),
+        MidiVelocityLevel.Medium => Select("متوسط", "Medium"),
+        _ => Select("قوی", "Strong")
+    };
     public static string PlayNote => Select("پخش نت", "Play note");
     public static string MetronomeClick => Select("کلیک مترونوم", "Metronome click");
 

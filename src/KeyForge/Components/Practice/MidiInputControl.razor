@@ -2,6 +2,7 @@
 @implements IAsyncDisposable
 @inject IJSRuntime JavaScript
 @inject MidiInputRouter InputRouter
+@inject MidiPracticeInputState MidiState
 
 <section class="midi-input-control" aria-label="@UiText.Midi">
     <div class="midi-input-control__header">
@@ -28,6 +29,17 @@
         </label>
     }
 
+    @if (_status is MidiInputStatus.Connected)
+    {
+        <dl class="midi-input-control__diagnostics" aria-live="polite">
+            <div><dt>@UiText.SelectedMidiDevice</dt><dd>@SelectedDeviceName</dd></div>
+            <div><dt>@UiText.MidiInputStatus</dt><dd>@UiText.MidiInputActive</dd></div>
+            <div><dt>@UiText.LastMidiNote</dt><dd><bdi>@(MidiState.LastNote?.Value ?? UiText.NoMidiActivity)</bdi></dd></div>
+            <div><dt>@UiText.Velocity</dt><dd>@VelocityLabel</dd></div>
+            <div><dt>@UiText.Sustain</dt><dd>@(MidiState.IsSustainDown ? UiText.PedalDown : UiText.PedalUp)</dd></div>
+        </dl>
+    }
+
     @if (_status is MidiInputStatus.PermissionDenied or MidiInputStatus.Error)
     {
         <p class="midi-input-control__error" role="alert">@StatusLabel</p>
@@ -51,6 +63,12 @@
         MidiInputStatus.Error => UiText.MidiConnectionError,
         _ => UiText.MidiDisabled
     };
+    private string SelectedDeviceName => _devices.FirstOrDefault(device => device.Id == _selectedDeviceId)?.DisplayName ?? UiText.MidiNoDevice;
+    private string VelocityLabel => MidiState.LastVelocity is { } velocity
+        ? $"{UiText.GetMidiVelocityLevel(MidiPracticeInputState.GetVelocityLevel(velocity))} ({velocity})"
+        : UiText.NoMidiActivity;
+
+    protected override void OnInitialized() => MidiState.Changed += HandleMidiStateChanged;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -114,7 +132,19 @@
     }
 
     [JSInvokable]
-    public Task HandleMidiMessage(MidiInputMessage message) => InputRouter.DispatchAsync(message);
+    public async Task HandleMidiMessage(MidiInputMessage message)
+    {
+        var presentationEvent = MidiInputAdapter.TryCreatePresentationEvent(message);
+        if (presentationEvent is not null)
+        {
+            MidiState.Apply(presentationEvent);
+        }
+
+        if (MidiInputAdapter.IsNoteOn(message))
+        {
+            await InputRouter.DispatchAsync(message);
+        }
+    }
 
     [JSInvokable]
     public Task HandleMidiDevicesChanged(MidiAccessState state)
@@ -125,14 +155,22 @@
 
     private void ApplyState(MidiAccessState state)
     {
+        if (!string.Equals(_selectedDeviceId, state.SelectedDeviceId, StringComparison.Ordinal))
+        {
+            MidiState.Reset();
+        }
         _enabled = state.Enabled;
         _devices = state.Devices ?? [];
         _selectedDeviceId = state.SelectedDeviceId;
         _status = state.Status;
     }
 
+    private void HandleMidiStateChanged() => _ = InvokeAsync(StateHasChanged);
+
     public async ValueTask DisposeAsync()
     {
+        MidiState.Changed -= HandleMidiStateChanged;
+        MidiState.Reset();
         if (_module is not null)
         {
             try

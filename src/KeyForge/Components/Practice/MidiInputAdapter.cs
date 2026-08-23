@@ -5,6 +5,8 @@ public static class MidiInputAdapter
 {
     private const int NoteOnCommand = 0x90;
     private const int NoteOffCommand = 0x80;
+    private const int ControlChangeCommand = 0xB0;
+    private const int SustainControlNumber = 64;
 
     public static ExerciseInputEvent? TryCreate(
         MidiInputMessage message,
@@ -74,5 +76,40 @@ public static class MidiInputAdapter
         return message.Data1 is >= 0 and <= 127 &&
             message.Data2 is >= 0 and <= 127 &&
             (command == NoteOffCommand || (command == NoteOnCommand && message.Data2 == 0));
+    }
+
+    public static MidiPresentationEvent? TryCreatePresentationEvent(MidiInputMessage message)
+    {
+        ArgumentNullException.ThrowIfNull(message);
+        if (IsNoteOn(message))
+        {
+            return new MidiPresentationEvent
+            {
+                Type = MidiPresentationEventType.NoteOn,
+                Note = MusicalNote.FromMidiNumber(message.Data1),
+                Velocity = message.Data2
+            };
+        }
+
+        if (IsNoteOff(message))
+        {
+            return new MidiPresentationEvent
+            {
+                Type = MidiPresentationEventType.NoteOff,
+                Note = MusicalNote.FromMidiNumber(message.Data1)
+            };
+        }
+
+        var command = message.Status & 0xF0;
+        if (command == ControlChangeCommand && message.Data1 == SustainControlNumber && message.Data2 is >= 0 and <= 127)
+        {
+            return new MidiPresentationEvent
+            {
+                Type = MidiPresentationEventType.SustainChanged,
+                IsSustainDown = message.Data2 >= 64
+            };
+        }
+
+        return null;
     }
 }
