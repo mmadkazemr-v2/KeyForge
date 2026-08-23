@@ -1,0 +1,45 @@
+@namespace KeyForge.Components.Audio
+@inject IAudioPlaybackService Audio
+
+<section class="kf-card" aria-labelledby="audio-verification-title">
+    <div class="kf-card__body">
+        <div class="kf-card__header">
+            <div>
+                <p class="kf-meta">@UiText.AudioVerification</p>
+                <h2 id="audio-verification-title" class="kf-card__title">@GetStateLabel()</h2>
+            </div>
+            <span class="kf-status-badge @GetStateClass()">@GetStateLabel()</span>
+        </div>
+        <p class="kf-card__description">@UiText.AudioVerificationDescription</p>
+    </div>
+    <div class="kf-card__body">
+        <div class="practice-actions practice-actions--inline">
+            <button class="kf-button kf-button--primary" type="button" @onclick="EnableAudioAsync">@UiText.EnableAudio</button>
+            <button class="kf-button kf-button--secondary" type="button" disabled="@(!IsReady)" @onclick='() => PlayNoteAsync("C4")'>@UiText.PlayNote C4</button>
+            <button class="kf-button kf-button--secondary" type="button" disabled="@(!IsReady)" @onclick='() => PlayNoteAsync("E4")'>@UiText.PlayNote E4</button>
+            <button class="kf-button kf-button--secondary" type="button" disabled="@(!IsReady)" @onclick="PlayMetronomeAsync">@UiText.MetronomeClick</button>
+        </div>
+        @if (Audio.State == AudioPlaybackState.Failed)
+        {
+            <p class="practice-error" role="alert">@UiText.AudioUnavailable</p>
+        }
+    </div>
+</section>
+
+@code {
+    private bool IsReady => Audio.State == AudioPlaybackState.Ready;
+    private Task EnableAudioAsync() => Audio.InitializeAsync();
+    private async Task PlayNoteAsync(string note) => await Audio.PlayNoteAsync(MusicalNote.Parse(note));
+    private Task PlayMetronomeAsync() => Audio.PlayMetronomeClickAsync();
+
+    private string GetStateLabel() => Audio.State switch
+    {
+        AudioPlaybackState.Ready => UiText.AudioReady,
+        AudioPlaybackState.Failed => UiText.AudioUnavailable,
+        _ => UiText.AudioNotEnabled
+    };
+
+    private string GetStateClass() => Audio.State == AudioPlaybackState.Ready
+        ? "kf-status-badge--completed"
+        : Audio.State == AudioPlaybackState.Failed ? "kf-status-badge--locked" : "kf-status-badge--available";
+}

@@ -3,6 +3,49 @@ namespace KeyForge.Tests.ProcessTest.Features.Practice;
 /// <summary>Verifies the service composition consumed by the practice page.</summary>
 public sealed class PracticeSessionUiFlowProcessTests
 {
+    [Fact]
+    public void PracticePageContracts_RecordAutomaticMentalKeyboardAttemptAndProgress()
+    {
+        ExerciseDefinition exercise = new MentalKeyboardExerciseDefinition
+        {
+            Id = "mental-exercise", StartingNote = "C4", Steps = 4, Direction = ExerciseDirection.Ascending
+        };
+        var lesson = new LessonDefinition
+        {
+            Id = "mental-lesson", Title = "Mental lesson", Order = 1,
+            Unlock = new UnlockRule { Mode = UnlockMode.Immediate },
+            Completion = new CompletionRule { RequireAllExercises = true }, Exercises = [exercise]
+        };
+        var catalog = new FakeLessonCatalog(lesson);
+        var progressStore = new InMemoryProgressStore();
+        var attempts = new InMemoryExerciseAttemptRecorder();
+        var progression = new LessonProgressionService(catalog, progressStore,
+            new ExerciseCompletionEvaluator(attempts));
+        var service = new PracticeSessionService(catalog, progression, new ExerciseChallengeGenerator(),
+            new ExerciseEvaluator(), new ExerciseScorer(), attempts);
+        var progress = new ProgressUpdateService(progressStore, catalog, progression);
+        var session = service.StartSession(lesson.Id)!;
+        var runtime = service.StartExercise(session);
+
+        foreach (var expected in runtime.Challenge.ExpectedInputs)
+        {
+            runtime.CaptureInput(new ExerciseInputEvent
+            {
+                Timestamp = runtime.StartedAt.AddMilliseconds(200),
+                Source = InputSource.VirtualPiano, Type = InputEventType.Note, Value = expected.Value
+            });
+        }
+
+        var result = service.SubmitAttempt(session, runtime, runtime.StartedAt.AddSeconds(1));
+        progress.UpdateProgress(lesson.Id, result);
+
+        Assert.True(result.IsSuccessful);
+        Assert.Equal(100, result.Score);
+        Assert.Equal(0, session.CurrentExerciseIndex);
+        Assert.True(Assert.Single(attempts.GetAllAttempts()).IsSuccessful);
+        Assert.Equal(100, Assert.Single(progressStore.GetAllProgress()).BestScore);
+    }
+
     [Theory]
     [InlineData(ExerciseType.Interval)]
     [InlineData(ExerciseType.Octave)]

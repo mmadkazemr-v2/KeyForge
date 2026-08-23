@@ -1,4 +1,6 @@
 @page "/"
+@using KeyForge.Components.Audio
+@inject IWebHostEnvironment HostEnvironment
 
 <PageTitle>@UiText.Home - @UiText.ProductName</PageTitle>
 
@@ -10,3 +12,8 @@
     </div>
     <a class="kf-button kf-button--primary" href="/lessons">@UiText.BrowseLessons</a>
 </header>
+
+@if (HostEnvironment.IsDevelopment())
+{
+    <AudioVerification />
+}

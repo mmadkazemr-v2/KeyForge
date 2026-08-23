@@ -2,9 +2,11 @@
   "name": "keyforge-ui",
   "private": true,
   "scripts": {
-    "vendor:vexflow": "node scripts/vendor-vexflow.mjs"
+    "vendor:vexflow": "node scripts/vendor-vexflow.mjs",
+    "vendor:tone": "node scripts/vendor-tone.mjs"
   },
   "dependencies": {
+    "tone": "15.1.22",
     "vexflow": "5.0.0"
   }
 }

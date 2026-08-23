@@ -29,6 +29,11 @@ public sealed class ExerciseChallengeGenerator : IExerciseChallengeGenerator
             return new OctaveChallengeGenerator().Create(octave);
         }
 
+        if (exercise is MentalKeyboardExerciseDefinition mentalKeyboard)
+        {
+            return new MentalKeyboardChallengeGenerator().Create(mentalKeyboard);
+        }
+
         return new ExerciseChallenge
         {
             ExerciseId = exercise.Id,

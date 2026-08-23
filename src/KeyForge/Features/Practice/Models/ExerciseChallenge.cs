@@ -8,4 +8,5 @@ public sealed class ExerciseChallenge
     public required IReadOnlyList<ExpectedInput> ExpectedInputs { get; init; }
     public IntervalChallengeDetails? Interval { get; init; }
     public OctaveChallengeDetails? Octave { get; init; }
+    public MentalKeyboardChallengeDetails? MentalKeyboard { get; init; }
 }

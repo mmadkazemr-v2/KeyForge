@@ -55,3 +55,7 @@ Status selection belongs to presentation mapping; lesson unlocking and completio
 ## Music notation
 
 VexFlow is the standard renderer for new music-notation UI. Keep it isolated behind the reusable KeyForge `VexFlowStaff` component and its small JavaScript interop module; domain and application services must not depend on VexFlow. Do not introduce new custom staff renderers. Musical notation always renders LTR, independently of the surrounding Persian/RTL or English/LTR interface.
+
+## Audio
+
+Tone.js is the standard KeyForge browser audio engine for playback, metronome timing, and future audio exercises. It is isolated behind the UI-layer `IAudioPlaybackService` and a small JavaScript interop module; domain and business services must not depend on Tone.js. VexFlow remains responsible only for notation. Browser audio must always be enabled by an explicit user action before playback. Future rhythm scheduling may use Tone.js scheduling, while existing practice timestamps remain application/runtime concerns.

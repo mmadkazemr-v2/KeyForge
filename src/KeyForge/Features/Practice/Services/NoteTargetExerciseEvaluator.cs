@@ -40,7 +40,8 @@ public sealed class NoteTargetExerciseEvaluator
             ExpectedValue = challenge.ExpectedInputs[0].Value,
             ActualValue = inputEvents.FirstOrDefault()?.Value,
             Interval = exerciseType == ExerciseType.Interval ? details : null,
-            Octave = exerciseType == ExerciseType.Octave ? details : null
+            Octave = exerciseType == ExerciseType.Octave ? details : null,
+            MentalKeyboard = exerciseType == ExerciseType.MentalKeyboard ? details : null
         };
     }
 

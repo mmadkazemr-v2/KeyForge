@@ -130,6 +130,12 @@ else if (CurrentExercise is { } exercise)
                                                  RuntimeExercise="_runtimeExercise!"
                                                  OnCompleted="CompleteInteractiveAttempt" />
                     }
+                    else if (IsMentalKeyboardChallenge)
+                    {
+                        <MentalKeyboardWorkspace @key="_runtimeExercise"
+                                                RuntimeExercise="_runtimeExercise!"
+                                                OnCompleted="CompleteInteractiveAttempt" />
+                    }
                     else
                     {
                         <h2 id="attempt-form-title" class="kf-card__title">@UiText.RuntimeUnavailable</h2>
@@ -257,7 +263,10 @@ else if (CurrentExercise is { } exercise)
         _runtimeExercise?.Definition is NoteReadingExerciseDefinition && HasInteractiveChallenge;
     private bool IsIntervalOrOctaveChallenge =>
         _runtimeExercise?.Definition is IntervalExerciseDefinition or OctaveExerciseDefinition && HasInteractiveChallenge;
-    private NoteTargetEvaluationDetails? NoteTargetResult => _result?.Evaluation.Interval ?? _result?.Evaluation.Octave;
+    private bool IsMentalKeyboardChallenge =>
+        _runtimeExercise?.Definition is MentalKeyboardExerciseDefinition && HasInteractiveChallenge;
+    private NoteTargetEvaluationDetails? NoteTargetResult => _result?.Evaluation.Interval ??
+        _result?.Evaluation.Octave ?? _result?.Evaluation.MentalKeyboard;
     private int CurrentExerciseNumber => (_session?.CurrentExerciseIndex ?? 0) + 1;
     private int SessionProgressPercent => _session?.Exercises.Count > 0
         ? (int)Math.Round(CurrentExerciseNumber * 100d / _session.Exercises.Count)

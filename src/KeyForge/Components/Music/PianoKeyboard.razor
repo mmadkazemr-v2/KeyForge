@@ -11,7 +11,10 @@
                         aria-label="@UiText.GetPianoKeyAriaLabel(key.Note.Value)"
                         aria-pressed="@(IsSelected(key.Note) ? "true" : "false")"
                         @onclick="() => SelectNote(key.Note)">
-                    <span class="piano-keyboard__label">@key.Note.Value</span>
+                    @if (!HideNoteLabels || RevealAnswer)
+                    {
+                        <span class="piano-keyboard__label">@key.Note.Value</span>
+                    }
                     @if (GetStateMarker(key.Note) is { } marker)
                     {
                         <span class="piano-keyboard__state" aria-hidden="true">@marker</span>
@@ -29,7 +32,10 @@
                     aria-label="@UiText.GetPianoKeyAriaLabel(key.Note.Value)"
                     aria-pressed="@(IsSelected(key.Note) ? "true" : "false")"
                     @onclick="() => SelectNote(key.Note)">
-                <span class="piano-keyboard__label">@key.Note.Value</span>
+                @if (!HideNoteLabels || RevealAnswer)
+                {
+                    <span class="piano-keyboard__label">@key.Note.Value</span>
+                }
                 @if (GetStateMarker(key.Note) is { } marker)
                 {
                     <span class="piano-keyboard__state" aria-hidden="true">@marker</span>
@@ -54,6 +60,10 @@
 
     [Parameter]
     public bool RevealAnswer { get; set; }
+
+    /// <summary>Hides key names until the current answer is revealed.</summary>
+    [Parameter]
+    public bool HideNoteLabels { get; set; }
 
     [Parameter]
     public bool Disabled { get; set; }

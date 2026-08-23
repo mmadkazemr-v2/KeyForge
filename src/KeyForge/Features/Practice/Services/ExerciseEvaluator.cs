@@ -25,7 +25,7 @@ public sealed class ExerciseEvaluator : IExerciseEvaluator
             return new NoteReadingExerciseEvaluator().Evaluate(challenge, inputEvents);
         }
 
-        if (challenge.ExerciseType is ExerciseType.Interval or ExerciseType.Octave)
+        if (challenge.ExerciseType is ExerciseType.Interval or ExerciseType.Octave or ExerciseType.MentalKeyboard)
         {
             return new NoteTargetExerciseEvaluator().Evaluate(challenge, inputEvents, challenge.ExerciseType);
         }

@@ -33,6 +33,16 @@ public static class UiText
     public static string NotationUnavailable => Select(
         "نمایش نت برای این ورودی در دسترس نیست.",
         "Notation is unavailable for this input.");
+    public static string AudioVerification => Select("بررسی صدای توسعه", "Development audio check");
+    public static string AudioVerificationDescription => Select(
+        "ابتدا صدا را فعال کنید، سپس نت‌ها و کلیک مترونوم را بررسی کنید.",
+        "Enable audio first, then verify notes and the metronome click.");
+    public static string EnableAudio => Select("فعال‌سازی صدا", "Enable audio");
+    public static string AudioNotEnabled => Select("صدا هنوز فعال نشده است", "Audio is not enabled yet");
+    public static string AudioReady => Select("صدا آماده است", "Audio is ready");
+    public static string AudioUnavailable => Select("صدا در این مرورگر در دسترس نیست", "Audio is unavailable in this browser");
+    public static string PlayNote => Select("پخش نت", "Play note");
+    public static string MetronomeClick => Select("کلیک مترونوم", "Metronome click");
 
     public static string LearningPath => Select("مسیر یادگیری", "Learning path");
     public static string LessonsDescription => Select(
@@ -109,6 +119,15 @@ public static class UiText
         "شروع تمرین ریتم ممکن نشد. دوباره تلاش کنید.",
         "The rhythm exercise could not start. Please try again.");
     public static string NoteReadingPractice => Select("تمرین نت‌خوانی", "Note-reading practice");
+    public static string MentalKeyboardPractice => Select("تمرین کیبورد ذهنی", "Mental keyboard practice");
+    public static string MentalKeyboardInstructions => Select(
+        "با استفاده از نت آغاز و دستور حرکت، جای نت هدف را روی کیبورد پیدا کنید. نام کلیدها پس از پاسخ نمایش داده می‌شود.",
+        "Use the starting note and navigation instruction to find the target key. Key names appear after you answer.");
+    public static string KeyboardStartingNote => Select("نت آغاز", "Starting note");
+    public static string NavigationInstruction => Select("دستور حرکت", "Navigation instruction");
+    public static string GetKeyboardNavigationInstruction(int steps, ExerciseDirection direction) => Select(
+        $"{FormatNumber(steps)} گام به‌صورت {GetExerciseDirection(direction)} حرکت کنید.",
+        $"Move {steps} key step(s) {GetExerciseDirection(direction).ToLowerInvariant()}.");
     public static string ReadTheNote => Select("نت روی حامل را پیدا کنید", "Read the note on the staff");
     public static string NoteReadingInstructions => Select(
         "نت نمایش‌داده‌شده را روی پیانو انتخاب کنید. نام نت پس از پاسخ نمایش داده می‌شود.",
