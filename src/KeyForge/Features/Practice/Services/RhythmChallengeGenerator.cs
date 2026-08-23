@@ -5,11 +5,12 @@ public sealed class RhythmChallengeGenerator
 {
     private const double MillisecondsPerMinute = 60_000d;
 
-    public ExerciseChallenge Create(RhythmExerciseDefinition exercise)
+    public ExerciseChallenge Create(RhythmExerciseDefinition exercise, int? selectedBpm = null)
     {
         ArgumentNullException.ThrowIfNull(exercise);
 
-        var beatInterval = CalculateBeatInterval(exercise.Tempo);
+        var bpm = selectedBpm ?? exercise.Tempo?.DefaultBpm ?? 0;
+        var beatInterval = CalculateBeatInterval(bpm);
         var beatsPerPattern = GetBeatsPerPattern(exercise.TimeSignature);
         if (exercise.PatternCount <= 0)
         {

@@ -36,6 +36,18 @@ public sealed class RhythmChallengeGeneratorTests
         Assert.Equal(6, challenge.ExpectedInputs.Count);
     }
 
+    [Fact]
+    public void Create_SelectedRuntimeBpm_ChangesExpectedBeatTiming()
+    {
+        var exercise = Rhythm(tempo: 120, timeSignature: "4/4", patternCount: 1);
+
+        var defaultChallenge = new RhythmChallengeGenerator().Create(exercise);
+        var selectedChallenge = new RhythmChallengeGenerator().Create(exercise, selectedBpm: 60);
+
+        Assert.Equal(500, defaultChallenge.ExpectedInputs[1].ExpectedOffset!.Value.TotalMilliseconds);
+        Assert.Equal(1000, selectedChallenge.ExpectedInputs[1].ExpectedOffset!.Value.TotalMilliseconds);
+    }
+
     [Theory]
     [InlineData(0)]
     [InlineData(-1)]
@@ -76,7 +88,7 @@ public sealed class RhythmChallengeGeneratorTests
         int patternCount) => new()
     {
         Id = "rhythm-01",
-        Tempo = tempo,
+        Tempo = new TempoConfiguration { DefaultBpm = tempo },
         TimeSignature = timeSignature,
         PatternCount = patternCount
     };

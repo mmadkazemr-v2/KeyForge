@@ -67,6 +67,35 @@ public sealed class PracticeSessionServiceTests
     }
 
     [Fact]
+    public void StartExercise_UsesTempoDefaultAndRecordsRuntimeSelectionOnAttempt()
+    {
+        var exercise = new RhythmExerciseDefinition
+        {
+            Id = "rhythm-01",
+            TimeSignature = "4/4",
+            PatternCount = 1,
+            Tempo = new TempoConfiguration
+            {
+                DefaultBpm = 100,
+                AllowUserChange = true,
+                MinBpm = 60,
+                MaxBpm = 140,
+                Step = 5
+            }
+        };
+        var service = CreateService([Lesson(exercise)], evaluator: new FixedEvaluator(success: true, rawScore: 80));
+        var session = service.StartSession("lesson-01")!;
+        var runtime = service.StartExercise(session);
+
+        Assert.Equal(100, runtime.SelectedBpm);
+        runtime.SetSelectedBpm(80);
+        var result = service.SubmitAttempt(session, runtime, runtime.StartedAt.AddSeconds(1));
+
+        Assert.Equal(80, result.Attempt.TempoBpm);
+        Assert.Equal(100, exercise.Tempo.DefaultBpm);
+    }
+
+    [Fact]
     public void StartExercise_FinishedSession_ThrowsInvalidOperationException()
     {
         var service = CreateService([Lesson(Note())]);

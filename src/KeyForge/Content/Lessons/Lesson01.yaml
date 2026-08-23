@@ -18,7 +18,18 @@ exercises:
     title: "ضرب‌های سیاه یکنواخت"
     description: "در سرعتی راحت، نت‌های سیاه را با ضربی یکنواخت دست بزنید و بنوازید."
     duration: 5
-    tempo: 80
+    tempo:
+      defaultBpm: 80
+      allowUserChange: true
+      minBpm: 50
+      maxBpm: 120
+      step: 5
+      suggestedBpms: [60, 80, 100]
+    metronome:
+      enabled: true
+      visual: true
+      audio: true
+      countInBeats: 3
     difficulty: easy
     timeSignature: "4/4"
     noteValues: [quarter, eighth]
@@ -29,7 +40,8 @@ exercises:
     title: "نت‌ها را پیدا کنید"
     description: "نت‌ها را روی حامل تشخیص دهید و جای آن‌ها را روی کیبورد پیدا کنید."
     duration: 5
-    tempo: 60
+    tempo:
+      defaultBpm: 60
     difficulty: easy
     clef: treble
     range: "C4-G5"
@@ -50,7 +62,8 @@ exercises:
     title: "حرکت پله‌ای یا پرشی"
     description: "تشخیص دهید حرکت میان دو نت پله‌ای است یا پرشی."
     duration: 4
-    tempo: 70
+    tempo:
+      defaultBpm: 70
     difficulty: easy
     intervals: [M2, M3]
     direction: both
@@ -61,7 +74,8 @@ exercises:
     title: "پرش‌های اکتاو"
     description: "پرش‌های اکتاو را در گستره کیبورد بنوازید و تشخیص دهید."
     duration: 4
-    tempo: 70
+    tempo:
+      defaultBpm: 70
     difficulty: easy
     octaves: 2
     direction: both
@@ -72,7 +86,18 @@ exercises:
     title: "همسایه‌های آرام"
     description: "هر انگشت را پایین نگه دارید و انگشتان کناری را بی‌حرکت حفظ کنید."
     duration: 4
-    tempo: 60
+    tempo:
+      defaultBpm: 60
+      allowUserChange: true
+      minBpm: 40
+      maxBpm: 100
+      step: 5
+      suggestedBpms: [50, 60, 80]
+    metronome:
+      enabled: true
+      visual: true
+      audio: true
+      countInBeats: 3
     difficulty: easy
     fingers: [2, 3, 4]
     hand: both
@@ -92,7 +117,18 @@ exercises:
     title: "حرکت پنج‌انگشتی"
     description: "یک الگوی پنج‌انگشتی را به‌تدریج سریع‌تر بنوازید."
     duration: 3
-    tempo: 70
+    tempo:
+      defaultBpm: 70
+      allowUserChange: true
+      minBpm: 50
+      maxBpm: 120
+      step: 5
+      suggestedBpms: [60, 70, 90]
+    metronome:
+      enabled: true
+      visual: true
+      audio: true
+      countInBeats: 3
     difficulty: easy
     pattern: scale
     targetTempo: 110

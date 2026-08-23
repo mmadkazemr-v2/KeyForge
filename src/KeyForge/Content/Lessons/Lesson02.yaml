@@ -17,7 +17,18 @@ exercises:
     title: "جفت‌های نت چنگ"
     description: "جفت‌های نت چنگ را روی ضربی یکنواخت دست بزنید و بنوازید."
     duration: 5
-    tempo: 84
+    tempo:
+      defaultBpm: 84
+      allowUserChange: true
+      minBpm: 50
+      maxBpm: 130
+      step: 5
+      suggestedBpms: [64, 84, 104]
+    metronome:
+      enabled: true
+      visual: true
+      audio: true
+      countInBeats: 3
     difficulty: easy
     timeSignature: "4/4"
     noteValues: [quarter, eighth]
@@ -28,7 +39,8 @@ exercises:
     title: "کلید سل و فا"
     description: "نت‌های کلید سل و فا را بخوانید و آن‌ها را روی کیبورد پیدا کنید."
     duration: 6
-    tempo: 60
+    tempo:
+      defaultBpm: 60
     difficulty: easy
     clef: grand
     range: "C3-G5"
@@ -39,7 +51,8 @@ exercises:
     title: "تشخیص حرکت پرشی"
     description: "فاصله‌های سوم و پنجم را با گوش و روی نت تشخیص دهید."
     duration: 4
-    tempo: 70
+    tempo:
+      defaultBpm: 70
     difficulty: easy
     intervals: [M3, P5]
     direction: both
@@ -60,7 +73,18 @@ exercises:
     title: "حرکت پنج‌انگشتی سریع‌تر"
     description: "سرعت اجرای الگوی پنج‌انگشتی را افزایش دهید."
     duration: 3
-    tempo: 80
+    tempo:
+      defaultBpm: 80
+      allowUserChange: true
+      minBpm: 50
+      maxBpm: 140
+      step: 5
+      suggestedBpms: [60, 80, 100]
+    metronome:
+      enabled: true
+      visual: true
+      audio: true
+      countInBeats: 3
     difficulty: easy
     pattern: scale
     targetTempo: 120

@@ -79,6 +79,19 @@ public static class UiText
     public static string Duration => Select("مدت", "Duration");
     public static string Tempo => Select("سرعت", "Tempo");
     public static string BeatsPerMinute => Select("ضرب در دقیقه", "BPM");
+    public static string SuggestedTempos => Select("سرعت‌های پیشنهادی", "Suggested tempos");
+    public static string Recommended => Select("پیشنهادی", "Recommended");
+    public static string DecreaseTempo => Select("کاهش سرعت", "Decrease tempo");
+    public static string IncreaseTempo => Select("افزایش سرعت", "Increase tempo");
+    public static string Metronome => Select("مترونوم", "Metronome");
+    public static string StartMetronome => Select("شروع مترونوم", "Start metronome");
+    public static string StopMetronome => Select("توقف مترونوم", "Stop metronome");
+    public static string MetronomeReady => Select("آماده", "Ready");
+    public static string MetronomeActive => Select("در حال اجرا", "Active");
+    public static string CountingIn => Select("شمارش شروع", "Count-in");
+    public static string MetronomeBeat => Select("ضرب مترونوم", "Metronome beat");
+    public static string GetCountInLabel(int beat) => Select($"شمارش: {FormatNumber(beat)}", $"Count-in: {FormatNumber(beat)}");
+    public static string GetBeatLabel(int beat) => Select($"ضرب {FormatNumber(beat)}", $"Beat {FormatNumber(beat)}");
 
     public static string PracticeSession => Select("جلسه تمرین", "Practice session");
     public static string PracticeSessionDescription => Select(

@@ -39,6 +39,9 @@ public sealed class ExerciseAttempt
     /// </summary>
     public int? Score { get; set; }
 
+    /// <summary>Optional BPM selected for this runtime attempt.</summary>
+    public int? TempoBpm { get; set; }
+
     /// <summary>
     /// Whether the attempt met the runtime evaluator's requirements.
     /// </summary>

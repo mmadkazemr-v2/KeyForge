@@ -31,7 +31,8 @@ exercises:
     title: "تطبیق ملودی‌ها"
     description: "فاصله‌ها را در عبارت‌های ملودیک کوتاه تشخیص دهید."
     duration: 5
-    tempo: 72
+    tempo:
+      defaultBpm: 72
     difficulty: easy
     intervals: [M2, M3, P5]
     direction: ascending
@@ -42,7 +43,18 @@ exercises:
     title: "انگشت سوم و چهارم"
     description: "انگشتان سوم و چهارم هر دست را به‌صورت مستقل تمرین دهید."
     duration: 5
-    tempo: 60
+    tempo:
+      defaultBpm: 60
+      allowUserChange: true
+      minBpm: 40
+      maxBpm: 100
+      step: 5
+      suggestedBpms: [50, 60, 80]
+    metronome:
+      enabled: true
+      visual: true
+      audio: true
+      countInBeats: 3
     difficulty: easy
     fingers: [3, 4]
     hand: both
@@ -52,7 +64,8 @@ exercises:
     title: "پرش اکتاو با هر دو دست"
     description: "پرش‌های اکتاو را با هر دو دست به‌طور هم‌زمان بنوازید."
     duration: 5
-    tempo: 76
+    tempo:
+      defaultBpm: 76
     difficulty: easy
     octaves: 2
     direction: ascending
@@ -73,7 +86,18 @@ exercises:
     title: "حرکت سریع اکتاو"
     description: "پرش‌های اکتاو را با سرعتی یکنواخت و کنترل‌شده بنوازید."
     duration: 4
-    tempo: 84
+    tempo:
+      defaultBpm: 84
+      allowUserChange: true
+      minBpm: 60
+      maxBpm: 150
+      step: 5
+      suggestedBpms: [64, 84, 104]
+    metronome:
+      enabled: true
+      visual: true
+      audio: true
+      countInBeats: 3
     difficulty: medium
     pattern: repeatedNote
     targetTempo: 120

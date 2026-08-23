@@ -20,6 +20,12 @@
     margin-block-start: var(--kf-space-3);
 }
 
+.practice-tempo-tools {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+    gap: var(--kf-space-4);
+}
+
 .practice-error {
     margin: 0;
     padding-block: var(--kf-space-3);

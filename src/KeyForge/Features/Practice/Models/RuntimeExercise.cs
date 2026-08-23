@@ -5,7 +5,14 @@ public sealed class RuntimeExercise
 {
     private readonly List<ExerciseInputEvent> _inputEvents = [];
 
-    public RuntimeExercise(ExerciseDefinition definition, ExerciseChallenge challenge, DateTime startedAt)
+    private readonly Func<int?, ExerciseChallenge>? _challengeFactory;
+
+    public RuntimeExercise(
+        ExerciseDefinition definition,
+        ExerciseChallenge challenge,
+        DateTime startedAt,
+        int? selectedBpm = null,
+        Func<int?, ExerciseChallenge>? challengeFactory = null)
     {
         ArgumentNullException.ThrowIfNull(definition);
         ArgumentNullException.ThrowIfNull(challenge);
@@ -20,11 +27,14 @@ public sealed class RuntimeExercise
         Definition = definition;
         Challenge = challenge;
         StartedAt = startedAt;
+        SelectedBpm = selectedBpm;
+        _challengeFactory = challengeFactory;
     }
 
     public ExerciseDefinition Definition { get; }
-    public ExerciseChallenge Challenge { get; }
+    public ExerciseChallenge Challenge { get; private set; }
     public DateTime StartedAt { get; }
+    public int? SelectedBpm { get; private set; }
     public IReadOnlyList<ExerciseInputEvent> InputEvents => _inputEvents.AsReadOnly();
 
     public void CaptureInput(ExerciseInputEvent inputEvent)
@@ -47,5 +57,26 @@ public sealed class RuntimeExercise
         }
 
         _inputEvents.Add(inputEvent);
+    }
+
+    /// <summary>Changes the runtime-only tempo before input is captured.</summary>
+    public void SetSelectedBpm(int bpm)
+    {
+        var tempo = Definition.Tempo ?? throw new InvalidOperationException(
+            "This exercise does not define tempo settings.");
+        if (!tempo.AllowUserChange || !tempo.Supports(bpm))
+        {
+            throw new InvalidOperationException("The selected BPM is not allowed by this exercise.");
+        }
+        if (_inputEvents.Count > 0)
+        {
+            throw new InvalidOperationException("Tempo cannot change after exercise input has been captured.");
+        }
+
+        SelectedBpm = bpm;
+        if (_challengeFactory is not null)
+        {
+            Challenge = _challengeFactory(bpm);
+        }
     }
 }

@@ -32,7 +32,9 @@ public sealed class YamlLessonParser : IYamlLessonParser
 
         try
         {
-            return _deserializer.Deserialize<LessonDefinition>(yaml);
+            var lesson = _deserializer.Deserialize<LessonDefinition>(yaml);
+            YamlLessonValidator.ValidateExerciseConfigurations(lesson);
+            return lesson;
         }
         catch (YamlException ex)
         {

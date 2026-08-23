@@ -1,0 +1,153 @@
+@using KeyForge.Components.Audio
+@using KeyForge.Features.Practice.Models
+@implements IAsyncDisposable
+@inject IAudioPlaybackService Audio
+
+@if (Configuration is { Enabled: true })
+{
+    <section class="metronome-control" aria-labelledby="@($"{_id}-title")">
+        <div class="metronome-control__header">
+            <div>
+                <p class="kf-meta">@UiText.Metronome</p>
+                <h3 id="@($"{_id}-title")" class="kf-card__title"><bdi>@UiText.GetBpmLabel(CurrentBpm)</bdi></h3>
+            </div>
+            <span class="kf-status-badge kf-status-badge--available">@StatusLabel</span>
+        </div>
+
+        @if (Configuration.Visual)
+        {
+            <div class="metronome-control__visual" aria-live="polite" aria-label="@UiText.MetronomeBeat">
+                @for (var beat = 1; beat <= VisualBeatCount; beat++)
+                {
+                    <span class="@(_currentBeat == beat ? "is-active" : null)"></span>
+                }
+                <strong>@(IsCountingIn ? UiText.GetCountInLabel(_currentBeat) : UiText.GetBeatLabel(_currentBeat))</strong>
+            </div>
+        }
+
+        @if (_audioFailed)
+        {
+            <p class="metronome-control__error" role="status">@UiText.AudioUnavailable</p>
+        }
+
+        <div class="metronome-control__actions">
+            @if (!_isRunning)
+            {
+                <button class="kf-button kf-button--primary" type="button" @onclick="StartAsync">@UiText.StartMetronome</button>
+            }
+            else
+            {
+                <button class="kf-button kf-button--secondary" type="button" @onclick="StopAsync">@UiText.StopMetronome</button>
+            }
+        </div>
+    </section>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public required RuntimeExercise RuntimeExercise { get; set; }
+
+    [Parameter, EditorRequired]
+    public required MetronomeConfiguration Configuration { get; set; }
+
+    [Parameter]
+    public bool StopAfterCountIn { get; set; }
+
+    [Parameter]
+    public EventCallback OnCountInCompleted { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> OnRunningChanged { get; set; }
+
+    private readonly string _id = $"metronome-{Guid.NewGuid():N}";
+    private CancellationTokenSource? _runCancellation;
+    private bool _isRunning;
+    private bool _audioFailed;
+    private int _currentBeat;
+
+    private int CurrentBpm => RuntimeExercise.SelectedBpm ?? RuntimeExercise.Definition.Tempo?.DefaultBpm ?? 0;
+    private int VisualBeatCount => Math.Max(Configuration.CountInBeats, 4);
+    private bool IsCountingIn => _isRunning && _currentBeat <= Configuration.CountInBeats;
+    private string StatusLabel => !_isRunning ? UiText.MetronomeReady : IsCountingIn ? UiText.CountingIn : UiText.MetronomeActive;
+
+    private async Task StartAsync()
+    {
+        if (_isRunning || CurrentBpm <= 0)
+        {
+            return;
+        }
+
+        _audioFailed = false;
+        if (Configuration.Audio && !await Audio.InitializeAsync())
+        {
+            _audioFailed = true;
+        }
+
+        _runCancellation = new CancellationTokenSource();
+        _isRunning = true;
+        _currentBeat = 0;
+        await OnRunningChanged.InvokeAsync(true);
+        _ = RunAsync(_runCancellation.Token);
+    }
+
+    private async Task RunAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            var interval = MetronomeTiming.GetBeatInterval(CurrentBpm);
+            foreach (var beat in MetronomeTiming.GetCountInBeats(Configuration.CountInBeats))
+            {
+                await TickAsync(beat, cancellationToken);
+                await Task.Delay(interval, cancellationToken);
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            await OnCountInCompleted.InvokeAsync();
+            if (StopAfterCountIn)
+            {
+                await StopAsync();
+                return;
+            }
+
+            for (var beat = 1; ; beat = beat == VisualBeatCount ? 1 : beat + 1)
+            {
+                await TickAsync(beat, cancellationToken);
+                await Task.Delay(interval, cancellationToken);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Stop, navigation, and disposal deliberately cancel this loop.
+        }
+    }
+
+    private async Task TickAsync(int beat, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        _currentBeat = beat;
+        await InvokeAsync(StateHasChanged);
+        if (Configuration.Audio && !_audioFailed && !await Audio.PlayMetronomeClickAsync())
+        {
+            _audioFailed = true;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task StopAsync()
+    {
+        _runCancellation?.Cancel();
+        _runCancellation?.Dispose();
+        _runCancellation = null;
+        if (!_isRunning)
+        {
+            return;
+        }
+
+        _isRunning = false;
+        _currentBeat = 0;
+        await Audio.StopActiveNotesAsync();
+        await OnRunningChanged.InvokeAsync(false);
+    }
+
+    public async ValueTask DisposeAsync() => await StopAsync();
+}

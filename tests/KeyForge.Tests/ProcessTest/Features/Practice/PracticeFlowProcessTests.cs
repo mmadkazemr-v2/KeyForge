@@ -256,7 +256,7 @@ public sealed class PracticeFlowProcessTests
     {
         Id = id,
         Title = "Keep the beat",
-        Tempo = tempo,
+        Tempo = new TempoConfiguration { DefaultBpm = tempo },
         TimeSignature = "4/4",
         PatternCount = patternCount,
         NoteValues = ["quarter"]

@@ -2,7 +2,7 @@ namespace KeyForge.Features.Exercises.Models;
 
 /// <summary>
 /// An exercise that practises playing a pattern at increasingly high tempos.
-/// <see cref="ExerciseDefinition.Tempo"/> holds the starting tempo;
+/// <see cref="ExerciseDefinition.Tempo"/> holds the optional starting-tempo configuration;
 /// <see cref="TargetTempo"/> holds the tempo to work toward.
 /// </summary>
 public sealed class SpeedExerciseDefinition : ExerciseDefinition

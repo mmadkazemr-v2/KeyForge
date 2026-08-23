@@ -16,7 +16,7 @@ public sealed class LessonDetailDisplayProcessTests
             Title = "Steady Pulse",
             Description = "Keep a consistent beat.",
             Duration = 5,
-            Tempo = 80,
+            Tempo = new TempoConfiguration { DefaultBpm = 80 },
             Difficulty = Difficulty.Easy
         });
         var (catalog, query) = CreateServices([lesson], new InMemoryProgressStore());
@@ -33,7 +33,7 @@ public sealed class LessonDetailDisplayProcessTests
         Assert.Equal(ExerciseType.Rhythm, exercise.Type);
         Assert.Equal("Steady Pulse", exercise.Title);
         Assert.Equal(5, exercise.Duration);
-        Assert.Equal(80, exercise.Tempo);
+        Assert.Equal(80, exercise.Tempo!.DefaultBpm);
         Assert.True(state.IsUnlocked);
     }
 

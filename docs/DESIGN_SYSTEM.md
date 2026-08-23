@@ -59,3 +59,7 @@ VexFlow is the standard renderer for new music-notation UI. Keep it isolated beh
 ## Audio
 
 Tone.js is the standard KeyForge browser audio engine for playback, metronome timing, and future audio exercises. It is isolated behind the UI-layer `IAudioPlaybackService` and a small JavaScript interop module; domain and business services must not depend on Tone.js. VexFlow remains responsible only for notation. Browser audio must always be enabled by an explicit user action before playback. Future rhythm scheduling may use Tone.js scheduling, while existing practice timestamps remain application/runtime concerns.
+
+## Tempo and metronome controls
+
+Use the shared `TempoSelector` and `MetronomeControl` only when an exercise provides the corresponding data-driven configuration. The selector changes `RuntimeExercise.SelectedBpm`, never lesson YAML or an exercise definition. Suggested tempos are quick selections; the configured default is labelled recommended. The metronome observes the same runtime BPM, uses logical-layout CSS, and starts browser audio only from its explicit Start action. Rhythm uses the configured count-in before accepting scored input; retries retain the selected runtime tempo.

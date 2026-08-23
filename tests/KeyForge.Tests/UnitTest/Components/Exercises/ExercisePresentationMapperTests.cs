@@ -13,7 +13,7 @@ public sealed class ExercisePresentationMapperTests
         {
             Difficulty = Difficulty.Medium,
             Duration = 5,
-            Tempo = 84,
+            Tempo = new TempoConfiguration { DefaultBpm = 84 },
             TimeSignature = "4/4",
             NoteValues = ["quarter", "eighth"],
             PatternCount = 4
@@ -140,7 +140,7 @@ public sealed class ExercisePresentationMapperTests
         using var _ = new CultureScope("en");
         var exercise = new SpeedExerciseDefinition
         {
-            Tempo = 80,
+            Tempo = new TempoConfiguration { DefaultBpm = 80 },
             TargetTempo = 120,
             Pattern = SpeedPattern.Arpeggio,
             Repetitions = 12
@@ -162,7 +162,7 @@ public sealed class ExercisePresentationMapperTests
         {
             Difficulty = Difficulty.Hard,
             Duration = 3,
-            Tempo = 70
+            Tempo = new TempoConfiguration { DefaultBpm = 70 }
         };
 
         var items = ExercisePresentationMapper.Map(exercise);

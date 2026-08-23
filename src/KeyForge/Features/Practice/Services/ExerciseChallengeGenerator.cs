@@ -5,13 +5,13 @@ namespace KeyForge.Features.Practice.Services;
 /// </summary>
 public sealed class ExerciseChallengeGenerator : IExerciseChallengeGenerator
 {
-    public ExerciseChallenge Create(ExerciseDefinition exercise)
+    public ExerciseChallenge Create(ExerciseDefinition exercise, int? selectedBpm = null)
     {
         ArgumentNullException.ThrowIfNull(exercise);
 
         if (exercise is RhythmExerciseDefinition rhythm)
         {
-            return new RhythmChallengeGenerator().Create(rhythm);
+            return new RhythmChallengeGenerator().Create(rhythm, selectedBpm ?? rhythm.Tempo?.DefaultBpm);
         }
 
         if (exercise is NoteReadingExerciseDefinition noteReading)

@@ -93,9 +93,9 @@ else
                                 {
                                     <li>@UiText.Duration: @exercise.Duration @UiText.Minute</li>
                                 }
-                                @if (exercise.Tempo > 0)
+                                @if (exercise.Tempo is { } tempo)
                                 {
-                                    <li>@UiText.Tempo: @exercise.Tempo @UiText.BeatsPerMinute</li>
+                                    <li>@UiText.Tempo: @tempo.DefaultBpm @UiText.BeatsPerMinute</li>
                                 }
                             </ul>
                         </article>

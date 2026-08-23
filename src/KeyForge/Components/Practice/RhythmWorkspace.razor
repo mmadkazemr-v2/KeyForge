@@ -1,9 +1,11 @@
 @using KeyForge.Features.Exercises.Models
 @using KeyForge.Features.Practice.Models
 @using KeyForge.Features.Practice.Services
+@using KeyForge.Components.Audio
 @using Microsoft.JSInterop
 @implements IAsyncDisposable
 @inject IJSRuntime JS
+@inject IAudioPlaybackService Audio
 
 <div id="@_workspaceId"
      class="rhythm-workspace"
@@ -22,7 +24,7 @@
 
     <div class="rhythm-workspace__pulse" aria-live="polite" aria-atomic="true">
         <strong data-rhythm-countdown>@UiText.RhythmReady</strong>
-        <span class="kf-text-secondary">@UiText.GetBpmLabel(Rhythm.Tempo)</span>
+        <span class="kf-text-secondary">@UiText.GetBpmLabel(RuntimeExercise.SelectedBpm ?? 0)</span>
     </div>
 
     <div class="rhythm-workspace__instruction">
@@ -52,9 +54,24 @@
         <div class="kf-progress__value" style="--kf-progress-value: 0%"></div>
     </div>
 
-    @if (!_started)
+    @if (RuntimeExercise.Definition.Tempo is not null)
     {
-        <button class="kf-button kf-button--primary" type="button" @onclick="StartAsync">
+        <TempoSelector RuntimeExercise="RuntimeExercise"
+                       IsDisabled="@(_started || _metronomeRunning)"
+                       OnTempoChanged="HandleTempoChanged" />
+    }
+
+    @if (!_started && RuntimeExercise.Definition.Metronome is { Enabled: true } metronome)
+    {
+        <MetronomeControl RuntimeExercise="RuntimeExercise"
+                          Configuration="metronome"
+                          StopAfterCountIn="true"
+                          OnCountInCompleted="StartTimelineAsync"
+                          OnRunningChanged="HandleMetronomeRunningChanged" />
+    }
+    else if (!_started)
+    {
+        <button class="kf-button kf-button--primary" type="button" @onclick="StartTimelineAsync">
             @UiText.StartRhythm
         </button>
     }
@@ -79,14 +96,21 @@
     private bool _started;
     private bool _isActive;
     private bool _startFailed;
+    private bool _metronomeRunning;
 
-    private RhythmExerciseDefinition Rhythm =>
-        (RhythmExerciseDefinition)RuntimeExercise.Definition;
     private int BeatCount => RuntimeExercise.Challenge.ExpectedInputs.Count;
     private double BeatIntervalMilliseconds =>
-        RhythmChallengeGenerator.CalculateBeatInterval(Rhythm.Tempo).TotalMilliseconds;
+        RhythmChallengeGenerator.CalculateBeatInterval(RuntimeExercise.SelectedBpm ?? 0).TotalMilliseconds;
 
-    private async Task StartAsync()
+    private Task HandleTempoChanged(int _) => InvokeAsync(StateHasChanged);
+
+    private Task HandleMetronomeRunningChanged(bool isRunning)
+    {
+        _metronomeRunning = isRunning;
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private async Task StartTimelineAsync()
     {
         if (_started)
         {
@@ -112,11 +136,10 @@
                 BeatCount,
                 new
                 {
-                    countdown = UiText.Countdown,
-                    start = UiText.RhythmGo,
                     active = UiText.RhythmActive,
                     evaluating = UiText.EvaluatingRhythm,
-                    digits = UiText.NumeralDigits
+                    digits = UiText.NumeralDigits,
+                    audio = RuntimeExercise.Definition.Metronome?.Audio == true
                 });
         }
         catch (JSException)
@@ -165,6 +188,17 @@
 
         _isActive = false;
         await OnCompleted.InvokeAsync(DateTime.UtcNow);
+    }
+
+    [JSInvokable]
+    public async Task PlayRhythmMetronomeClick()
+    {
+        if (RuntimeExercise.Definition.Metronome?.Audio != true)
+        {
+            return;
+        }
+
+        await Audio.PlayMetronomeClickAsync();
     }
 
     public async ValueTask DisposeAsync()

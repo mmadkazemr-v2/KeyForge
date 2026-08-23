@@ -1,0 +1,70 @@
+@using KeyForge.Features.Practice.Models
+
+@if (RuntimeExercise.Definition.Tempo is { } tempo)
+{
+    <section class="tempo-selector" aria-labelledby="@($"{_id}-title")">
+        <div class="tempo-selector__header">
+            <span id="@($"{_id}-title")" class="kf-meta">@UiText.Tempo</span>
+            <strong><bdi>@UiText.GetBpmLabel(CurrentBpm)</bdi></strong>
+        </div>
+
+        @if (tempo.SuggestedBpms.Count > 0)
+        {
+            <div class="tempo-selector__suggestions" aria-label="@UiText.SuggestedTempos">
+                @foreach (var bpm in tempo.SuggestedBpms)
+                {
+                    <button class="tempo-selector__suggestion @(bpm == CurrentBpm ? "is-selected" : null)"
+                            type="button"
+                            aria-pressed="@(bpm == CurrentBpm)"
+                            disabled="@(IsDisabled || !tempo.AllowUserChange)"
+                            @onclick="() => SelectAsync(bpm)">
+                        <bdi>@UiText.GetBpmLabel(bpm)</bdi>
+                        @if (bpm == tempo.DefaultBpm)
+                        {
+                            <span>@UiText.Recommended</span>
+                        }
+                    </button>
+                }
+            </div>
+        }
+
+        <div class="tempo-selector__adjustment">
+            <button class="kf-button kf-button--secondary" type="button"
+                    aria-label="@UiText.DecreaseTempo"
+                    disabled="@(IsDisabled || !tempo.AllowUserChange || !tempo.Supports(CurrentBpm - tempo.Step))"
+                    @onclick="() => SelectAsync(CurrentBpm - tempo.Step)">−</button>
+            <output aria-live="polite"><bdi>@UiText.GetBpmLabel(CurrentBpm)</bdi></output>
+            <button class="kf-button kf-button--secondary" type="button"
+                    aria-label="@UiText.IncreaseTempo"
+                    disabled="@(IsDisabled || !tempo.AllowUserChange || !tempo.Supports(CurrentBpm + tempo.Step))"
+                    @onclick="() => SelectAsync(CurrentBpm + tempo.Step)">+</button>
+        </div>
+    </section>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public required RuntimeExercise RuntimeExercise { get; set; }
+
+    [Parameter]
+    public bool IsDisabled { get; set; }
+
+    [Parameter]
+    public EventCallback<int> OnTempoChanged { get; set; }
+
+    private readonly string _id = $"tempo-{Guid.NewGuid():N}";
+
+    private int CurrentBpm => RuntimeExercise.SelectedBpm ?? RuntimeExercise.Definition.Tempo?.DefaultBpm ?? 0;
+
+    private async Task SelectAsync(int bpm)
+    {
+        var tempo = RuntimeExercise.Definition.Tempo;
+        if (IsDisabled || tempo is null || !tempo.AllowUserChange || !tempo.Supports(bpm))
+        {
+            return;
+        }
+
+        RuntimeExercise.SetSelectedBpm(bpm);
+        await OnTempoChanged.InvokeAsync(bpm);
+    }
+}

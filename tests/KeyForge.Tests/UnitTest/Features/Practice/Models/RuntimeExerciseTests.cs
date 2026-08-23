@@ -71,6 +71,38 @@ public sealed class RuntimeExerciseTests
         Assert.Throws<ArgumentException>(() => new RuntimeExercise(exercise, challenge, StartedAt));
     }
 
+    [Fact]
+    public void SetSelectedBpm_RegeneratesRuntimeChallengeWithoutMutatingDefinition()
+    {
+        var definition = new RhythmExerciseDefinition
+        {
+            Id = "rhythm-01",
+            TimeSignature = "4/4",
+            PatternCount = 1,
+            Tempo = new TempoConfiguration
+            {
+                DefaultBpm = 120,
+                AllowUserChange = true,
+                MinBpm = 60,
+                MaxBpm = 140,
+                Step = 5
+            }
+        };
+        var generator = new RhythmChallengeGenerator();
+        var runtime = new RuntimeExercise(
+            definition,
+            generator.Create(definition, 120),
+            StartedAt,
+            120,
+            bpm => generator.Create(definition, bpm));
+
+        runtime.SetSelectedBpm(60);
+
+        Assert.Equal(60, runtime.SelectedBpm);
+        Assert.Equal(120, definition.Tempo.DefaultBpm);
+        Assert.Equal(1000, runtime.Challenge.ExpectedInputs[1].ExpectedOffset!.Value.TotalMilliseconds);
+    }
+
     private static RuntimeExercise Runtime(
         InputEventType type = InputEventType.Note,
         TimeSpan? expectedOffset = null)

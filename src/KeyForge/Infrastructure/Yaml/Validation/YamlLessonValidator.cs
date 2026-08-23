@@ -36,6 +36,25 @@ internal static class YamlLessonValidator
         }
     }
 
+    /// <summary>Validates optional, typed exercise configuration after deserialization.</summary>
+    internal static void ValidateExerciseConfigurations(LessonDefinition lesson)
+    {
+        ArgumentNullException.ThrowIfNull(lesson);
+
+        try
+        {
+            foreach (var exercise in lesson.Exercises)
+            {
+                exercise.Tempo?.Validate();
+                exercise.Metronome?.Validate();
+            }
+        }
+        catch (InvalidOperationException ex)
+        {
+            throw new YamlLessonParseException(ex.Message, ex);
+        }
+    }
+
     private static YamlMappingNode LoadRootMapping(string yaml)
     {
         YamlStream stream;

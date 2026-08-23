@@ -123,6 +123,88 @@ public class YamlLessonParserTests
     }
 
     [Fact]
+    public void Parse_TempoAndMetronomeConfiguration_CorrectlyMaps()
+    {
+        const string yaml = """
+            id: lesson-01
+            exercises:
+              - id: rhythm-01
+                type: rhythm
+                timeSignature: "4/4"
+                tempo:
+                  defaultBpm: 80
+                  allowUserChange: true
+                  minBpm: 50
+                  maxBpm: 120
+                  step: 5
+                  suggestedBpms: [60, 80, 100]
+                metronome:
+                  enabled: true
+                  visual: true
+                  audio: true
+                  countInBeats: 4
+            """;
+
+        var exercise = Assert.IsType<RhythmExerciseDefinition>(Assert.Single(_parser.Parse(yaml).Exercises));
+
+        Assert.Equal(80, exercise.Tempo!.DefaultBpm);
+        Assert.True(exercise.Tempo.AllowUserChange);
+        Assert.Equal(50, exercise.Tempo.MinBpm);
+        Assert.Equal(120, exercise.Tempo.MaxBpm);
+        Assert.Equal(5, exercise.Tempo.Step);
+        Assert.Equal([60, 80, 100], exercise.Tempo.SuggestedBpms);
+        Assert.True(exercise.Metronome!.Enabled);
+        Assert.True(exercise.Metronome.Visual);
+        Assert.True(exercise.Metronome.Audio);
+        Assert.Equal(4, exercise.Metronome.CountInBeats);
+    }
+
+    [Fact]
+    public void Parse_OptionalTempoAndMetronome_RemainNull()
+    {
+        const string yaml = """
+            id: lesson-01
+            exercises:
+              - id: note-01
+                type: noteReading
+            """;
+
+        var exercise = Assert.IsType<NoteReadingExerciseDefinition>(Assert.Single(_parser.Parse(yaml).Exercises));
+
+        Assert.Null(exercise.Tempo);
+        Assert.Null(exercise.Metronome);
+    }
+
+    [Fact]
+    public void Parse_InvalidTempoConfiguration_FailsClearly()
+    {
+        const string yaml = """
+            id: lesson-01
+            exercises:
+              - id: rhythm-01
+                type: rhythm
+                tempo:
+                  defaultBpm: 40
+                  minBpm: 50
+                  maxBpm: 120
+            """;
+
+        Assert.Throws<YamlLessonParseException>(() => _parser.Parse(yaml));
+    }
+
+    [Fact]
+    public void Parse_ProjectLessonFiles_WithTempoConfigurations_RemainParseable()
+    {
+        var lessonsDirectory = Path.Combine(AppContext.BaseDirectory, "Content", "Lessons");
+        var lessonFiles = Directory.GetFiles(lessonsDirectory, "*.yaml");
+
+        var lessons = lessonFiles.Select(file => _parser.Parse(File.ReadAllText(file))).ToArray();
+
+        Assert.NotEmpty(lessons);
+        Assert.All(lessons, lesson => Assert.NotEmpty(lesson.Exercises));
+    }
+
+    [Fact]
     public void Parse_NoteReadingExercise_ReturnsNoteReadingExerciseDefinition()
     {
         const string yaml = """
@@ -412,7 +494,8 @@ public class YamlLessonParserTests
                 title: "Quarter Note Pulse"
                 description: "Practice a steady quarter-note pulse."
                 duration: 5
-                tempo: 60
+                tempo:
+                  defaultBpm: 60
                 difficulty: easy
                 timeSignature: "6/8"
                 noteValues: [quarter, eighth]
@@ -427,7 +510,7 @@ public class YamlLessonParserTests
         Assert.Equal("Quarter Note Pulse", exercise.Title);
         Assert.Equal("Practice a steady quarter-note pulse.", exercise.Description);
         Assert.Equal(5, exercise.Duration);
-        Assert.Equal(60, exercise.Tempo);
+        Assert.Equal(60, exercise.Tempo!.DefaultBpm);
         Assert.Equal(Difficulty.Easy, exercise.Difficulty);
         Assert.Equal("6/8", exercise.TimeSignature);
         Assert.Equal(new[] { "quarter", "eighth" }, exercise.NoteValues);

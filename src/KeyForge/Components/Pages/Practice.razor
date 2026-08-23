@@ -108,6 +108,19 @@ else if (CurrentExercise is { } exercise)
 
         <ExercisePresentation Exercise="exercise" />
 
+        @if (_result is null && _runtimeExercise?.Definition is not RhythmExerciseDefinition &&
+            _runtimeExercise?.Definition.Tempo is not null)
+        {
+            <section class="practice-tempo-tools" aria-label="@UiText.Tempo">
+                <TempoSelector RuntimeExercise="_runtimeExercise"
+                               OnTempoChanged="HandleTempoChanged" />
+                @if (_runtimeExercise.Definition.Metronome is { Enabled: true } metronome)
+                {
+                    <MetronomeControl RuntimeExercise="_runtimeExercise" Configuration="metronome" />
+                }
+            </section>
+        }
+
         @if (_result is null)
         {
             <section class="kf-card" aria-labelledby="@(HasInteractiveChallenge ? null : "attempt-form-title")">
@@ -342,8 +355,9 @@ else if (CurrentExercise is { } exercise)
 
     private void RetryCurrentExercise()
     {
+        var selectedBpm = _runtimeExercise?.SelectedBpm;
         _result = null;
-        ResetAttemptForm();
+        ResetAttemptForm(selectedBpm);
     }
 
     private void AdvanceSession()
@@ -389,11 +403,18 @@ else if (CurrentExercise is { } exercise)
         _submissionError = false;
     }
 
-    private void ResetAttemptForm()
+    private Task HandleTempoChanged(int _) => InvokeAsync(StateHasChanged);
+
+    private void ResetAttemptForm(int? selectedBpm = null)
     {
         _runtimeExercise = _session is { IsFinished: false }
             ? PracticeSessionService.StartExercise(_session)
             : null;
+        if (selectedBpm is { } bpm && _runtimeExercise?.Definition.Tempo is { AllowUserChange: true } &&
+            _runtimeExercise.SelectedBpm != bpm)
+        {
+            _runtimeExercise.SetSelectedBpm(bpm);
+        }
         _submissionError = false;
     }
 

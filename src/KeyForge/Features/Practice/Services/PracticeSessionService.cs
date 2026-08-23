@@ -80,10 +80,13 @@ public sealed class PracticeSessionService : IPracticeSessionService
             throw new InvalidOperationException("The session has no current exercise.");
         }
 
+        var selectedBpm = currentExercise.Tempo?.DefaultBpm;
         return new RuntimeExercise(
             currentExercise,
-            _challengeGenerator.Create(currentExercise),
-            DateTime.UtcNow);
+            _challengeGenerator.Create(currentExercise, selectedBpm),
+            DateTime.UtcNow,
+            selectedBpm,
+            bpm => _challengeGenerator.Create(currentExercise, bpm));
     }
 
     /// <inheritdoc />
@@ -128,6 +131,7 @@ public sealed class PracticeSessionService : IPracticeSessionService
             ExerciseId = currentExercise.Id,
             StartedAt = runtimeExercise.StartedAt,
             CompletedAt = completedAt,
+            TempoBpm = runtimeExercise.SelectedBpm,
             Score = score,
             IsSuccessful = evaluation.IsSuccessful
         };

@@ -58,19 +58,6 @@ export async function startRhythm(
     };
     activeRuns.set(workspaceId, run);
     root.focus({ preventScroll: true });
-    setState(root, "countdown", labels.countdown);
-
-    for (const value of [3, 2, 1]) {
-        if (run.cancelled) return;
-        setText(root, "[data-rhythm-countdown]", formatNumber(value, labels.digits));
-        await sleep(1000);
-    }
-
-    if (run.cancelled) return;
-    setText(root, "[data-rhythm-countdown]", labels.start);
-    await sleep(400);
-    if (run.cancelled) return;
-
     await dotNetReference.invokeMethodAsync("NotifyRhythmStarted");
     if (run.cancelled) return;
 
@@ -112,6 +99,9 @@ export async function startRhythm(
         if (run.cancelled) return;
         showBeat(root, index, beatCount);
         setText(root, "[data-rhythm-countdown]", formatNumber(index + 1, labels.digits));
+        if (labels.audio) {
+            void dotNetReference.invokeMethodAsync("PlayRhythmMetronomeClick");
+        }
     }
 
     const endTarget = run.timelineStartedAt + beatCount * beatIntervalMilliseconds;

@@ -60,11 +60,11 @@ public static class ExercisePresentationMapper
                 $"{UiText.FormatNumber(exercise.Duration)} {UiText.Minute}"));
         }
 
-        if (exercise.Tempo > 0)
+        if (exercise.Tempo is { } tempo)
         {
             items.Add(new ExercisePresentationItem(
                 usesStartingTempo ? UiText.StartingTempo : UiText.Tempo,
-                FormatTempo(exercise.Tempo)));
+                FormatTempo(tempo.DefaultBpm)));
         }
     }
 

@@ -35,10 +35,12 @@ public abstract class ExerciseDefinition
     public int Duration { get; set; }
 
     /// <summary>
-    /// Suggested starting tempo in beats per minute.
-    /// A value of 0 means tempo is not applicable or not set.
+    /// Optional data-driven tempo settings. A null value means tempo is not applicable.
     /// </summary>
-    public int Tempo { get; set; }
+    public TempoConfiguration? Tempo { get; set; }
+
+    /// <summary>Optional reusable metronome settings for this exercise.</summary>
+    public MetronomeConfiguration? Metronome { get; set; }
 
     /// <summary>Relative difficulty of the exercise.</summary>
     public Difficulty Difficulty { get; set; } = Difficulty.Easy;
