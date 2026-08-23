@@ -41,6 +41,15 @@ public static class UiText
     public static string AudioNotEnabled => Select("صدا هنوز فعال نشده است", "Audio is not enabled yet");
     public static string AudioReady => Select("صدا آماده است", "Audio is ready");
     public static string AudioUnavailable => Select("صدا در این مرورگر در دسترس نیست", "Audio is unavailable in this browser");
+    public static string Midi => Select("میدی", "MIDI");
+    public static string EnableMidi => Select("فعال‌سازی میدی", "Enable MIDI");
+    public static string MidiDevice => Select("دستگاه میدی", "MIDI device");
+    public static string MidiConnected => Select("دستگاه میدی متصل است", "MIDI device connected");
+    public static string MidiNoDevice => Select("دستگاه میدی پیدا نشد", "No MIDI device found");
+    public static string MidiPermissionDenied => Select("اجازهٔ دسترسی به میدی داده نشد", "MIDI permission was denied");
+    public static string MidiNotSupported => Select("میدی در این مرورگر پشتیبانی نمی‌شود", "MIDI is not supported in this browser");
+    public static string MidiDisabled => Select("میدی غیرفعال است", "MIDI is disabled");
+    public static string MidiConnectionError => Select("اتصال میدی ممکن نشد", "MIDI could not be connected");
     public static string PlayNote => Select("پخش نت", "Play note");
     public static string MetronomeClick => Select("کلیک مترونوم", "Metronome click");
 
@@ -133,6 +142,21 @@ public static class UiText
         "The rhythm exercise could not start. Please try again.");
     public static string NoteReadingPractice => Select("تمرین نت‌خوانی", "Note-reading practice");
     public static string EarTrainingPractice => Select("تمرین شنیداری", "Ear-training practice");
+    public static string SpeedPractice => Select("تمرین سرعت", "Speed practice");
+    public static string FingerIndependencePractice => Select("تمرین استقلال انگشتان", "Finger independence practice");
+    public static string PlayTheSequenceInTime => Select("الگو را با ریتم مشخص اجرا کنید", "Play the sequence in time");
+    public static string PlayTheFingerSequence => Select("توالی انگشتان را به ترتیب اجرا کنید", "Play the finger sequence in order");
+    public static string SpeedPracticeInstructions => Select("پس از شروع، نت فعال را با ضرب انتخاب کنید.", "After starting, select the active note on each beat.");
+    public static string FingerIndependenceInstructions => Select("توالی نشان‌داده‌شده را اجرا کنید؛ شمارهٔ انگشتان راهنمای آموزشی هستند.", "Play the displayed sequence; finger numbers are instructional guidance.");
+    public static string SequenceProgress => Select("پیشرفت توالی", "Sequence progress");
+    public static string ExpectedSequence => Select("توالی مورد انتظار", "Expected sequence");
+    public static string CurrentExpectedInput => Select("نت فعلی", "Current note");
+    public static string InputAccepted => Select("نت ثبت شد", "Input accepted");
+    public static string InputIncorrect => Select("نت نادرست ثبت شد", "Incorrect input recorded");
+    public static string CorrectInputs => Select("ورودی‌های درست", "Correct inputs");
+    public static string MissedInputs => Select("ورودی‌های ازدست‌رفته", "Missed inputs");
+    public static string IncorrectInputs => Select("ورودی‌های نادرست", "Incorrect inputs");
+    public static string ExtraInputs => Select("ورودی‌های اضافه", "Extra inputs");
     public static string IdentifyTheNote => Select("نت شنیده‌شده را پیدا کنید", "Identify the note you hear");
     public static string EarTrainingInstructions => Select("صدا را پخش کنید و سپس نت شنیده‌شده را روی پیانو انتخاب کنید.", "Play the sound, then select the note you heard on the piano.");
     public static string AudioPrompt => Select("پخش صدای تمرین", "Exercise audio playback");

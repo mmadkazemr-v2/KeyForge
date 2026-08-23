@@ -47,4 +47,7 @@ public sealed class ExerciseEvaluationResult
 
     /// <summary>Question-by-question feedback when the challenge is Ear Training.</summary>
     public EarTrainingEvaluationDetails? EarTraining { get; init; }
+
+    public SequenceEvaluationDetails? Speed { get; init; }
+    public SequenceEvaluationDetails? FingerIndependence { get; init; }
 }

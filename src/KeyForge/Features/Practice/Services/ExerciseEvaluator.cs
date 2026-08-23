@@ -35,6 +35,16 @@ public sealed class ExerciseEvaluator : IExerciseEvaluator
             return new EarTrainingExerciseEvaluator().Evaluate(challenge, inputEvents);
         }
 
+        if (challenge.ExerciseType == ExerciseType.Speed)
+        {
+            return new SequenceExerciseEvaluator().Evaluate(challenge, inputEvents, ExerciseType.Speed, requireTiming: true);
+        }
+
+        if (challenge.ExerciseType == ExerciseType.FingerIndependence)
+        {
+            return new SequenceExerciseEvaluator().Evaluate(challenge, inputEvents, ExerciseType.FingerIndependence, requireTiming: false);
+        }
+
         var expected = challenge.ExpectedInputs.FirstOrDefault();
         if (expected is null)
         {

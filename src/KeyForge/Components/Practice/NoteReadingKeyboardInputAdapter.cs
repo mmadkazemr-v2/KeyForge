@@ -29,7 +29,8 @@ public static class NoteReadingKeyboardInputAdapter
         bool repeat,
         bool isActive,
         DateTime exerciseStartedAt,
-        DateTime occurredAt)
+        DateTime occurredAt,
+        DateTime? timelineStartedAt = null)
     {
         if (!isActive || repeat || string.IsNullOrWhiteSpace(code) ||
             !Mapping.TryGetValue(code, out var value))
@@ -42,10 +43,16 @@ public static class NoteReadingKeyboardInputAdapter
             throw new ArgumentOutOfRangeException(nameof(occurredAt));
         }
 
+        var offsetOrigin = timelineStartedAt ?? exerciseStartedAt;
+        if (offsetOrigin < exerciseStartedAt || occurredAt < offsetOrigin)
+        {
+            throw new ArgumentOutOfRangeException(nameof(timelineStartedAt));
+        }
+
         return new ExerciseInputEvent
         {
             Timestamp = occurredAt,
-            Offset = occurredAt - exerciseStartedAt,
+            Offset = occurredAt - offsetOrigin,
             Source = InputSource.ComputerKeyboard,
             Type = InputEventType.Note,
             Value = value

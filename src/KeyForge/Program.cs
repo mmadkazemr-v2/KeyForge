@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Localization;
 using KeyForge.Components.Audio;
+using KeyForge.Components.Practice;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,6 +27,7 @@ builder.Services.AddSingleton<IExerciseScorer, ExerciseScorer>();
 builder.Services.AddSingleton<IPracticeSessionService, PracticeSessionService>();
 builder.Services.AddSingleton<IProgressUpdateService, ProgressUpdateService>();
 builder.Services.AddScoped<IAudioPlaybackService, AudioPlaybackService>();
+builder.Services.AddScoped<MidiInputRouter>();
 
 // ── Blazor ─────────────────────────────────────────────────────────
 

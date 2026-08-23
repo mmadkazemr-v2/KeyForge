@@ -10,4 +10,6 @@ public sealed class ExerciseChallenge
     public OctaveChallengeDetails? Octave { get; init; }
     public MentalKeyboardChallengeDetails? MentalKeyboard { get; init; }
     public EarTrainingChallengeDetails? EarTraining { get; init; }
+    public SpeedChallengeDetails? Speed { get; init; }
+    public FingerIndependenceChallengeDetails? FingerIndependence { get; init; }
 }

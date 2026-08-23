@@ -1,0 +1,126 @@
+@namespace KeyForge.Components.Practice
+@implements IDisposable
+@inject MidiInputRouter MidiInput
+
+<div class="kf-practice-workspace sequence-workspace" tabindex="0" @onkeydown="HandleKeyDown" aria-labelledby="sequence-title">
+    <header class="kf-practice-workspace__header">
+        <div>
+            <p class="kf-meta">@PracticeLabel</p>
+            <h2 id="sequence-title" class="kf-card__title">@Instruction</h2>
+            <p class="kf-card__description">@Description</p>
+        </div>
+        <span class="kf-status-badge kf-status-badge--available">@UiText.GetQuestionPosition(CurrentStep, StepCount)</span>
+    </header>
+
+    <div class="kf-practice-workspace__progress">
+        <span class="kf-meta">@UiText.SequenceProgress</span>
+        <div class="kf-progress" role="progressbar" aria-label="@UiText.SequenceProgress" aria-valuemin="0" aria-valuemax="@StepCount" aria-valuenow="@CompletedStepCount">
+            <div class="kf-progress__value" style="@($"--kf-progress-value: {ProgressPercent}%")"></div>
+        </div>
+    </div>
+
+    <dl class="kf-practice-summary sequence-workspace__configuration">
+        @if (IsSpeed)
+        {
+            <div><dt>@UiText.SpeedPatternLabel</dt><dd>@UiText.GetSpeedPattern(SpeedDetails.Pattern)</dd></div>
+        }
+        else
+        {
+            <div><dt>@UiText.Hand</dt><dd>@UiText.GetPracticeHand(FingerDetails.Hand)</dd></div>
+            <div><dt>@UiText.Fingers</dt><dd><bdi>@FingerList</bdi></dd></div>
+        }
+        @if (RuntimeExercise.SelectedBpm is { } bpm)
+        {
+            <div><dt>@UiText.Tempo</dt><dd><bdi>@UiText.GetBpmLabel(bpm)</bdi></dd></div>
+        }
+    </dl>
+
+    <section class="sequence-workspace__sequence" aria-label="@UiText.ExpectedSequence">
+        @for (var index = 0; index < StepCount; index++)
+        {
+            <span class="@GetStepClass(index)"><bdi>@ExpectedNotes[index]</bdi></span>
+        }
+    </section>
+
+    @if (RuntimeExercise.Definition.Tempo is not null)
+    {
+        <TempoSelector RuntimeExercise="RuntimeExercise" IsDisabled="@(_isActive || _metronomeRunning)" OnTempoChanged="HandleTempoChanged" />
+    }
+
+    @if (!_isActive && !_completed && RuntimeExercise.Definition.Metronome is { Enabled: true } metronome)
+    {
+        <MetronomeControl RuntimeExercise="RuntimeExercise" Configuration="metronome" StopAfterCountIn="true" OnCountInCompleted="StartSequenceAsync" OnRunningChanged="HandleMetronomeRunningChanged" />
+    }
+    else if (!_isActive && !_completed)
+    {
+        <button class="kf-button kf-button--primary" type="button" @onclick="StartSequenceAsync">@UiText.StartPractice</button>
+    }
+
+    @if (_isActive)
+    {
+        <section class="kf-practice-input sequence-workspace__input" aria-live="polite">
+            <p class="kf-meta">@UiText.CurrentExpectedInput</p>
+            <strong><bdi>@ExpectedNotes[_stepIndex]</bdi></strong>
+            <p class="kf-text-secondary">@UiText.SelectPianoNote</p>
+            <PianoKeyboard FirstNote="FirstPianoNote" LastNote="LastPianoNote" SelectedNote="_lastSelectedNote" Disabled="false" OnNoteSelected="HandlePianoNote" />
+            @if (_lastInputCorrect is not null)
+            {
+                <p class="@(_lastInputCorrect == true ? "sequence-workspace__live-feedback sequence-workspace__live-feedback--correct" : "sequence-workspace__live-feedback sequence-workspace__live-feedback--incorrect")" role="status">@(_lastInputCorrect == true ? UiText.InputAccepted : UiText.InputIncorrect)</p>
+            }
+        </section>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public RuntimeExercise RuntimeExercise { get; set; } = null!;
+    [Parameter] public EventCallback<DateTime> OnCompleted { get; set; }
+    private DateTime _timelineStartedAt;
+    private int _stepIndex;
+    private bool _isActive;
+    private bool _completed;
+    private bool _metronomeRunning;
+    private bool? _lastInputCorrect;
+    private MusicalNote? _lastSelectedNote;
+    private IDisposable? _midiRegistration;
+    private bool IsSpeed => RuntimeExercise.Definition is SpeedExerciseDefinition;
+    private SpeedChallengeDetails SpeedDetails => RuntimeExercise.Challenge.Speed!;
+    private FingerIndependenceChallengeDetails FingerDetails => RuntimeExercise.Challenge.FingerIndependence!;
+    private IReadOnlyList<string> ExpectedNotes => IsSpeed ? SpeedDetails.ExpectedNotes : FingerDetails.ExpectedNotes;
+    private int StepCount => ExpectedNotes.Count;
+    private int CurrentStep => Math.Min(_stepIndex + 1, StepCount);
+    private int CompletedStepCount => Math.Min(_stepIndex, StepCount);
+    private int ProgressPercent => (int)Math.Round(CompletedStepCount * 100d / StepCount);
+    private string PracticeLabel => IsSpeed ? UiText.SpeedPractice : UiText.FingerIndependencePractice;
+    private string Instruction => IsSpeed ? UiText.PlayTheSequenceInTime : UiText.PlayTheFingerSequence;
+    private string Description => IsSpeed ? UiText.SpeedPracticeInstructions : UiText.FingerIndependenceInstructions;
+    private string FingerList => string.Join(UiText.ListSeparator, FingerDetails.Fingers.Select(UiText.FormatNumber));
+    private MusicalNote FirstPianoNote => MusicalNote.Parse("C4");
+    private MusicalNote LastPianoNote => MusicalNote.Parse("C5");
+    protected override void OnInitialized() => _midiRegistration = MidiInput.Register(HandleMidiMessageAsync);
+    private Task HandleTempoChanged(int _) => InvokeAsync(StateHasChanged);
+    private Task HandleMetronomeRunningChanged(bool isRunning) { _metronomeRunning = isRunning; return InvokeAsync(StateHasChanged); }
+    private Task StartSequenceAsync() { if (_isActive || _completed) return Task.CompletedTask; _timelineStartedAt = DateTime.UtcNow; _isActive = true; _lastInputCorrect = null; return InvokeAsync(StateHasChanged); }
+    private Task HandlePianoNote(MusicalNote note) => CaptureInputAsync(VirtualPianoInputAdapter.Create(note, RuntimeExercise.StartedAt, DateTime.UtcNow, _timelineStartedAt));
+    private Task HandleKeyDown(KeyboardEventArgs args)
+    {
+        var input = NoteReadingKeyboardInputAdapter.TryCreate(args.Code, args.Repeat, _isActive, RuntimeExercise.StartedAt, DateTime.UtcNow, _timelineStartedAt);
+        return input is null ? Task.CompletedTask : CaptureInputAsync(input);
+    }
+    private Task HandleMidiMessageAsync(MidiInputMessage message)
+    {
+        var input = MidiInputAdapter.TryCreate(message, RuntimeExercise.StartedAt, DateTime.UtcNow, _timelineStartedAt);
+        return input is null ? Task.CompletedTask : CaptureInputAsync(input);
+    }
+    private async Task CaptureInputAsync(ExerciseInputEvent input)
+    {
+        if (!_isActive || _completed) return;
+        var expected = RuntimeExercise.Challenge.ExpectedInputs[_stepIndex];
+        _lastInputCorrect = string.Equals(expected.Value, input.Value, StringComparison.OrdinalIgnoreCase);
+        _lastSelectedNote = MusicalNote.Parse(input.Value);
+        RuntimeExercise.CaptureInput(input);
+        _stepIndex++;
+        if (_stepIndex == StepCount) { _isActive = false; _completed = true; await OnCompleted.InvokeAsync(DateTime.UtcNow); }
+    }
+    private string GetStepClass(int index) => index < _stepIndex ? "is-complete" : _isActive && index == _stepIndex ? "is-active" : string.Empty;
+    public void Dispose() => _midiRegistration?.Dispose();
+}

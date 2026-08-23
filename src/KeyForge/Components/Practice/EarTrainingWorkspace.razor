@@ -2,6 +2,7 @@
 @using KeyForge.Components.Audio
 @implements IAsyncDisposable
 @inject IAudioPlaybackService Audio
+@inject MidiInputRouter MidiInput
 
 <div class="kf-practice-workspace ear-training-workspace" tabindex="0" @onkeydown="HandleKeyDown" aria-labelledby="ear-training-title">
     <header class="kf-practice-workspace__header note-reading-workspace__header">
@@ -78,6 +79,7 @@
     private MusicalNote? _selectedNote;
     private bool _hasPlayed;
     private bool _audioFailed;
+    private IDisposable? _midiRegistration;
 
     private int QuestionCount => RuntimeExercise.Challenge.ExpectedInputs.Count;
     private int CurrentQuestionNumber => _questionIndex + 1;
@@ -94,6 +96,8 @@
     private string FeedbackClass => IsCurrentAnswerCorrect
         ? "note-reading-feedback note-reading-feedback--correct"
         : "note-reading-feedback note-reading-feedback--incorrect";
+
+    protected override void OnInitialized() => _midiRegistration = MidiInput.Register(HandleMidiMessageAsync);
 
     private async Task PlayCurrentNoteAsync()
     {
@@ -125,6 +129,16 @@
         _selectedNote = MusicalNote.Parse(input.Value);
     }
 
+    private Task HandleMidiMessageAsync(MidiInputMessage message)
+    {
+        if (!IsAnswered)
+        {
+            var input = MidiInputAdapter.TryCreate(message, RuntimeExercise.StartedAt, DateTime.UtcNow);
+            if (input is not null) SetPendingInput(input);
+        }
+        return Task.CompletedTask;
+    }
+
     private void RetryQuestion()
     {
         _pendingInput = null;
@@ -146,5 +160,9 @@
         _hasPlayed = false;
     }
 
-    public async ValueTask DisposeAsync() => await Audio.StopActiveNotesAsync();
+    public async ValueTask DisposeAsync()
+    {
+        _midiRegistration?.Dispose();
+        await Audio.StopActiveNotesAsync();
+    }
 }

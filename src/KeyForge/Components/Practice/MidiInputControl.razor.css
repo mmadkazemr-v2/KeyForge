@@ -1,0 +1,39 @@
+.midi-input-control {
+    display: grid;
+    gap: var(--kf-space-2);
+    padding: var(--kf-space-3);
+    border: 1px solid var(--kf-color-border);
+    border-radius: var(--kf-radius-control);
+    background: var(--kf-color-surface);
+}
+
+.midi-input-control__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--kf-space-3);
+}
+
+.midi-input-control__header p {
+    margin: 0;
+}
+
+.midi-input-control__selector {
+    display: grid;
+    gap: var(--kf-space-1);
+}
+
+.midi-input-control select {
+    inline-size: 100%;
+    min-block-size: 2.75rem;
+    padding-inline: var(--kf-space-2);
+    color: var(--kf-color-text-primary);
+    border: 1px solid var(--kf-color-border);
+    border-radius: var(--kf-radius-control);
+    background: var(--kf-color-elevated-surface);
+}
+
+.midi-input-control__error {
+    margin: 0;
+    color: var(--kf-color-error);
+}

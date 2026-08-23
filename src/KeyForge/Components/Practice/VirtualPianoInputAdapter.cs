@@ -6,7 +6,8 @@ public static class VirtualPianoInputAdapter
     public static ExerciseInputEvent Create(
         MusicalNote note,
         DateTime exerciseStartedAt,
-        DateTime occurredAt)
+        DateTime occurredAt,
+        DateTime? timelineStartedAt = null)
     {
         ArgumentNullException.ThrowIfNull(note);
 
@@ -15,10 +16,16 @@ public static class VirtualPianoInputAdapter
             throw new ArgumentOutOfRangeException(nameof(occurredAt));
         }
 
+        var offsetOrigin = timelineStartedAt ?? exerciseStartedAt;
+        if (offsetOrigin < exerciseStartedAt || occurredAt < offsetOrigin)
+        {
+            throw new ArgumentOutOfRangeException(nameof(timelineStartedAt));
+        }
+
         return new ExerciseInputEvent
         {
             Timestamp = occurredAt,
-            Offset = occurredAt - exerciseStartedAt,
+            Offset = occurredAt - offsetOrigin,
             Source = InputSource.VirtualPiano,
             Type = InputEventType.Note,
             Value = note.Value

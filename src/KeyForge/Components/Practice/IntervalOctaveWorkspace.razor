@@ -1,4 +1,6 @@
 @namespace KeyForge.Components.Practice
+@implements IDisposable
+@inject MidiInputRouter MidiInput
 
 <div class="kf-practice-workspace note-reading-workspace"
      tabindex="0"
@@ -76,6 +78,7 @@
     private int _questionIndex;
     private ExerciseInputEvent? _pendingInput;
     private MusicalNote? _selectedNote;
+    private IDisposable? _midiRegistration;
 
     private bool IsInterval => RuntimeExercise.Definition is IntervalExerciseDefinition;
     private int QuestionCount => RuntimeExercise.Challenge.ExpectedInputs.Count;
@@ -110,6 +113,8 @@
         ? "note-reading-feedback note-reading-feedback--correct"
         : "note-reading-feedback note-reading-feedback--incorrect";
 
+    protected override void OnInitialized() => _midiRegistration = MidiInput.Register(HandleMidiMessageAsync);
+
     private void HandlePianoNote(MusicalNote note)
     {
         if (!IsAnswered)
@@ -134,6 +139,16 @@
         _selectedNote = MusicalNote.Parse(input.Value);
     }
 
+    private Task HandleMidiMessageAsync(MidiInputMessage message)
+    {
+        if (!IsAnswered)
+        {
+            var input = MidiInputAdapter.TryCreate(message, RuntimeExercise.StartedAt, DateTime.UtcNow);
+            if (input is not null) SetPendingInput(input);
+        }
+        return Task.CompletedTask;
+    }
+
     private void RetryQuestion()
     {
         _pendingInput = null;
@@ -153,4 +168,6 @@
         _pendingInput = null;
         _selectedNote = null;
     }
+
+    public void Dispose() => _midiRegistration?.Dispose();
 }

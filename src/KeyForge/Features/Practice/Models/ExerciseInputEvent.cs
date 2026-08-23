@@ -12,4 +12,6 @@ public sealed class ExerciseInputEvent
     public required InputSource Source { get; init; }
     public required InputEventType Type { get; init; }
     public required string Value { get; init; }
+    /// <summary>Optional input velocity supplied by a capable adapter such as MIDI.</summary>
+    public int? Velocity { get; init; }
 }

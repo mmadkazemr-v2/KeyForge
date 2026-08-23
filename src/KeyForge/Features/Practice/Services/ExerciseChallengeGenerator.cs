@@ -39,6 +39,16 @@ public sealed class ExerciseChallengeGenerator : IExerciseChallengeGenerator
             return new EarTrainingChallengeGenerator().Create(earTraining);
         }
 
+        if (exercise is SpeedExerciseDefinition speed)
+        {
+            return new SpeedChallengeGenerator().Create(speed, selectedBpm);
+        }
+
+        if (exercise is FingerIndependenceExerciseDefinition fingerIndependence)
+        {
+            return new FingerIndependenceChallengeGenerator().Create(fingerIndependence, selectedBpm);
+        }
+
         return new ExerciseChallenge
         {
             ExerciseId = exercise.Id,
