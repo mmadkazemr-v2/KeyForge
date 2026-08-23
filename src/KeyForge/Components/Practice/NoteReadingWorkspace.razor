@@ -1,10 +1,10 @@
 @namespace KeyForge.Components.Practice
 
-<div class="note-reading-workspace"
+<div class="kf-practice-workspace note-reading-workspace"
      tabindex="0"
      @onkeydown="HandleKeyDown"
      aria-labelledby="note-reading-title">
-    <header class="note-reading-workspace__header">
+    <header class="kf-practice-workspace__header note-reading-workspace__header">
         <div>
             <p class="kf-meta">@UiText.NoteReadingPractice</p>
             <h2 id="note-reading-title" class="kf-card__title">@UiText.ReadTheNote</h2>
@@ -15,7 +15,7 @@
         </span>
     </header>
 
-    <div class="note-reading-workspace__progress">
+    <div class="kf-practice-workspace__progress note-reading-workspace__progress">
         <span class="kf-meta">@UiText.QuestionProgress</span>
         <div class="kf-progress"
              role="progressbar"
@@ -29,8 +29,8 @@
 
     <MusicStaff Note="CurrentNote" Clef="CurrentClef" />
 
-    <section class="note-reading-workspace__piano" aria-labelledby="piano-title">
-        <div class="note-reading-workspace__piano-header">
+    <section class="kf-practice-input note-reading-workspace__piano" aria-labelledby="piano-title">
+        <div class="kf-practice-input__header note-reading-workspace__piano-header">
             <div>
                 <h3 id="piano-title" class="kf-section-title">@UiText.VirtualPiano</h3>
                 <p class="kf-text-secondary">@UiText.SelectPianoNote</p>
@@ -48,12 +48,12 @@
 
     @if (IsAnswered)
     {
-        <section class="@FeedbackClass" role="status" aria-live="polite">
+        <section class="kf-practice-feedback @FeedbackClass" role="status" aria-live="polite">
             <div>
                 <p class="kf-meta">@UiText.AttemptResult</p>
                 <h3 class="kf-section-title">@(IsCurrentAnswerCorrect ? UiText.CorrectAnswer : UiText.IncorrectAnswer)</h3>
             </div>
-            <dl class="note-reading-feedback__values">
+            <dl class="kf-practice-feedback__values note-reading-feedback__values">
                 <div>
                     <dt>@UiText.ExpectedNote</dt>
                     <dd><bdi>@CurrentNote.Value</bdi></dd>
@@ -63,7 +63,7 @@
                     <dd><bdi>@_selectedNote?.Value</bdi></dd>
                 </div>
             </dl>
-            <div class="note-reading-feedback__actions">
+            <div class="kf-practice-feedback__actions note-reading-feedback__actions">
                 @if (!IsCurrentAnswerCorrect)
                 {
                     <button class="kf-button kf-button--secondary" type="button" @onclick="RetryQuestion">

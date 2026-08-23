@@ -30,6 +30,11 @@ public sealed class ExerciseEvaluator : IExerciseEvaluator
             return new NoteTargetExerciseEvaluator().Evaluate(challenge, inputEvents, challenge.ExerciseType);
         }
 
+        if (challenge.ExerciseType == ExerciseType.EarTraining)
+        {
+            return new EarTrainingExerciseEvaluator().Evaluate(challenge, inputEvents);
+        }
+
         var expected = challenge.ExpectedInputs.FirstOrDefault();
         if (expected is null)
         {

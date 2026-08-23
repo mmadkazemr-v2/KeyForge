@@ -1,0 +1,5 @@
+.ear-training-workspace { display: grid; gap: var(--kf-space-5); outline: none; }
+.ear-training-workspace:focus-visible { outline: 2px solid var(--kf-color-primary); outline-offset: var(--kf-space-2); border-radius: var(--kf-radius-card); }
+.ear-training-workspace__playback { display: flex; flex-wrap: wrap; align-items: center; gap: var(--kf-space-3); padding-block: var(--kf-space-4); padding-inline: var(--kf-space-4); background: var(--kf-color-surface-elevated); border: 1px solid var(--kf-color-border); border-radius: var(--kf-radius-card); }
+.ear-training-workspace__playback .kf-text-secondary { margin: 0; flex: 1 1 14rem; }
+@media (max-width: 40rem) { .ear-training-workspace { gap: var(--kf-space-4); } .ear-training-workspace__playback .kf-button { width: 100%; } }

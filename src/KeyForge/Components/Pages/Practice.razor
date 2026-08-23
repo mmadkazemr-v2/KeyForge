@@ -59,7 +59,7 @@ else if (_session?.IsFinished == true)
         <a class="kf-button kf-button--primary" href="/lessons">@UiText.ReturnToLessons</a>
     </header>
 
-    <section class="kf-card" role="status" aria-labelledby="session-summary-title">
+    <section class="kf-card practice-completion" role="status" aria-labelledby="session-summary-title">
         <div class="kf-card__body">
             <div class="kf-card__header">
                 <h2 id="session-summary-title" class="kf-card__title">@_lesson?.Title</h2>
@@ -90,7 +90,7 @@ else if (CurrentExercise is { } exercise)
         <a class="kf-button kf-button--secondary" href="/lessons">@UiText.ReturnToLessons</a>
     </header>
 
-    <div class="kf-content-stack">
+    <div class="kf-content-stack practice-session">
         <section class="practice-progress" aria-labelledby="session-progress-label">
             <div class="practice-progress__header">
                 <span id="session-progress-label" class="kf-meta">@UiText.SessionProgress</span>
@@ -123,8 +123,8 @@ else if (CurrentExercise is { } exercise)
 
         @if (_result is null)
         {
-            <section class="kf-card" aria-labelledby="@(HasInteractiveChallenge ? null : "attempt-form-title")">
-                <div class="kf-card__body">
+            <section class="kf-card practice-workspace" aria-labelledby="@(HasInteractiveChallenge ? null : "attempt-form-title")">
+                <div class="kf-card__body practice-workspace__body">
                     @if (IsRhythmChallenge)
                     {
                         <RhythmWorkspace @key="_runtimeExercise"
@@ -149,6 +149,12 @@ else if (CurrentExercise is { } exercise)
                                                 RuntimeExercise="_runtimeExercise!"
                                                 OnCompleted="CompleteInteractiveAttempt" />
                     }
+                    else if (IsEarTrainingChallenge)
+                    {
+                        <EarTrainingWorkspace @key="_runtimeExercise"
+                                              RuntimeExercise="_runtimeExercise!"
+                                              OnCompleted="CompleteInteractiveAttempt" />
+                    }
                     else
                     {
                         <h2 id="attempt-form-title" class="kf-card__title">@UiText.RuntimeUnavailable</h2>
@@ -169,7 +175,7 @@ else if (CurrentExercise is { } exercise)
         }
         else
         {
-            <section class="kf-card @GetResultCardClass()" role="status" aria-labelledby="attempt-result-title">
+            <section class="kf-card practice-feedback @GetResultCardClass()" role="status" aria-labelledby="attempt-result-title">
                 <div class="kf-card__body">
                     <div class="kf-card__header">
                         <div>
@@ -278,6 +284,8 @@ else if (CurrentExercise is { } exercise)
         _runtimeExercise?.Definition is IntervalExerciseDefinition or OctaveExerciseDefinition && HasInteractiveChallenge;
     private bool IsMentalKeyboardChallenge =>
         _runtimeExercise?.Definition is MentalKeyboardExerciseDefinition && HasInteractiveChallenge;
+    private bool IsEarTrainingChallenge =>
+        _runtimeExercise?.Definition is EarTrainingExerciseDefinition && HasInteractiveChallenge;
     private NoteTargetEvaluationDetails? NoteTargetResult => _result?.Evaluation.Interval ??
         _result?.Evaluation.Octave ?? _result?.Evaluation.MentalKeyboard;
     private int CurrentExerciseNumber => (_session?.CurrentExerciseIndex ?? 0) + 1;

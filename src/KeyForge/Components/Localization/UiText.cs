@@ -132,6 +132,14 @@ public static class UiText
         "شروع تمرین ریتم ممکن نشد. دوباره تلاش کنید.",
         "The rhythm exercise could not start. Please try again.");
     public static string NoteReadingPractice => Select("تمرین نت‌خوانی", "Note-reading practice");
+    public static string EarTrainingPractice => Select("تمرین شنیداری", "Ear-training practice");
+    public static string IdentifyTheNote => Select("نت شنیده‌شده را پیدا کنید", "Identify the note you hear");
+    public static string EarTrainingInstructions => Select("صدا را پخش کنید و سپس نت شنیده‌شده را روی پیانو انتخاب کنید.", "Play the sound, then select the note you heard on the piano.");
+    public static string AudioPrompt => Select("پخش صدای تمرین", "Exercise audio playback");
+    public static string ListenThenChoose => Select("با دقت گوش دهید، سپس پاسخ خود را انتخاب کنید.", "Listen carefully, then choose your answer.");
+    public static string PlayAudio => Select("پخش صدا", "Play audio");
+    public static string ReplayAudio => Select("پخش دوباره", "Replay audio");
+    public static string SelectHeardNote => Select("نتی را که شنیدید انتخاب کنید", "Select the note you heard");
     public static string MentalKeyboardPractice => Select("تمرین کیبورد ذهنی", "Mental keyboard practice");
     public static string MentalKeyboardInstructions => Select(
         "با استفاده از نت آغاز و دستور حرکت، جای نت هدف را روی کیبورد پیدا کنید. نام کلیدها پس از پاسخ نمایش داده می‌شود.",

@@ -26,7 +26,7 @@ public sealed class ExerciseChallengeGeneratorTests
     }
 
     [Fact]
-    public void Create_UnsupportedExercise_ReturnsSafeEmptyChallenge()
+    public void Create_EarTrainingPitchMatching_GeneratesRuntimeChallenge()
     {
         var exercise = new EarTrainingExerciseDefinition { Id = "ear-01" };
 
@@ -34,7 +34,8 @@ public sealed class ExerciseChallengeGeneratorTests
 
         Assert.Equal(exercise.Id, challenge.ExerciseId);
         Assert.Equal(ExerciseType.EarTraining, challenge.ExerciseType);
-        Assert.Empty(challenge.ExpectedInputs);
+        Assert.NotEmpty(challenge.ExpectedInputs);
+        Assert.Equal(EarTrainingTask.PitchMatching, challenge.EarTraining!.TaskType);
     }
 
     [Fact]

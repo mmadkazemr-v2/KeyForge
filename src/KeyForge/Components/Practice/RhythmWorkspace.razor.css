@@ -17,7 +17,7 @@
     display: grid;
     place-items: center;
     gap: var(--kf-space-2);
-    min-height: calc(var(--kf-space-6) * 4);
+    min-height: calc(var(--kf-space-6) * 5);
     padding-block: var(--kf-space-5);
     padding-inline: var(--kf-space-5);
     background: var(--kf-color-surface-elevated);
@@ -30,6 +30,14 @@
 .rhythm-workspace__pulse strong {
     color: var(--kf-color-primary);
     font-size: var(--kf-font-size-page);
+}
+
+.rhythm-workspace[data-state="countdown"] .rhythm-workspace__pulse {
+    border-color: var(--kf-color-warning);
+}
+
+.rhythm-workspace[data-state="active"] .rhythm-workspace__pulse {
+    border-color: var(--kf-color-primary);
 }
 
 .rhythm-workspace.is-hit .rhythm-workspace__pulse {
@@ -100,6 +108,11 @@
 }
 
 @media (max-width: 47.99rem) {
+    .rhythm-workspace__pulse {
+        min-height: calc(var(--kf-space-6) * 4);
+        padding-inline: var(--kf-space-4);
+    }
+
     .rhythm-workspace > .kf-button {
         width: 100%;
     }

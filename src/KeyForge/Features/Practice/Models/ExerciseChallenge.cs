@@ -9,4 +9,5 @@ public sealed class ExerciseChallenge
     public IntervalChallengeDetails? Interval { get; init; }
     public OctaveChallengeDetails? Octave { get; init; }
     public MentalKeyboardChallengeDetails? MentalKeyboard { get; init; }
+    public EarTrainingChallengeDetails? EarTraining { get; init; }
 }

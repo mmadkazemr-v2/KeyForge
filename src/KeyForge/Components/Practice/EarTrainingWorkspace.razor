@@ -1,0 +1,150 @@
+@namespace KeyForge.Components.Practice
+@using KeyForge.Components.Audio
+@implements IAsyncDisposable
+@inject IAudioPlaybackService Audio
+
+<div class="kf-practice-workspace ear-training-workspace" tabindex="0" @onkeydown="HandleKeyDown" aria-labelledby="ear-training-title">
+    <header class="kf-practice-workspace__header note-reading-workspace__header">
+        <div>
+            <p class="kf-meta">@UiText.EarTrainingPractice</p>
+            <h2 id="ear-training-title" class="kf-card__title">@UiText.IdentifyTheNote</h2>
+            <p class="kf-card__description">@UiText.EarTrainingInstructions</p>
+        </div>
+        <span class="kf-status-badge kf-status-badge--available">@UiText.GetQuestionPosition(CurrentQuestionNumber, QuestionCount)</span>
+    </header>
+
+    <div class="kf-practice-workspace__progress note-reading-workspace__progress">
+        <span class="kf-meta">@UiText.QuestionProgress</span>
+        <div class="kf-progress" role="progressbar" aria-label="@UiText.QuestionProgress"
+             aria-valuemin="0" aria-valuemax="@QuestionCount" aria-valuenow="@CurrentQuestionNumber">
+            <div class="kf-progress__value" style="@($"--kf-progress-value: {QuestionProgressPercent}%")"></div>
+        </div>
+    </div>
+
+    <section class="kf-practice-input ear-training-workspace__playback" aria-label="@UiText.AudioPrompt">
+        <p class="kf-text-secondary">@UiText.ListenThenChoose</p>
+        <button class="kf-button kf-button--primary" type="button" disabled="@IsAnswered" @onclick="PlayCurrentNoteAsync">
+            @(_hasPlayed ? UiText.ReplayAudio : UiText.PlayAudio)
+        </button>
+        @if (_audioFailed)
+        {
+            <p class="metronome-control__error" role="alert">@UiText.AudioUnavailable</p>
+        }
+    </section>
+
+    <section class="kf-practice-input note-reading-workspace__piano" aria-labelledby="ear-piano-title">
+        <div class="kf-practice-input__header note-reading-workspace__piano-header">
+            <div>
+                <h3 id="ear-piano-title" class="kf-section-title">@UiText.VirtualPiano</h3>
+                <p class="kf-text-secondary">@UiText.SelectHeardNote</p>
+            </div>
+            <p class="kf-meta">@UiText.ComputerKeyboardHint</p>
+        </div>
+        <PianoKeyboard FirstNote="FirstPianoNote" LastNote="LastPianoNote"
+                       SelectedNote="_selectedNote" ExpectedNote="CurrentNote"
+                       RevealAnswer="IsAnswered" Disabled="IsAnswered"
+                       OnNoteSelected="HandlePianoNote" />
+    </section>
+
+    @if (IsAnswered)
+    {
+        <section class="kf-practice-feedback @FeedbackClass" role="status" aria-live="polite">
+            <div>
+                <p class="kf-meta">@UiText.AttemptResult</p>
+                <h3 class="kf-section-title">@(IsCurrentAnswerCorrect ? UiText.CorrectAnswer : UiText.IncorrectAnswer)</h3>
+            </div>
+            <dl class="kf-practice-feedback__values note-reading-feedback__values">
+                <div><dt>@UiText.ExpectedNote</dt><dd><bdi>@CurrentNote.Value</bdi></dd></div>
+                <div><dt>@UiText.YourNote</dt><dd><bdi>@_selectedNote?.Value</bdi></dd></div>
+            </dl>
+            <div class="kf-practice-feedback__actions note-reading-feedback__actions">
+                <button class="kf-button kf-button--secondary" type="button" @onclick="PlayCurrentNoteAsync">@UiText.ReplayAudio</button>
+                @if (!IsCurrentAnswerCorrect)
+                {
+                    <button class="kf-button kf-button--secondary" type="button" @onclick="RetryQuestion">@UiText.RetryQuestion</button>
+                }
+                <button class="kf-button kf-button--primary" type="button" @onclick="AcceptAnswer">@UiText.ContinueQuestions</button>
+            </div>
+        </section>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public RuntimeExercise RuntimeExercise { get; set; } = null!;
+    [Parameter] public EventCallback<DateTime> OnCompleted { get; set; }
+
+    private int _questionIndex;
+    private ExerciseInputEvent? _pendingInput;
+    private MusicalNote? _selectedNote;
+    private bool _hasPlayed;
+    private bool _audioFailed;
+
+    private int QuestionCount => RuntimeExercise.Challenge.ExpectedInputs.Count;
+    private int CurrentQuestionNumber => _questionIndex + 1;
+    private ExpectedInput CurrentExpectedInput => RuntimeExercise.Challenge.ExpectedInputs[_questionIndex];
+    private MusicalNote CurrentNote => MusicalNote.Parse(CurrentExpectedInput.Value);
+    private IReadOnlyList<MusicalNote> AvailableNotes => EarTrainingChallengeGenerator.GetAvailableNotes(
+        (EarTrainingExerciseDefinition)RuntimeExercise.Definition);
+    private MusicalNote FirstPianoNote => AvailableNotes.MinBy(note => note.MidiNumber)!;
+    private MusicalNote LastPianoNote => AvailableNotes.MaxBy(note => note.MidiNumber)!;
+    private bool IsAnswered => _pendingInput is not null;
+    private bool IsCurrentAnswerCorrect => _pendingInput is not null &&
+        EarTrainingExerciseEvaluator.IsCorrect(CurrentExpectedInput, _pendingInput);
+    private int QuestionProgressPercent => (int)Math.Round(CurrentQuestionNumber * 100d / QuestionCount);
+    private string FeedbackClass => IsCurrentAnswerCorrect
+        ? "note-reading-feedback note-reading-feedback--correct"
+        : "note-reading-feedback note-reading-feedback--incorrect";
+
+    private async Task PlayCurrentNoteAsync()
+    {
+        _audioFailed = !await Audio.InitializeAsync() || !await Audio.PlayNoteAsync(CurrentNote);
+        _hasPlayed = !_audioFailed;
+    }
+
+    private void HandlePianoNote(MusicalNote note)
+    {
+        if (!IsAnswered)
+        {
+            SetPendingInput(VirtualPianoInputAdapter.Create(note, RuntimeExercise.StartedAt, DateTime.UtcNow));
+        }
+    }
+
+    private void HandleKeyDown(KeyboardEventArgs args)
+    {
+        var input = NoteReadingKeyboardInputAdapter.TryCreate(args.Code, args.Repeat, !IsAnswered,
+            RuntimeExercise.StartedAt, DateTime.UtcNow);
+        if (input is not null)
+        {
+            SetPendingInput(input);
+        }
+    }
+
+    private void SetPendingInput(ExerciseInputEvent input)
+    {
+        _pendingInput = input;
+        _selectedNote = MusicalNote.Parse(input.Value);
+    }
+
+    private void RetryQuestion()
+    {
+        _pendingInput = null;
+        _selectedNote = null;
+    }
+
+    private async Task AcceptAnswer()
+    {
+        if (_pendingInput is null) return;
+        RuntimeExercise.CaptureInput(_pendingInput);
+        if (_questionIndex == QuestionCount - 1)
+        {
+            await OnCompleted.InvokeAsync(DateTime.UtcNow);
+            return;
+        }
+        _questionIndex++;
+        _pendingInput = null;
+        _selectedNote = null;
+        _hasPlayed = false;
+    }
+
+    public async ValueTask DisposeAsync() => await Audio.StopActiveNotesAsync();
+}

@@ -8,6 +8,23 @@
     border-radius: var(--kf-radius-card);
 }
 
+.practice-session {
+    gap: var(--kf-space-5);
+}
+
+.practice-workspace {
+    border-color: var(--kf-color-border-strong);
+}
+
+.practice-workspace__body {
+    min-width: 0;
+}
+
+.practice-completion,
+.practice-feedback {
+    border-color: var(--kf-color-border-strong);
+}
+
 .practice-progress__header {
     display: flex;
     flex-wrap: wrap;
@@ -24,6 +41,10 @@
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
     gap: var(--kf-space-4);
+}
+
+.practice-tempo-tools > * {
+    min-width: 0;
 }
 
 .practice-error {
@@ -71,6 +92,10 @@
     border-top: 1px solid var(--kf-color-border);
 }
 
+.practice-feedback .kf-card__meta {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+}
+
 .practice-result-summary div {
     display: grid;
     gap: var(--kf-space-1);
@@ -89,11 +114,25 @@
 }
 
 @media (max-width: 47.99rem) {
+    .practice-session {
+        gap: var(--kf-space-4);
+    }
+
+    .practice-progress,
+    .practice-workspace__body {
+        padding-inline: var(--kf-space-4);
+    }
+
     .practice-actions {
         display: grid;
     }
 
     .practice-actions .kf-button {
         width: 100%;
+    }
+
+    .practice-result-summary {
+        grid-template-columns: 1fr;
+        padding-inline: var(--kf-space-4);
     }
 }

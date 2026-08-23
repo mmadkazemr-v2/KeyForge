@@ -1,6 +1,8 @@
 .vexflow-staff {
     width: 100%;
-    min-height: 11rem;
+    min-height: calc(var(--kf-space-6) * 5);
+    max-width: 48rem;
+    margin-inline: auto;
     overflow: hidden;
     background: var(--kf-color-surface-elevated);
     border: 1px solid var(--kf-color-border);
@@ -10,7 +12,7 @@
 
 .vexflow-staff__canvas {
     width: 100%;
-    min-height: 11rem;
+    min-height: calc(var(--kf-space-6) * 5);
 }
 
 .vexflow-staff__canvas ::deep svg {
@@ -21,11 +23,19 @@
 
 .vexflow-staff__fallback {
     display: grid;
-    min-height: 11rem;
+    min-height: calc(var(--kf-space-6) * 5);
     place-items: center;
     margin: 0;
     padding-block: var(--kf-space-4);
     padding-inline: var(--kf-space-5);
     color: var(--kf-color-text-secondary);
     text-align: center;
+}
+
+@media (max-width: 40rem) {
+    .vexflow-staff,
+    .vexflow-staff__canvas,
+    .vexflow-staff__fallback {
+        min-height: calc(var(--kf-space-6) * 4);
+    }
 }

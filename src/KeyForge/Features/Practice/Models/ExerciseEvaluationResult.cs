@@ -44,4 +44,7 @@ public sealed class ExerciseEvaluationResult
 
     /// <summary>Question-by-question feedback when the challenge is Mental Keyboard.</summary>
     public NoteTargetEvaluationDetails? MentalKeyboard { get; init; }
+
+    /// <summary>Question-by-question feedback when the challenge is Ear Training.</summary>
+    public EarTrainingEvaluationDetails? EarTraining { get; init; }
 }

@@ -347,6 +347,102 @@ textarea:focus-visible {
     background: var(--kf-color-success);
 }
 
+/* Shared practice workspace patterns */
+.kf-practice-workspace {
+    display: grid;
+    gap: var(--kf-space-5);
+    min-width: 0;
+}
+
+.kf-practice-workspace__header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--kf-space-4);
+}
+
+.kf-practice-workspace__progress {
+    display: grid;
+    gap: var(--kf-space-2);
+}
+
+.kf-practice-input {
+    display: grid;
+    gap: var(--kf-space-4);
+    min-width: 0;
+}
+
+.kf-practice-input__header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--kf-space-4);
+}
+
+.kf-practice-input__header .kf-text-secondary,
+.kf-practice-input__header .kf-meta {
+    margin-block: var(--kf-space-2) 0;
+}
+
+.kf-practice-input__header .kf-meta {
+    max-width: 32rem;
+    line-height: var(--kf-line-height-body);
+}
+
+.kf-practice-feedback {
+    display: grid;
+    gap: var(--kf-space-4);
+    padding-block: var(--kf-space-4);
+    padding-inline: var(--kf-space-5);
+    background: var(--kf-color-surface-elevated);
+    border: 1px solid var(--kf-color-border);
+    border-inline-start-width: 4px;
+    border-radius: var(--kf-radius-card);
+}
+
+.kf-practice-feedback.note-reading-feedback--correct {
+    border-inline-start-color: var(--kf-color-success);
+}
+
+.kf-practice-feedback.note-reading-feedback--incorrect {
+    border-inline-start-color: var(--kf-color-error);
+}
+
+.kf-practice-feedback__values,
+.kf-practice-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--kf-space-4);
+    margin: 0;
+}
+
+.kf-practice-feedback__values div,
+.kf-practice-summary div {
+    display: grid;
+    gap: var(--kf-space-1);
+}
+
+.kf-practice-feedback__values dt,
+.kf-practice-summary dt {
+    color: var(--kf-color-text-muted);
+    font-size: var(--kf-font-size-small);
+}
+
+.kf-practice-feedback__values dd,
+.kf-practice-summary dd {
+    margin: 0;
+    color: var(--kf-color-text-primary);
+    font-weight: 700;
+}
+
+.kf-practice-feedback__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--kf-space-3);
+}
+
 /* Blazor validation and error states */
 .valid.modified:not([type="checkbox"]) {
     outline: 1px solid var(--kf-color-success);
@@ -382,6 +478,26 @@ textarea:focus-visible {
 
     .kf-page-header .kf-button {
         width: 100%;
+    }
+
+    .kf-practice-workspace {
+        gap: var(--kf-space-4);
+    }
+
+    .kf-practice-workspace__header {
+        align-items: stretch;
+    }
+
+    .kf-practice-input__header {
+        display: grid;
+    }
+
+    .kf-practice-feedback {
+        padding-inline: var(--kf-space-4);
+    }
+
+    .kf-practice-feedback__actions .kf-button {
+        flex: 1 1 100%;
     }
 }
 

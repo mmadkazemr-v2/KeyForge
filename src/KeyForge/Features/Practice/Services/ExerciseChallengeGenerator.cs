@@ -34,6 +34,11 @@ public sealed class ExerciseChallengeGenerator : IExerciseChallengeGenerator
             return new MentalKeyboardChallengeGenerator().Create(mentalKeyboard);
         }
 
+        if (exercise is EarTrainingExerciseDefinition earTraining)
+        {
+            return new EarTrainingChallengeGenerator().Create(earTraining);
+        }
+
         return new ExerciseChallenge
         {
             ExerciseId = exercise.Id,

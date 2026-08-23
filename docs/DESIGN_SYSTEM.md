@@ -29,6 +29,7 @@ Tokens live in `src/KeyForge/wwwroot/app.css` and use the `--kf-*` prefix.
 - Buttons: `.kf-button` with `.kf-button--primary` or `.kf-button--secondary`
 - Badge: `.kf-status-badge` plus a status modifier
 - Progress: `.kf-progress` and `.kf-progress__value`; set `--kf-progress-value` to a percentage and provide the appropriate ARIA progressbar attributes
+- Practice: `.kf-practice-workspace`, `.kf-practice-workspace__header`, `.kf-practice-workspace__progress`, `.kf-practice-input`, and `.kf-practice-feedback` keep interactive exercises consistent without removing their exercise-specific content.
 
 Prefer these CSS classes over new Razor components until shared behavior, not just shared appearance, justifies a component.
 
@@ -50,6 +51,7 @@ Status selection belongs to presentation mapping; lesson unlocking and completio
 - Use spacing and color tokens instead of one-off values.
 - Keep one clear primary action per section; use secondary buttons for alternatives.
 - Never rely on color alone: pair statuses with visible text and preserve focus outlines.
+- Keep practice workspaces ordered as context, progress, focused input, feedback, then session actions. Tempo and metronome controls remain supporting controls rather than the primary visual focus.
 - The card grid uses auto-fit columns for desktop and tablet, then naturally collapses on narrow screens. The application shell switches between mobile navigation and a fixed sidebar at one 48rem breakpoint.
 
 ## Music notation

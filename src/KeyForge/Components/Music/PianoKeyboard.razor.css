@@ -2,6 +2,8 @@
     max-width: 100%;
     overflow-x: auto;
     padding-block-end: var(--kf-space-2);
+    overscroll-behavior-inline: contain;
+    scrollbar-color: var(--kf-color-border-strong) transparent;
 }
 
 .piano-keyboard {
@@ -9,6 +11,7 @@
     min-width: max(40rem, calc(var(--kf-piano-white-key-count) * 3.25rem));
     height: 14rem;
     isolation: isolate;
+    direction: ltr;
 }
 
 .piano-keyboard__white-keys {
@@ -21,6 +24,7 @@
     position: relative;
     font: inherit;
     cursor: pointer;
+    touch-action: manipulation;
     transition: border-color 120ms ease, background-color 120ms ease, transform 120ms ease;
 }
 
@@ -32,6 +36,7 @@
 
 .piano-keyboard__key:disabled {
     cursor: default;
+    opacity: 1;
 }
 
 .piano-keyboard__key--white {
@@ -87,7 +92,7 @@
 }
 
 .piano-keyboard__label {
-    font-family: var(--kf-font-family);
+    font-family: var(--kf-font-sans);
     font-size: var(--kf-font-size-small);
     font-weight: 700;
     white-space: nowrap;
@@ -103,6 +108,11 @@
 
 @media (max-width: 40rem) {
     .piano-keyboard {
+        min-width: max(36rem, calc(var(--kf-piano-white-key-count) * 2.75rem));
         height: 11rem;
+    }
+
+    .piano-keyboard__key--white {
+        min-height: 2.75rem;
     }
 }
