@@ -16,6 +16,7 @@ internal static class ExerciseTypeMap
         ["octave"] = typeof(OctaveExerciseDefinition),
         ["fingerIndependence"] = typeof(FingerIndependenceExerciseDefinition),
         ["mentalKeyboard"] = typeof(MentalKeyboardExerciseDefinition),
-        ["speed"] = typeof(SpeedExerciseDefinition)
+        ["speed"] = typeof(SpeedExerciseDefinition),
+        ["sequence"] = typeof(SequenceExerciseDefinition)
     };
 }

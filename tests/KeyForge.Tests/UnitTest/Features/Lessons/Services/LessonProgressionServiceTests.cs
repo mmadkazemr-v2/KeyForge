@@ -527,6 +527,95 @@ public sealed class LessonProgressionServiceTests
     }
 
     [Fact]
+    public void IsCompleted_ScoreOnlyRule_CompletedPassingAttemptCompletesImmediately()
+    {
+        var recorder = new InMemoryExerciseAttemptRecorder();
+        recorder.Record(new ExerciseAttempt
+        {
+            LessonId = "lesson-01",
+            ExerciseId = "ex-01",
+            StartedAt = DateTime.UtcNow,
+            CompletedAt = DateTime.UtcNow,
+            Score = 75,
+            IsSuccessful = true
+        });
+        var lesson = new LessonDefinition
+        {
+            Id = "lesson-01",
+            Completion = new CompletionRule { MinimumScore = 75 }
+        };
+        var store = CreateProgressStore();
+        store.SaveProgress(new LessonProgress { LessonId = lesson.Id, BestScore = 75 });
+
+        var service = CreateService([lesson], store, recorder);
+
+        Assert.True(service.IsCompleted(lesson.Id));
+    }
+
+    [Fact]
+    public void IsCompleted_ScoreOnlyRule_FailedAttemptDoesNotComplete()
+    {
+        var recorder = new InMemoryExerciseAttemptRecorder();
+        recorder.Record(new ExerciseAttempt
+        {
+            LessonId = "lesson-01",
+            ExerciseId = "ex-01",
+            StartedAt = DateTime.UtcNow,
+            CompletedAt = DateTime.UtcNow,
+            Score = 95,
+            IsSuccessful = false
+        });
+        recorder.Record(new ExerciseAttempt
+        {
+            LessonId = "lesson-01",
+            ExerciseId = "ex-01",
+            StartedAt = DateTime.UtcNow,
+            CompletedAt = DateTime.UtcNow,
+            Score = 30,
+            IsSuccessful = true
+        });
+        var lesson = new LessonDefinition
+        {
+            Id = "lesson-01",
+            Completion = new CompletionRule { MinimumScore = 70 }
+        };
+        var store = CreateProgressStore();
+        store.SaveProgress(new LessonProgress { LessonId = lesson.Id, BestScore = 95 });
+
+        var service = CreateService([lesson], store, recorder);
+
+        Assert.False(service.IsCompleted(lesson.Id));
+    }
+
+    [Theory]
+    [InlineData(false, null)]
+    [InlineData(true, null)]
+    public void IsCompleted_ScoreOnlyRule_IncompleteAttemptDoesNotComplete(bool isSuccessful, int? score)
+    {
+        var recorder = new InMemoryExerciseAttemptRecorder();
+        recorder.Record(new ExerciseAttempt
+        {
+            LessonId = "lesson-01",
+            ExerciseId = "ex-01",
+            StartedAt = DateTime.UtcNow,
+            CompletedAt = null,
+            Score = score,
+            IsSuccessful = isSuccessful
+        });
+        var lesson = new LessonDefinition
+        {
+            Id = "lesson-01",
+            Completion = new CompletionRule { MinimumScore = 70 }
+        };
+        var store = CreateProgressStore();
+        store.SaveProgress(new LessonProgress { LessonId = lesson.Id, BestScore = 100 });
+
+        var service = CreateService([lesson], store, recorder);
+
+        Assert.False(service.IsCompleted(lesson.Id));
+    }
+
+    [Fact]
     public void IsCompleted_MinimumScore_AboveThreshold_ReturnsTrue()
     {
         var lesson = new LessonDefinition
@@ -580,6 +669,7 @@ public sealed class LessonProgressionServiceTests
             ExerciseId = "ex-01",
             StartedAt = DateTime.UtcNow,
             CompletedAt = DateTime.UtcNow,
+            Score = 100,
             IsSuccessful = true
         });
         recorder.Record(new ExerciseAttempt
@@ -588,6 +678,7 @@ public sealed class LessonProgressionServiceTests
             ExerciseId = "ex-02",
             StartedAt = DateTime.UtcNow,
             CompletedAt = DateTime.UtcNow,
+            Score = 100,
             IsSuccessful = true
         });
 
@@ -620,6 +711,7 @@ public sealed class LessonProgressionServiceTests
             ExerciseId = "ex-01",
             StartedAt = DateTime.UtcNow,
             CompletedAt = DateTime.UtcNow,
+            Score = 100,
             IsSuccessful = true
         });
 

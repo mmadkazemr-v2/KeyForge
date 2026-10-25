@@ -50,4 +50,5 @@ public sealed class ExerciseEvaluationResult
 
     public SequenceEvaluationDetails? Speed { get; init; }
     public SequenceEvaluationDetails? FingerIndependence { get; init; }
+    public SequenceEvaluationDetails? Sequence { get; init; }
 }

@@ -49,6 +49,11 @@ public sealed class ExerciseChallengeGenerator : IExerciseChallengeGenerator
             return new FingerIndependenceChallengeGenerator().Create(fingerIndependence, selectedBpm);
         }
 
+        if (exercise is SequenceExerciseDefinition sequence)
+        {
+            return new SequenceChallengeGenerator().Create(sequence);
+        }
+
         return new ExerciseChallenge
         {
             ExerciseId = exercise.Id,

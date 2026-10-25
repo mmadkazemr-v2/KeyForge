@@ -23,7 +23,7 @@ public sealed class PracticeSessionUiFlowProcessTests
             new ExerciseCompletionEvaluator(attempts));
         var service = new PracticeSessionService(catalog, progression, new ExerciseChallengeGenerator(),
             new ExerciseEvaluator(), new ExerciseScorer(), attempts);
-        var progress = new ProgressUpdateService(progressStore, catalog, progression);
+        var progress = new ProgressUpdateService(progressStore, catalog, progression, attempts);
         var session = service.StartSession(lesson.Id)!;
         var runtime = service.StartExercise(session);
 
@@ -75,7 +75,7 @@ public sealed class PracticeSessionUiFlowProcessTests
         var progression = new LessonProgressionService(catalog, progressStore, completion);
         var service = new PracticeSessionService(catalog, progression, new ExerciseChallengeGenerator(),
             new ExerciseEvaluator(), new ExerciseScorer(), attempts);
-        var progress = new ProgressUpdateService(progressStore, catalog, progression);
+        var progress = new ProgressUpdateService(progressStore, catalog, progression, attempts);
         var session = service.StartSession(lesson.Id)!;
         var runtime = service.StartExercise(session);
 
@@ -126,7 +126,7 @@ public sealed class PracticeSessionUiFlowProcessTests
             new ExerciseEvaluator(),
             new ExerciseScorer(),
             attemptRecorder);
-        var progressUpdate = new ProgressUpdateService(progressStore, catalog, progression);
+        var progressUpdate = new ProgressUpdateService(progressStore, catalog, progression, attemptRecorder);
         var lessonQuery = new LessonProgressQueryService(catalog, progressStore, progression);
         var session = sessionService.StartSession(lesson.Id)!;
 

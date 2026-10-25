@@ -12,6 +12,9 @@ public sealed class FingerIndependenceExerciseDefinition : ExerciseDefinition
     /// </summary>
     public List<int> Fingers { get; set; } = [];
 
+    /// <summary>Optional authored pitch order paired with the instructional finger numbers.</summary>
+    public List<string>? Sequence { get; set; }
+
     /// <summary>Which hand(s) the exercise is practised with.</summary>
     public PracticeHand Hand { get; set; } = PracticeHand.Both;
 

@@ -38,10 +38,22 @@ public sealed class ExerciseCompletionEvaluator : IExerciseCompletionEvaluator
 
         var successfulIds = new HashSet<string>(
             attempts
-                .Where(a => a.IsSuccessful)
+                .Where(IsCompletedSuccess)
                 .Select(a => a.ExerciseId),
             StringComparer.Ordinal);
 
         return exercises.All(e => successfulIds.Contains(e.Id));
     }
+
+    /// <inheritdoc />
+    public bool HasSuccessfulAttempt(string lessonId, int? minimumScore = null)
+    {
+        ArgumentNullException.ThrowIfNull(lessonId);
+        return _recorder.GetAttemptsByLesson(lessonId).Any(attempt =>
+            IsCompletedSuccess(attempt) &&
+            (minimumScore is null || attempt.Score >= minimumScore));
+    }
+
+    private static bool IsCompletedSuccess(ExerciseAttempt attempt) =>
+        attempt.IsSuccessful && attempt.CompletedAt is not null && attempt.Score is not null;
 }

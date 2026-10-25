@@ -34,7 +34,7 @@ public sealed class IntervalEarTrainingPracticeProcessTests
         var progression = new LessonProgressionService(catalog, store, new ExerciseCompletionEvaluator(recorder));
         var service = new PracticeSessionService(catalog, progression, new ExerciseChallengeGenerator(),
             new ExerciseEvaluator(), new ExerciseScorer(), recorder);
-        var progress = new ProgressUpdateService(store, catalog, progression);
+        var progress = new ProgressUpdateService(store, catalog, progression, recorder);
 
         var session = service.StartSession(lesson.Id)!;
         var runtime = service.StartExercise(session);

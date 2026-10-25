@@ -32,5 +32,8 @@ public enum ExerciseType
     MentalKeyboard,
 
     /// <summary>Practises playing patterns at increasingly high tempos.</summary>
-    Speed
+    Speed,
+
+    /// <summary>Practises an authored or scale-derived sequence of pitches.</summary>
+    Sequence
 }

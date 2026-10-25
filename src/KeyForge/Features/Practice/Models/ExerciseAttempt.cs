@@ -10,6 +10,9 @@ namespace KeyForge.Features.Practice.Models;
 /// </summary>
 public sealed class ExerciseAttempt
 {
+    /// <summary>Stable identity used to prevent recording the same attempt twice.</summary>
+    public Guid Id { get; set; } = Guid.NewGuid();
+
     /// <summary>
     /// Stable identifier of the lesson this attempt belongs to,
     /// matching <see cref="Features.Lessons.Models.LessonDefinition.Id"/>.

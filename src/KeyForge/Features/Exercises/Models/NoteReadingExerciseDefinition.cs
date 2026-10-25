@@ -13,6 +13,18 @@ public sealed class NoteReadingExerciseDefinition : ExerciseDefinition
     /// </summary>
     public string Range { get; set; } = string.Empty;
 
+    /// <summary>Structured chromatic range; additive alternative to the legacy range string.</summary>
+    public PitchRangeDefinition? NoteRange { get; set; }
+
+    /// <summary>Explicit note pool. Null means use the configured range.</summary>
+    public List<string>? Notes { get; set; }
+
+    /// <summary>Number of notes to generate; defaults to the legacy five-question drill.</summary>
+    public int Count { get; set; } = 5;
+
+    /// <summary>True selects random notes, false cycles deterministically; null preserves legacy spread.</summary>
+    public bool? Randomized { get; set; }
+
     /// <summary>
     /// The key signature the exercise is written in, e.g. "C major" or "G major".
     /// </summary>

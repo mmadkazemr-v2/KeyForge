@@ -19,6 +19,17 @@ public interface IExerciseAttemptRecorder
     void Record(ExerciseAttempt attempt);
 
     /// <summary>
+    /// Records an attempt only if its identity has not already been seen.
+    /// Implementations that do not support identity-based deduplication retain the
+    /// legacy behavior and report the attempt as newly recorded.
+    /// </summary>
+    bool RecordIfNew(ExerciseAttempt attempt)
+    {
+        Record(attempt);
+        return true;
+    }
+
+    /// <summary>
     /// Returns all recorded attempts for the specified lesson.
     /// </summary>
     /// <param name="lessonId">

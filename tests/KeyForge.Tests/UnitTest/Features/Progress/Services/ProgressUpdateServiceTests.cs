@@ -16,12 +16,14 @@ public sealed class ProgressUpdateServiceTests
     private static ProgressUpdateService CreateService(
         ILessonCatalog? catalog = null,
         IProgressStore? progressStore = null,
-        ILessonProgressionService? progression = null)
+        ILessonProgressionService? progression = null,
+        IExerciseAttemptRecorder? attemptRecorder = null)
     {
         return new ProgressUpdateService(
             progressStore ?? new InMemoryProgressStore(),
             catalog ?? new FakeLessonCatalog(),
-            progression ?? new FakeProgressionService());
+            progression ?? new FakeProgressionService(),
+            attemptRecorder ?? new InMemoryExerciseAttemptRecorder());
     }
 
     private static SessionResult MakeResult(int score = 80) => new()
@@ -75,7 +77,8 @@ public sealed class ProgressUpdateServiceTests
             BestScore = 50,
             AttemptCount = 1
         });
-        var service = CreateService(catalog: catalog, progressStore: store);
+        var recorder = CreateRecorderWithAttempts(1);
+        var service = CreateService(catalog: catalog, progressStore: store, attemptRecorder: recorder);
 
         service.UpdateProgress("lesson-01", MakeResult(75));
 
@@ -161,7 +164,8 @@ public sealed class ProgressUpdateServiceTests
             LessonId = "lesson-01",
             AttemptCount = 3
         });
-        var service = CreateService(catalog: catalog, progressStore: store);
+        var recorder = CreateRecorderWithAttempts(3);
+        var service = CreateService(catalog: catalog, progressStore: store, attemptRecorder: recorder);
 
         service.UpdateProgress("lesson-01", MakeResult(85));
 
@@ -213,7 +217,7 @@ public sealed class ProgressUpdateServiceTests
     }
 
     [Fact]
-    public void UpdateProgress_CompletionRulesNotMet_SetsNotCompleted()
+    public void UpdateProgress_LowerScore_DoesNotUndoCompletedLesson()
     {
         var catalog = new FakeLessonCatalog(MakeLesson(
             completion: new CompletionRule { MinimumScore = 70 }));
@@ -229,7 +233,50 @@ public sealed class ProgressUpdateServiceTests
 
         service.UpdateProgress("lesson-01", MakeResult(50));
 
-        Assert.False(store.GetProgress("lesson-01")!.IsCompleted);
+        Assert.True(store.GetProgress("lesson-01")!.IsCompleted);
+    }
+
+    [Fact]
+    public void UpdateProgress_ThreeAttempts_CountsEachOnceAndKeepsBestScore()
+    {
+        var catalog = new FakeLessonCatalog(MakeLesson());
+        var store = new InMemoryProgressStore();
+        var service = CreateService(catalog: catalog, progressStore: store);
+
+        service.UpdateProgress("lesson-01", MakeResult(70));
+        service.UpdateProgress("lesson-01", MakeResult(90));
+        service.UpdateProgress("lesson-01", MakeResult(80));
+
+        Assert.Equal(3, store.GetProgress("lesson-01")!.AttemptCount);
+        Assert.Equal(90, store.GetProgress("lesson-01")!.BestScore);
+    }
+
+    [Fact]
+    public void UpdateProgress_ReprocessingSameAttempt_DoesNotDoubleCount()
+    {
+        var catalog = new FakeLessonCatalog(MakeLesson());
+        var store = new InMemoryProgressStore();
+        var service = CreateService(catalog: catalog, progressStore: store);
+        var result = MakeResult();
+
+        service.UpdateProgress("lesson-01", result);
+        service.UpdateProgress("lesson-01", result);
+
+        Assert.Equal(1, store.GetProgress("lesson-01")!.AttemptCount);
+    }
+
+    [Fact]
+    public void UpdateProgress_IncompleteAttempt_DoesNotCreateProgress()
+    {
+        var catalog = new FakeLessonCatalog(MakeLesson());
+        var store = new InMemoryProgressStore();
+        var service = CreateService(catalog: catalog, progressStore: store);
+        var result = MakeResult();
+        result.Attempt.CompletedAt = null;
+
+        service.UpdateProgress("lesson-01", result);
+
+        Assert.Null(store.GetProgress("lesson-01"));
     }
 
     [Fact]
@@ -274,8 +321,10 @@ public sealed class ProgressUpdateServiceTests
             AttemptCount = 5,
             IsCompleted = true
         });
+        var recorder = CreateRecorderWithAttempts(5);
         var progression = new FakeProgressionService(isCompleted: true);
-        var service = CreateService(catalog: catalog, progressStore: store, progression: progression);
+        var service = CreateService(catalog: catalog, progressStore: store, progression: progression,
+            attemptRecorder: recorder);
 
         service.UpdateProgress("lesson-01", MakeResult(70));
 
@@ -288,6 +337,24 @@ public sealed class ProgressUpdateServiceTests
     }
 
     #endregion
+
+    private static InMemoryExerciseAttemptRecorder CreateRecorderWithAttempts(int count)
+    {
+        var recorder = new InMemoryExerciseAttemptRecorder();
+        for (var i = 0; i < count; i++)
+        {
+            recorder.Record(new ExerciseAttempt
+            {
+                LessonId = "lesson-01",
+                ExerciseId = "ex-01",
+                StartedAt = DateTime.UtcNow,
+                CompletedAt = DateTime.UtcNow,
+                Score = 60 + i,
+                IsSuccessful = i >= 1
+            });
+        }
+        return recorder;
+    }
 
     #region Error handling tests
 
@@ -349,6 +416,7 @@ public sealed class ProgressUpdateServiceTests
         services.AddSingleton<IProgressStore, InMemoryProgressStore>();
         services.AddSingleton<ILessonCatalog, FakeLessonCatalog>();
         services.AddSingleton<ILessonProgressionService, FakeProgressionService>();
+        services.AddSingleton<IExerciseAttemptRecorder, InMemoryExerciseAttemptRecorder>();
         services.AddSingleton<IProgressUpdateService, ProgressUpdateService>();
         var provider = services.BuildServiceProvider();
 

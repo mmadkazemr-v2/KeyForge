@@ -62,7 +62,8 @@ public sealed class SequenceExerciseEvaluator
             ExpectedValue = expected[0].Value,
             ActualValue = actual.FirstOrDefault()?.Value,
             Speed = exerciseType == ExerciseType.Speed ? details : null,
-            FingerIndependence = exerciseType == ExerciseType.FingerIndependence ? details : null
+            FingerIndependence = exerciseType == ExerciseType.FingerIndependence ? details : null,
+            Sequence = exerciseType == ExerciseType.Sequence ? details : null
         };
     }
 

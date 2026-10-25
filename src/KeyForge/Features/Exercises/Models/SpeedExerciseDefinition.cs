@@ -16,6 +16,12 @@ public sealed class SpeedExerciseDefinition : ExerciseDefinition
     /// <summary>Number of times the pattern should be repeated per set.</summary>
     public int Repetitions { get; set; } = 10;
 
+    /// <summary>Optional authored pitch order used instead of the legacy pattern.</summary>
+    public List<string>? Sequence { get; set; }
+
+    /// <summary>Optional formula-based scale used instead of the legacy pattern.</summary>
+    public ScaleConfiguration? Scale { get; set; }
+
     /// <summary>Default constructor that pins the polymorphic discriminator.</summary>
     public SpeedExerciseDefinition() => Type = ExerciseType.Speed;
 }

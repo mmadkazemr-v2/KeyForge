@@ -13,7 +13,11 @@ public sealed class SpeedChallengeGenerator
 
         var bpm = selectedBpm ?? exercise.Tempo?.DefaultBpm ?? throw new InvalidOperationException(
             "Speed exercises require a runtime tempo.");
-        var pattern = GetPatternNotes(exercise.Pattern);
+        var pattern = exercise.Sequence is not null
+            ? PitchSequenceBuilder.ParsePitches(exercise.Sequence, exercise.Id, "sequence")
+            : exercise.Scale is not null
+                ? PitchSequenceBuilder.BuildScale(exercise.Scale, exercise.Id)
+                : GetPatternNotes(exercise.Pattern);
         var notes = Enumerable.Range(0, exercise.Repetitions)
             .SelectMany(_ => pattern)
             .ToArray();

@@ -53,28 +53,23 @@ public sealed class LessonProgressionService(
             return false;
         }
 
-        if (lesson.Completion.RequireAllExercises)
+        if (lesson.Completion.MinimumScore is { } minScore &&
+            !_exerciseCompletionEvaluator.HasSuccessfulAttempt(lessonId, minScore) &&
+            !(progress.IsCompleted && progress.BestScore >= minScore))
         {
-            var completed = _exerciseCompletionEvaluator.AreAllExercisesCompleted(lessonId, lesson.Exercises);
-            if (!completed)
-            {
-                return false;
-            }
-        }
-        else
-        {
-            if (!progress.IsCompleted)
-            {
-                return false;
-            }
+            return false;
         }
 
-        if (lesson.Completion.MinimumScore is not { } minScore)
+        // Trust an already completed state after the current score requirement passes.
+        // BestScore is monotonic, so a lower retry cannot revoke legitimate completion.
+        if (progress.IsCompleted)
         {
             return true;
         }
 
-        return progress.BestScore is not null && !(progress.BestScore < minScore);
+        return lesson.Completion.RequireAllExercises
+            ? _exerciseCompletionEvaluator.AreAllExercisesCompleted(lessonId, lesson.Exercises)
+            : _exerciseCompletionEvaluator.HasSuccessfulAttempt(lessonId);
     }
 
     private bool IsPreviousCompleted(LessonDefinition lesson)
@@ -104,7 +99,6 @@ public sealed class LessonProgressionService(
 
     private bool IsPrerequisiteMet(string lessonId)
     {
-        var progress = _progressStore.GetProgress(lessonId);
-        return progress is not null && progress.IsCompleted;
+        return IsCompleted(lessonId);
     }
 }

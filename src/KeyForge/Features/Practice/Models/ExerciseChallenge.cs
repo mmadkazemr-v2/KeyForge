@@ -12,4 +12,5 @@ public sealed class ExerciseChallenge
     public EarTrainingChallengeDetails? EarTraining { get; init; }
     public SpeedChallengeDetails? Speed { get; init; }
     public FingerIndependenceChallengeDetails? FingerIndependence { get; init; }
+    public SequenceChallengeDetails? Sequence { get; init; }
 }

@@ -28,6 +28,18 @@ public sealed class InMemoryExerciseAttemptRecorderTests
     }
 
     [Fact]
+    public void Record_SameAttemptTwice_IsIdempotent()
+    {
+        var recorder = CreateRecorder();
+        var attempt = new ExerciseAttempt { LessonId = "lesson-01", ExerciseId = "ex-01" };
+
+        recorder.Record(attempt);
+        recorder.Record(attempt);
+
+        Assert.Single(recorder.GetAllAttempts());
+    }
+
+    [Fact]
     public void Record_RecordedAttempt_IsRetrievable()
     {
         var recorder = CreateRecorder();

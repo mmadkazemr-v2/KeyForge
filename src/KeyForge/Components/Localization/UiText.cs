@@ -431,6 +431,7 @@ public static class UiText
         ExerciseType.FingerIndependence => Select("استقلال انگشتان", "Finger independence"),
         ExerciseType.MentalKeyboard => Select("کیبورد ذهنی", "Mental keyboard"),
         ExerciseType.Speed => Select("سرعت", "Speed"),
+        ExerciseType.Sequence => Select("توالی نت‌ها", "Pitch sequence"),
         _ => Unknown
     };
 

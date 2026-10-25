@@ -15,7 +15,14 @@ public sealed class FingerIndependenceChallengeGenerator
             throw new InvalidOperationException("Finger-independence exercises support finger numbers 1 through 5.");
         }
 
-        var notes = fingers.Select(finger => FingerNotes[finger - 1]).ToArray();
+        var notes = exercise.Sequence is null
+            ? fingers.Select(finger => FingerNotes[finger - 1]).ToArray()
+            : PitchSequenceBuilder.ParsePitches(exercise.Sequence, exercise.Id, "sequence").ToArray();
+        if (exercise.Sequence is not null && exercise.Fingers.Count > 0 && exercise.Fingers.Count != notes.Length)
+        {
+            throw new InvalidOperationException(
+                $"Finger-independence exercise '{exercise.Id}' must provide one finger number per sequence pitch.");
+        }
         var bpm = selectedBpm ?? exercise.Tempo?.DefaultBpm;
         TimeSpan? interval = bpm.HasValue
             ? RhythmChallengeGenerator.CalculateBeatInterval(bpm.Value)
@@ -34,7 +41,7 @@ public sealed class FingerIndependenceChallengeGenerator
             FingerIndependence = new FingerIndependenceChallengeDetails
             {
                 Hand = exercise.Hand,
-                Fingers = fingers,
+                Fingers = exercise.Fingers.Count == 0 && exercise.Sequence is not null ? [] : fingers,
                 ExpectedNotes = notes
             }
         };

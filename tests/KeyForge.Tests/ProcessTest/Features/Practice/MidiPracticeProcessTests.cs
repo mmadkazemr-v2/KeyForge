@@ -40,7 +40,7 @@ public sealed class MidiPracticeProcessTests
             runtime.CaptureInput(input!);
         }
         var result = service.SubmitAttempt(session, runtime, runtime.StartedAt.AddSeconds(1));
-        new ProgressUpdateService(store, catalog, progression).UpdateProgress(lesson.Id, result);
+        new ProgressUpdateService(store, catalog, progression, recorder).UpdateProgress(lesson.Id, result);
 
         Assert.True(result.IsSuccessful);
         Assert.Equal(100, result.Score);

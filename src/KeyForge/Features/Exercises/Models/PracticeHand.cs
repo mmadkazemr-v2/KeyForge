@@ -12,5 +12,8 @@ public enum PracticeHand
     Right,
 
     /// <summary>Practise with both hands, usually together.</summary>
-    Both
+    Both,
+
+    /// <summary>The exercise may be practised with either hand.</summary>
+    Either
 }

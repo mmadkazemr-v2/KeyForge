@@ -73,7 +73,7 @@ public sealed class PracticeFlowProcessTests
         Assert.NotNull(progress);
         Assert.Equal(1, progress.AttemptCount);
         Assert.Equal(100, progress.BestScore);
-        Assert.False(progress.IsCompleted);
+        Assert.True(progress.IsCompleted);
     }
 
     [Fact]
@@ -230,7 +230,7 @@ public sealed class PracticeFlowProcessTests
 
         return new Flow(
             session,
-            new ProgressUpdateService(store, catalog, progression),
+            new ProgressUpdateService(store, catalog, progression, recorder),
             store,
             recorder);
     }

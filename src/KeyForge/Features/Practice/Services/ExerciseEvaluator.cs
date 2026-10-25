@@ -45,6 +45,11 @@ public sealed class ExerciseEvaluator : IExerciseEvaluator
             return new SequenceExerciseEvaluator().Evaluate(challenge, inputEvents, ExerciseType.FingerIndependence, requireTiming: false);
         }
 
+        if (challenge.ExerciseType == ExerciseType.Sequence)
+        {
+            return new SequenceExerciseEvaluator().Evaluate(challenge, inputEvents, ExerciseType.Sequence, requireTiming: false);
+        }
+
         var expected = challenge.ExpectedInputs.FirstOrDefault();
         if (expected is null)
         {
