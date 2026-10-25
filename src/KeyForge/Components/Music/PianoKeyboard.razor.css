@@ -1,9 +1,13 @@
 .piano-keyboard__viewport {
     max-width: 100%;
     overflow-x: auto;
-    padding-block-end: var(--kf-space-2);
+    padding-block: var(--kf-space-3);
+    padding-inline: var(--kf-space-3);
     overscroll-behavior-inline: contain;
     scrollbar-color: var(--kf-color-border-strong) transparent;
+    background: var(--kf-color-surface-elevated);
+    border: 1px solid var(--kf-color-border);
+    border-radius: var(--kf-radius-card);
 }
 
 .piano-keyboard {

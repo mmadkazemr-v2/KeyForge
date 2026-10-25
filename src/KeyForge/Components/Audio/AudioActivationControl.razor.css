@@ -1,0 +1,13 @@
+.audio-activation {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--kf-space-3);
+}
+
+.audio-activation__error {
+    flex-basis: 100%;
+    margin: 0;
+    color: var(--kf-color-error);
+    font-size: var(--kf-font-size-small);
+}

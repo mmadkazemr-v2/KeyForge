@@ -1,0 +1,31 @@
+@page "/dev/audio"
+@rendermode InteractiveServer
+@using KeyForge.Components.Audio
+@inject IWebHostEnvironment HostEnvironment
+
+<PageTitle>@UiText.AudioVerification - @UiText.ProductName</PageTitle>
+
+@if (HostEnvironment.IsDevelopment())
+{
+    <header class="kf-page-header">
+        <div>
+            <p class="kf-meta">@UiText.HomeEyebrow</p>
+            <h1 class="kf-page-title">@UiText.AudioVerification</h1>
+            <p class="kf-page-header__description">@UiText.AudioVerificationDescription</p>
+        </div>
+        <a class="kf-button kf-button--secondary" href="/">@UiText.Home</a>
+    </header>
+
+    <AudioVerification />
+}
+else
+{
+    <PageTitle>@UiText.ContentNotFound - @UiText.ProductName</PageTitle>
+    <header class="kf-page-header">
+        <div>
+            <h1 class="kf-page-title">@UiText.ContentNotFound</h1>
+            <p class="kf-page-header__description">@UiText.ContentNotFoundDescription</p>
+        </div>
+        <a class="kf-button kf-button--secondary" href="/">@UiText.Home</a>
+    </header>
+}

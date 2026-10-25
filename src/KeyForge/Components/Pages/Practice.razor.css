@@ -10,6 +10,8 @@
 
 .practice-session {
     gap: var(--kf-space-5);
+    max-width: 64rem;
+    margin-inline: auto;
 }
 
 .practice-workspace {
@@ -45,6 +47,39 @@
 
 .practice-tempo-tools > * {
     min-width: 0;
+}
+
+/* Secondary hardware/settings area: compact, collapsible, easy to ignore. */
+.practice-midi-panel {
+    max-width: 40rem;
+    width: 100%;
+    margin-inline: auto;
+}
+
+.practice-midi-panel summary {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--kf-space-2);
+    padding-block: var(--kf-space-2);
+    padding-inline: var(--kf-space-3);
+    border-radius: var(--kf-radius-control);
+    color: var(--kf-color-text-muted);
+    font-size: var(--kf-font-size-small);
+    font-weight: 650;
+    cursor: pointer;
+    user-select: none;
+}
+
+.practice-midi-panel summary:hover {
+    color: var(--kf-color-text-secondary);
+}
+
+.practice-midi-panel__hint {
+    font-weight: 400;
+}
+
+.practice-midi-panel__content {
+    padding-block-start: var(--kf-space-3);
 }
 
 .practice-error {

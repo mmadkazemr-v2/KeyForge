@@ -5,15 +5,28 @@ namespace KeyForge.Features.Exercises.Models;
 /// </summary>
 public enum EarTrainingTask
 {
-    /// <summary>Matching a sung/played pitch back by ear.</summary>
+    /// <summary>
+    /// Matching a sung/played pitch back by ear.
+    /// </summary>
     PitchMatching,
 
-    /// <summary>Identifying chords (major, minor, diminished, ...) by ear.</summary>
+    /// <summary>
+    /// Identifying melodic intervals between two notes by ear.
+    /// </summary>
+    IntervalRecognition,
+
+    /// <summary>
+    /// Identifying chords (major, minor, diminished, ...) by ear.
+    /// </summary>
     ChordRecognition,
 
-    /// <summary>Identifying scales and modes by ear.</summary>
+    /// <summary>
+    /// Identifying scales and modes by ear.
+    /// </summary>
     ScaleRecognition,
 
-    /// <summary>Transcribing a short melody by ear.</summary>
+    /// <summary>
+    /// Transcribing a short melody by ear.
+    /// </summary>
     MelodyDictation
 }

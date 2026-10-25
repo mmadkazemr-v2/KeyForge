@@ -48,6 +48,8 @@ export async function startRhythm(
         return;
     }
 
+    resetRhythmDisplay(root);
+
     const run = {
         cancelled: false,
         active: false,
@@ -58,10 +60,10 @@ export async function startRhythm(
     };
     activeRuns.set(workspaceId, run);
     root.focus({ preventScroll: true });
-    await dotNetReference.invokeMethodAsync("NotifyRhythmStarted");
+    run.timelineStartedAt = performance.now();
+    await dotNetReference.invokeMethodAsync("NotifyRhythmStarted", run.timelineStartedAt);
     if (run.cancelled) return;
 
-    run.timelineStartedAt = performance.now();
     run.active = true;
     setState(root, "active", labels.active);
 
@@ -132,4 +134,25 @@ export function stopRhythm(workspaceId) {
         document.removeEventListener("keydown", run.keyHandler);
     }
     activeRuns.delete(workspaceId);
+}
+
+export function setRhythmPaused(workspaceId, label) {
+    stopRhythm(workspaceId);
+    const root = document.getElementById(workspaceId);
+    if (!root) return;
+    resetRhythmDisplay(root);
+    setState(root, "ready", label);
+    setText(root, "[data-rhythm-countdown]", label);
+}
+
+function resetRhythmDisplay(root) {
+    root.querySelectorAll("[data-rhythm-beat]").forEach(beat => {
+        beat.classList.remove("is-active", "is-complete");
+    });
+    const progress = root.querySelector("[data-rhythm-progress]");
+    progress?.setAttribute("aria-valuenow", "0");
+    progress?.querySelector(".kf-progress__value")?.style.setProperty("--kf-progress-value", "0%");
+    const hitCount = root.querySelector("[data-rhythm-hit-count]");
+    if (hitCount) hitCount.textContent = "0";
+    root.classList.remove("is-hit");
 }

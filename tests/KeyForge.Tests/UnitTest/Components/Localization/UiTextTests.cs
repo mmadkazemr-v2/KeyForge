@@ -1,4 +1,5 @@
 using System.Globalization;
+using KeyForge.Components.Audio;
 using KeyForge.Components.Localization;
 
 namespace KeyForge.Tests.UnitTest.Components.Localization;
@@ -55,6 +56,10 @@ public sealed class UiTextTests
         Assert.Equal("Note-reading practice", UiText.NoteReadingPractice);
         Assert.Equal("Mental keyboard practice", UiText.MentalKeyboardPractice);
         Assert.Equal("Enable audio", UiText.EnableAudio);
+        Assert.Equal("Selected MIDI device disconnected", UiText.MidiDeviceDisconnected);
+        Assert.Equal("Could not open the selected MIDI input", UiText.MidiDeviceOpenFailure);
+        Assert.Equal("Select a MIDI input", UiText.MidiSelectDevice);
+        Assert.Contains("paused", UiText.MidiPerformancePaused, StringComparison.OrdinalIgnoreCase);
         Assert.Equal("Interval practice", UiText.IntervalPractice);
         Assert.Equal("Octave practice", UiText.OctavePractice);
         Assert.Equal("Question 2 of 5", UiText.GetQuestionPosition(2, 5));
@@ -75,6 +80,43 @@ public sealed class UiTextTests
         bool expected)
     {
         Assert.Equal(expected, UiText.IsSupportedLanguage(language));
+    }
+
+    [Fact]
+    public void AudioStatusLabels_LocalizePerCulture()
+    {
+        using var _ = new CultureScope("fa");
+        Assert.Equal("در حال فعال‌سازی صدا…", UiText.GetAudioStatusLabel(AudioPlaybackState.Initializing));
+        Assert.Equal("صدا آماده است", UiText.GetAudioStatusLabel(AudioPlaybackState.Ready));
+        Assert.Equal("صدا در این مرورگر در دسترس نیست", UiText.GetAudioStatusLabel(AudioPlaybackState.Failed));
+        Assert.Equal("صدا هنوز فعال نشده است", UiText.GetAudioStatusLabel(AudioPlaybackState.Uninitialized));
+
+        using var __ = new CultureScope("en");
+        Assert.Equal("Activating audio…", UiText.GetAudioStatusLabel(AudioPlaybackState.Initializing));
+        Assert.Equal("Audio is ready", UiText.GetAudioStatusLabel(AudioPlaybackState.Ready));
+        Assert.Equal("Audio is unavailable in this browser", UiText.GetAudioStatusLabel(AudioPlaybackState.Failed));
+        Assert.Equal("Audio is not enabled yet", UiText.GetAudioStatusLabel(AudioPlaybackState.Uninitialized));
+    }
+
+    [Fact]
+    public void AudioFailureMessages_LocalizePerCulture_WithoutMentioningMicrophonePermission()
+    {
+        using var _ = new CultureScope("fa");
+        Assert.Equal(
+            "صدا فعال نشد. تنظیمات صدای این سایت را در مرورگر بررسی کنید.",
+            UiText.GetAudioFailureMessage(AudioFailureReason.BrowserBlocked));
+        Assert.Equal(
+            "صدا در این مرورگر در دسترس نیست",
+            UiText.GetAudioFailureMessage(AudioFailureReason.NotInitialized));
+
+        using var __ = new CultureScope("en");
+        Assert.Equal(
+            "Audio could not be activated. Check this site's sound settings in your browser.",
+            UiText.GetAudioFailureMessage(AudioFailureReason.BrowserBlocked));
+        Assert.DoesNotContain("microphone", UiText.GetAudioFailureMessage(AudioFailureReason.BrowserBlocked),
+            StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("permission", UiText.GetAudioFailureMessage(AudioFailureReason.BrowserBlocked),
+            StringComparison.OrdinalIgnoreCase);
     }
 
     private sealed class CultureScope : IDisposable

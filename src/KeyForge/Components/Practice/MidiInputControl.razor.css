@@ -53,7 +53,7 @@
     color: var(--kf-color-text-primary);
     border: 1px solid var(--kf-color-border);
     border-radius: var(--kf-radius-control);
-    background: var(--kf-color-elevated-surface);
+    background: var(--kf-color-surface-elevated);
 }
 
 .midi-input-control__error {

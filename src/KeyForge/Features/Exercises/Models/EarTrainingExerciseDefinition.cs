@@ -6,10 +6,14 @@ namespace KeyForge.Features.Exercises.Models;
 /// </summary>
 public sealed class EarTrainingExerciseDefinition : ExerciseDefinition
 {
-    /// <summary>The specific ear-training task being practised.</summary>
+    /// <summary>
+    /// The specific ear-training task being practised.
+    /// </summary>
     public EarTrainingTask TaskType { get; set; } = EarTrainingTask.PitchMatching;
 
-    /// <summary>Number of questions/repetitions the student should complete.</summary>
+    /// <summary>
+    /// Number of questions/repetitions the student should complete.
+    /// </summary>
     public int Rounds { get; set; } = 10;
 
     /// <summary>
@@ -18,6 +22,19 @@ public sealed class EarTrainingExerciseDefinition : ExerciseDefinition
     /// </summary>
     public List<string> Keys { get; set; } = [];
 
-    /// <summary>Default constructor that pins the polymorphic discriminator.</summary>
+    /// <summary>
+    /// Intervals covered by interval-recognition tasks, expressed with standard
+    /// abbreviations, e.g. ["P5", "M3"]. An empty list uses every supported interval.
+    /// </summary>
+    public List<string> Intervals { get; set; } = [];
+
+    /// <summary>
+    /// Direction(s) the interval should be recognised in.
+    /// </summary>
+    public ExerciseDirection Direction { get; set; } = ExerciseDirection.Ascending;
+
+    /// <summary>
+    /// Default constructor that pins the polymorphic discriminator.
+    /// </summary>
     public EarTrainingExerciseDefinition() => Type = ExerciseType.EarTraining;
 }

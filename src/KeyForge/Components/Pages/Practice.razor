@@ -108,11 +108,6 @@ else if (CurrentExercise is { } exercise)
 
         <ExercisePresentation Exercise="exercise" />
 
-        @if (_result is null && SupportsMidiInput)
-        {
-            <MidiInputControl />
-        }
-
         @if (_result is null && _runtimeExercise?.Definition is not RhythmExerciseDefinition and not SpeedExerciseDefinition and not FingerIndependenceExerciseDefinition &&
             _runtimeExercise?.Definition.Tempo is not null)
         {
@@ -250,6 +245,14 @@ else if (CurrentExercise is { } exercise)
                         </div>
                     </dl>
                 }
+                @if (_result.Evaluation.EarTraining is { } earTraining)
+                {
+                    <dl class="practice-result-summary">
+                        <div><dt>@UiText.QuestionProgress</dt><dd>@UiText.FormatNumber(earTraining.QuestionCount)</dd></div>
+                        <div><dt>@UiText.CorrectAnswers</dt><dd>@UiText.FormatNumber(earTraining.CorrectAnswerCount)</dd></div>
+                        <div><dt>@UiText.IncorrectAnswers</dt><dd>@UiText.FormatNumber(earTraining.IncorrectAnswerCount)</dd></div>
+                    </dl>
+                }
                 @if (NoteTargetResult is { } noteTarget)
                 {
                     <dl class="practice-result-summary">
@@ -285,6 +288,19 @@ else if (CurrentExercise is { } exercise)
                     </button>
                 </div>
             </section>
+        }
+
+        @if (_result is null && SupportsMidiInput)
+        {
+            <details class="practice-midi-panel">
+                <summary>
+                    @UiText.Midi
+                    <span class="practice-midi-panel__hint">@UiText.OptionalMidi</span>
+                </summary>
+                <div class="practice-midi-panel__content">
+                    <MidiInputControl />
+                </div>
+            </details>
         }
     </div>
 }
@@ -345,29 +361,35 @@ else if (CurrentExercise is { } exercise)
         {
             _lesson = LessonCatalog.GetById(LessonId);
             _session = PracticeSessionService.StartSession(LessonId);
-
-            if (_session is null)
-            {
-                _startState = PracticeStartState.NotFound;
-                return;
-            }
-
-            _startState = PracticeStartState.Ready;
-            ResetAttemptForm();
-            RefreshLessonState();
         }
         catch (InvalidOperationException)
         {
             _startState = PracticeStartState.Locked;
+            return;
         }
         catch (ArgumentException)
         {
             _startState = PracticeStartState.NotFound;
+            return;
         }
         catch (Exception)
         {
             _startState = PracticeStartState.Error;
+            return;
         }
+
+        if (_session is null)
+        {
+            _startState = PracticeStartState.NotFound;
+            return;
+        }
+
+        _startState = PracticeStartState.Ready;
+
+        // A data-driven exercise definition may fail to build its runtime
+        // challenge; that is a start error, not a locked lesson.
+        PrepareRuntimeOrShowError();
+        RefreshLessonState();
     }
 
     private void CompleteInteractiveAttempt(DateTime completedAt)
@@ -401,7 +423,7 @@ else if (CurrentExercise is { } exercise)
     {
         var selectedBpm = _runtimeExercise?.SelectedBpm;
         _result = null;
-        ResetAttemptForm(selectedBpm);
+        PrepareRuntimeOrShowError(selectedBpm);
     }
 
     private void AdvanceSession()
@@ -413,8 +435,25 @@ else if (CurrentExercise is { } exercise)
 
         _session.Next();
         _result = null;
-        ResetAttemptForm();
+        PrepareRuntimeOrShowError();
         RefreshLessonState();
+    }
+
+    /// <summary>
+    /// Builds the runtime for the current exercise, or degrades to the error
+    /// state without leaving a stale runtime from the previous exercise.
+    /// </summary>
+    private void PrepareRuntimeOrShowError(int? selectedBpm = null)
+    {
+        try
+        {
+            ResetAttemptForm(selectedBpm);
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or ArgumentException)
+        {
+            _runtimeExercise = null;
+            _startState = PracticeStartState.Error;
+        }
     }
 
     private void AdvanceUnsupportedExercise()

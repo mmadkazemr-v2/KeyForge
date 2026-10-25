@@ -1,0 +1,52 @@
+@namespace KeyForge.Components.Audio
+@inject IAudioPlaybackService Audio
+@implements IDisposable
+
+<div class="audio-activation">
+    @if (Audio.State == AudioPlaybackState.Ready)
+    {
+        <span class="kf-status-badge kf-status-badge--completed">@UiText.GetAudioStatusLabel(Audio.State)</span>
+    }
+    else
+    {
+        <button class="kf-button kf-button--primary" type="button"
+                @ref="_button"
+                disabled="@(Audio.State == AudioPlaybackState.Initializing)"
+                aria-busy="@(Audio.State == AudioPlaybackState.Initializing)"
+                @onclick="EnableAsync">
+            @(Audio.State == AudioPlaybackState.Initializing ? UiText.AudioActivating : UiText.EnableAudio)
+        </button>
+        @if (Audio.State == AudioPlaybackState.Failed)
+        {
+            <p class="audio-activation__error" role="alert">
+                @UiText.GetAudioFailureMessage(Audio.FailureReason)
+            </p>
+        }
+    }
+</div>
+
+@code {
+    private ElementReference _button;
+    private bool _prepared;
+
+    protected override void OnInitialized() => Audio.StateChanged += Refresh;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_prepared && Audio.State != AudioPlaybackState.Ready)
+        {
+            _prepared = true;
+            await Audio.PrepareActivationAsync(_button);
+        }
+        if (Audio.State == AudioPlaybackState.Ready) _prepared = false;
+    }
+
+    private void Refresh() => _ = InvokeAsync(StateHasChanged);
+    public void Dispose() => Audio.StateChanged -= Refresh;
+
+    /// <summary>Runs the Tone.js activation from this explicit user click and refreshes the state.</summary>
+    private async Task EnableAsync()
+    {
+        await Audio.InitializeAsync();
+    }
+}

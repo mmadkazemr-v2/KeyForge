@@ -20,7 +20,15 @@
     {
         <label class="midi-input-control__selector">
             <span class="kf-meta">@UiText.MidiDevice</span>
-            <select value="@_selectedDeviceId" @onchange="SelectDeviceAsync" aria-label="@UiText.MidiDevice">
+            <select value="@SelectedInputValue" @onchange="SelectDeviceAsync" aria-label="@UiText.MidiDevice">
+                @if (_selectedDeviceId is null)
+                {
+                    <option value="" disabled>@UiText.MidiSelectDevice</option>
+                }
+                else if (_devices.All(device => device.Id != _selectedDeviceId))
+                {
+                    <option value="__selected-unavailable" disabled>@SelectedDeviceName (@StatusLabel)</option>
+                }
                 @foreach (var device in _devices)
                 {
                     <option value="@device.Id">@device.DisplayName</option>
@@ -29,20 +37,23 @@
         </label>
     }
 
-    @if (_status is MidiInputStatus.Connected)
+    @if (_selectedDeviceId is not null)
     {
         <dl class="midi-input-control__diagnostics" aria-live="polite">
             <div><dt>@UiText.SelectedMidiDevice</dt><dd>@SelectedDeviceName</dd></div>
-            <div><dt>@UiText.MidiInputStatus</dt><dd>@UiText.MidiInputActive</dd></div>
-            <div><dt>@UiText.LastMidiNote</dt><dd><bdi>@(MidiState.LastNote?.Value ?? UiText.NoMidiActivity)</bdi></dd></div>
-            <div><dt>@UiText.Velocity</dt><dd>@VelocityLabel</dd></div>
-            <div><dt>@UiText.Sustain</dt><dd>@(MidiState.IsSustainDown ? UiText.PedalDown : UiText.PedalUp)</dd></div>
+            <div><dt>@UiText.MidiInputStatus</dt><dd>@StatusLabel</dd></div>
+            @if (_status is MidiInputStatus.Connected)
+            {
+                <div><dt>@UiText.LastMidiNote</dt><dd><bdi>@(MidiState.LastNote?.Value ?? UiText.NoMidiActivity)</bdi></dd></div>
+                <div><dt>@UiText.Velocity</dt><dd>@VelocityLabel</dd></div>
+                <div><dt>@UiText.Sustain</dt><dd>@(MidiState.IsSustainDown ? UiText.PedalDown : UiText.PedalUp)</dd></div>
+            }
         </dl>
     }
 
-    @if (_status is MidiInputStatus.PermissionDenied or MidiInputStatus.Error)
+    @if (_status is MidiInputStatus.PermissionDenied or MidiInputStatus.Error or MidiInputStatus.DeviceOpenFailure)
     {
-        <p class="midi-input-control__error" role="alert">@StatusLabel</p>
+        <p class="midi-input-control__error" role="alert">@StatusLabel @(_errorMessage)</p>
     }
 </section>
 
@@ -51,8 +62,11 @@
     private DotNetObjectReference<MidiInputControl>? _dotNetReference;
     private IReadOnlyList<MidiDeviceDescriptor> _devices = [];
     private string? _selectedDeviceId;
+    private string? _selectedDeviceName;
+    private string? _errorMessage;
     private MidiInputStatus _status = MidiInputStatus.Disabled;
     private bool _enabled;
+    private IDisposable? _browserClockRegistration;
 
     private string StatusLabel => _status switch
     {
@@ -60,10 +74,18 @@
         MidiInputStatus.PermissionDenied => UiText.MidiPermissionDenied,
         MidiInputStatus.NoDevice => UiText.MidiNoDevice,
         MidiInputStatus.Connected => UiText.MidiConnected,
+        MidiInputStatus.DeviceDisconnected => UiText.MidiDeviceDisconnected,
+        MidiInputStatus.DeviceOpenFailure => UiText.MidiDeviceOpenFailure,
+        MidiInputStatus.DeviceSelectionRequired => UiText.MidiSelectDevice,
         MidiInputStatus.Error => UiText.MidiConnectionError,
         _ => UiText.MidiDisabled
     };
-    private string SelectedDeviceName => _devices.FirstOrDefault(device => device.Id == _selectedDeviceId)?.DisplayName ?? UiText.MidiNoDevice;
+    private string SelectedDeviceName => _devices.FirstOrDefault(device => device.Id == _selectedDeviceId)?.DisplayName ??
+        _selectedDeviceName ?? UiText.MidiNoDevice;
+    private string SelectedInputValue => _selectedDeviceId is not null &&
+        _devices.All(device => device.Id != _selectedDeviceId)
+            ? "__selected-unavailable"
+            : _selectedDeviceId ?? string.Empty;
     private string VelocityLabel => MidiState.LastVelocity is { } velocity
         ? $"{UiText.GetMidiVelocityLevel(MidiPracticeInputState.GetVelocityLevel(velocity))} ({velocity})"
         : UiText.NoMidiActivity;
@@ -80,6 +102,8 @@
         try
         {
             _module = await JavaScript.InvokeAsync<IJSObjectReference>("import", "./Components/Practice/MidiInputControl.razor.js");
+            _browserClockRegistration = InputRouter.RegisterBrowserClock(async () =>
+                await _module.InvokeAsync<double>("getBrowserTimestamp"));
             var supported = await _module.InvokeAsync<bool>("isSupported");
             if (!supported)
             {
@@ -108,9 +132,10 @@
             var state = await _module.InvokeAsync<MidiAccessState>("enable", _dotNetReference);
             ApplyState(state);
         }
-        catch (JSException)
+        catch (JSException exception)
         {
             _status = MidiInputStatus.Error;
+            _errorMessage = exception.Message;
         }
     }
 
@@ -125,25 +150,24 @@
         {
             ApplyState(await _module.InvokeAsync<MidiAccessState>("selectInput", deviceId));
         }
-        catch (JSException)
+        catch (JSException exception)
         {
             _status = MidiInputStatus.Error;
+            _errorMessage = exception.Message;
         }
     }
 
     [JSInvokable]
     public async Task HandleMidiMessage(MidiInputMessage message)
     {
+        if (!InputRouter.Accepts(message)) return;
         var presentationEvent = MidiInputAdapter.TryCreatePresentationEvent(message);
         if (presentationEvent is not null)
         {
             MidiState.Apply(presentationEvent);
         }
 
-        if (MidiInputAdapter.IsNoteOn(message))
-        {
-            await InputRouter.DispatchAsync(message);
-        }
+        await InputRouter.DispatchAsync(message);
     }
 
     [JSInvokable]
@@ -162,7 +186,17 @@
         _enabled = state.Enabled;
         _devices = state.Devices ?? [];
         _selectedDeviceId = state.SelectedDeviceId;
+        _selectedDeviceName = state.SelectedDeviceName is null ? null :
+            string.IsNullOrWhiteSpace(state.SelectedDeviceManufacturer)
+                ? state.SelectedDeviceName
+                : $"{state.SelectedDeviceManufacturer} {state.SelectedDeviceName}";
+        _errorMessage = state.ErrorMessage;
         _status = state.Status;
+        InputRouter.SetSelectedDevice(state.SelectedDeviceId, state.Status is MidiInputStatus.Connected);
+        if (state.Status is MidiInputStatus.DeviceDisconnected or MidiInputStatus.NoDevice or MidiInputStatus.Error)
+        {
+            MidiState.Reset();
+        }
     }
 
     private void HandleMidiStateChanged() => _ = InvokeAsync(StateHasChanged);
@@ -170,17 +204,35 @@
     public async ValueTask DisposeAsync()
     {
         MidiState.Changed -= HandleMidiStateChanged;
+        _browserClockRegistration?.Dispose();
+        InputRouter.SetSelectedDevice(null, false);
         MidiState.Reset();
         if (_module is not null)
         {
             try
             {
                 await _module.InvokeVoidAsync("dispose");
-                await _module.DisposeAsync();
             }
             catch (JSDisconnectedException)
             {
                 // Browser resources are released with the disconnected circuit.
+            }
+            catch (JSException)
+            {
+                // Cleanup must not interrupt navigation if the MIDI adapter is already gone.
+            }
+
+            try
+            {
+                await _module.DisposeAsync();
+            }
+            catch (JSDisconnectedException)
+            {
+                // The browser already reclaimed the module reference.
+            }
+            catch (JSException)
+            {
+                // Cleanup must not interrupt navigation if the module was already released.
             }
         }
 

@@ -1,0 +1,201 @@
+@namespace KeyForge.Components.Practice
+@using KeyForge.Components.Audio
+@implements IAsyncDisposable
+@inject IAudioPlaybackService Audio
+@inject MidiInputRouter MidiInput
+
+<div class="kf-practice-workspace interval-recognition-workspace" aria-labelledby="interval-recognition-title">
+    <header class="kf-practice-workspace__header">
+        <div>
+            <p class="kf-meta">@UiText.EarTrainingPractice</p>
+            <h2 id="interval-recognition-title" class="kf-card__title">@UiText.IdentifyTheInterval</h2>
+            <p class="kf-card__description">@UiText.IntervalRecognitionInstructions</p>
+        </div>
+        <span class="kf-status-badge kf-status-badge--available">@UiText.GetQuestionPosition(CurrentQuestionNumber, QuestionCount)</span>
+    </header>
+
+    <div class="kf-practice-workspace__progress">
+        <span class="kf-meta">@UiText.QuestionProgress</span>
+        <div class="kf-progress" role="progressbar" aria-label="@UiText.QuestionProgress"
+             aria-valuemin="0" aria-valuemax="@QuestionCount" aria-valuenow="@CurrentQuestionNumber">
+            <div class="kf-progress__value" style="@($"--kf-progress-value: {QuestionProgressPercent}%")"></div>
+        </div>
+    </div>
+
+    <section class="kf-practice-input interval-recognition-workspace__playback" aria-label="@UiText.AudioPrompt">
+        <p class="kf-text-secondary">@UiText.ListenThenChoose</p>
+        @if (AudioReady)
+        {
+            <button class="kf-button kf-button--primary" type="button" disabled="@_isPlaying"
+                    @onclick="PlayCurrentIntervalAsync">
+                @(_hasPlayed ? UiText.ReplayAudio : UiText.PlayAudio)
+            </button>
+        }
+        else
+        {
+            <AudioActivationControl />
+        }
+    </section>
+
+    <section class="kf-practice-input" aria-labelledby="interval-choices-title">
+        <div class="kf-practice-input__header">
+            <div>
+                <h3 id="interval-choices-title" class="kf-section-title">@UiText.SelectHeardInterval</h3>
+            </div>
+            <p class="kf-meta">@UiText.GetQuestionPosition(CurrentQuestionNumber, QuestionCount)</p>
+        </div>
+        <div class="interval-recognition-workspace__choices" role="group" aria-label="@UiText.SelectHeardInterval">
+            @foreach (var choice in Choices)
+            {
+                <button class="kf-button kf-button--secondary interval-recognition-workspace__choice" type="button"
+                        disabled="@IsAnswered"
+                        aria-pressed="@(IsSelected(choice) ? "true" : "false")"
+                        @onclick='() => HandleChoice(choice)'>
+                    @UiText.GetIntervalName(choice)
+                </button>
+            }
+        </div>
+    </section>
+
+    @if (IsAnswered)
+    {
+        <section class="kf-practice-feedback @FeedbackClass" role="status" aria-live="polite">
+            <div>
+                <p class="kf-meta">@UiText.AttemptResult</p>
+                <h3 class="kf-section-title">@(IsCurrentAnswerCorrect ? UiText.CorrectAnswer : UiText.IncorrectAnswer)</h3>
+            </div>
+            <dl class="kf-practice-feedback__values">
+                <div><dt>@UiText.TargetInterval</dt><dd>@UiText.GetIntervalName(CurrentQuestion.Interval)</dd></div>
+                <div><dt>@UiText.YourAnswer</dt><dd>@UiText.GetIntervalName(_selectedChoice ?? string.Empty)</dd></div>
+                <div><dt>@UiText.SourceNote</dt><dd><bdi>@CurrentQuestion.SourceNote</bdi></dd></div>
+                <div><dt>@UiText.TargetNote</dt><dd><bdi>@CurrentQuestion.TargetNote</bdi></dd></div>
+            </dl>
+            <div class="kf-practice-feedback__actions">
+                <button class="kf-button kf-button--secondary" type="button" disabled="@_isPlaying"
+                        @onclick="PlayCurrentIntervalAsync">@UiText.ReplayAudio</button>
+                @if (!IsCurrentAnswerCorrect)
+                {
+                    <button class="kf-button kf-button--secondary" type="button" @onclick="RetryQuestion">@UiText.RetryQuestion</button>
+                }
+                <button class="kf-button kf-button--primary" type="button" @onclick="AcceptAnswer">@UiText.ContinueQuestions</button>
+            </div>
+        </section>
+    }
+</div>
+
+@code {
+    /// <summary>Musical pause between the source and target note of an interval question.</summary>
+    public static readonly TimeSpan SequenceGap = TimeSpan.FromMilliseconds(700);
+
+    [Parameter, EditorRequired] public RuntimeExercise RuntimeExercise { get; set; } = null!;
+    [Parameter] public EventCallback<DateTime> OnCompleted { get; set; }
+
+    private int _questionIndex;
+    private string? _selectedChoice;
+    private ExerciseInputEvent? _pendingInput;
+    private bool _hasPlayed;
+    private bool _isPlaying;
+
+    private EarTrainingChallengeDetails Details => RuntimeExercise.Challenge.EarTraining!;
+    private bool AudioReady => Audio.State == AudioPlaybackState.Ready;
+    private int QuestionCount => RuntimeExercise.Challenge.ExpectedInputs.Count;
+    private int CurrentQuestionNumber => _questionIndex + 1;
+    private IReadOnlyList<string> Choices =>
+        Details.IntervalChoices.Count > 0 ? Details.IntervalChoices : EarTrainingChallengeGenerator.DefaultIntervals;
+    private EarTrainingIntervalQuestion CurrentQuestion => Details.IntervalQuestions[_questionIndex];
+    private ExpectedInput CurrentExpectedInput => RuntimeExercise.Challenge.ExpectedInputs[_questionIndex];
+    private bool IsAnswered => _pendingInput is not null;
+    private bool IsCurrentAnswerCorrect => _pendingInput is not null &&
+        EarTrainingExerciseEvaluator.IsCorrectInterval(CurrentExpectedInput, _pendingInput);
+    private int QuestionProgressPercent => (int)Math.Round(CurrentQuestionNumber * 100d / QuestionCount);
+    private string FeedbackClass => IsCurrentAnswerCorrect
+        ? "note-reading-feedback note-reading-feedback--correct"
+        : "note-reading-feedback note-reading-feedback--incorrect";
+
+    private bool IsSelected(string choice) =>
+        IsAnswered && string.Equals(_selectedChoice, choice, StringComparison.Ordinal);
+
+    private async Task PlayCurrentIntervalAsync()
+    {
+        if (_isPlaying)
+        {
+            return;
+        }
+
+        _isPlaying = true;
+        try
+        {
+            _hasPlayed = await Audio.PlaySequenceAsync(BuildPlaybackSequence(CurrentQuestion));
+        }
+        finally
+        {
+            _isPlaying = false;
+        }
+    }
+
+    /// <summary>Builds the source→target playback request for one interval question.</summary>
+    public static IReadOnlyList<AudioSequenceNote> BuildPlaybackSequence(EarTrainingIntervalQuestion question)
+    {
+        ArgumentNullException.ThrowIfNull(question);
+        return
+        [
+            AudioSequenceNote.From(MusicalNote.Parse(question.SourceNote), TimeSpan.Zero),
+            AudioSequenceNote.From(MusicalNote.Parse(question.TargetNote), SequenceGap)
+        ];
+    }
+
+    private void HandleChoice(string choice)
+    {
+        if (IsAnswered || !Choices.Contains(choice))
+        {
+            return;
+        }
+
+        var timestamp = DateTime.UtcNow;
+        _selectedChoice = choice;
+        _pendingInput = new ExerciseInputEvent
+        {
+            Timestamp = timestamp,
+            Offset = timestamp - RuntimeExercise.StartedAt,
+            Source = InputSource.ComputerKeyboard,
+            Type = InputEventType.Choice,
+            Value = choice
+        };
+    }
+
+    private void RetryQuestion()
+    {
+        _pendingInput = null;
+        _selectedChoice = null;
+    }
+
+    private async Task AcceptAnswer()
+    {
+        if (_pendingInput is null) return;
+        RuntimeExercise.CaptureInput(_pendingInput);
+        if (_questionIndex == QuestionCount - 1)
+        {
+            await OnCompleted.InvokeAsync(DateTime.UtcNow);
+            return;
+        }
+        _questionIndex++;
+        _pendingInput = null;
+        _selectedChoice = null;
+        _hasPlayed = false;
+    }
+
+    protected override void OnInitialized() => Audio.StateChanged += RefreshAudio;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            MidiInput.SetTimelineOrigin(await MidiInput.CaptureBrowserTimestampAsync());
+        }
+    }
+    private void RefreshAudio() => _ = InvokeAsync(StateHasChanged);
+    public async ValueTask DisposeAsync()
+    {
+        Audio.StateChanged -= RefreshAudio;
+        await Audio.StopActiveNotesAsync();
+    }
+}

@@ -55,6 +55,10 @@
     {
         <button class="kf-button kf-button--primary" type="button" @onclick="StartSequenceAsync">@UiText.StartPractice</button>
     }
+    @if (_pausedForMidi)
+    {
+        <p class="kf-practice-feedback" role="status" data-midi-disconnect-pause>@UiText.MidiPerformancePaused</p>
+    }
 
     @if (_isActive)
     {
@@ -75,9 +79,11 @@
     [Parameter, EditorRequired] public RuntimeExercise RuntimeExercise { get; set; } = null!;
     [Parameter] public EventCallback<DateTime> OnCompleted { get; set; }
     private DateTime _timelineStartedAt;
+    private double? _browserTimelineOriginMilliseconds;
     private int _stepIndex;
     private bool _isActive;
     private bool _completed;
+    private bool _pausedForMidi;
     private bool _metronomeRunning;
     private bool? _lastInputCorrect;
     private MusicalNote? _lastSelectedNote;
@@ -96,10 +102,38 @@
     private string FingerList => string.Join(UiText.ListSeparator, FingerDetails.Fingers.Select(UiText.FormatNumber));
     private MusicalNote FirstPianoNote => MusicalNote.Parse("C4");
     private MusicalNote LastPianoNote => MusicalNote.Parse("C5");
-    protected override void OnInitialized() => _midiRegistration = MidiInput.Register(HandleMidiMessageAsync);
+    protected override void OnInitialized()
+    {
+        _midiRegistration = MidiInput.Register(HandleMidiMessageAsync);
+        MidiInput.SelectedDeviceStateChanged += HandleMidiDeviceStateChanged;
+    }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender) await CaptureBrowserTimelineOriginAsync();
+    }
+    private async Task CaptureBrowserTimelineOriginAsync()
+    {
+        _browserTimelineOriginMilliseconds = await MidiInput.CaptureBrowserTimestampAsync();
+        MidiInput.SetTimelineOrigin(_browserTimelineOriginMilliseconds);
+    }
     private Task HandleTempoChanged(int _) => InvokeAsync(StateHasChanged);
     private Task HandleMetronomeRunningChanged(bool isRunning) { _metronomeRunning = isRunning; return InvokeAsync(StateHasChanged); }
-    private Task StartSequenceAsync() { if (_isActive || _completed) return Task.CompletedTask; _timelineStartedAt = DateTime.UtcNow; _isActive = true; _lastInputCorrect = null; return InvokeAsync(StateHasChanged); }
+    private async Task StartSequenceAsync()
+    {
+        if (_isActive || _completed) return;
+        if (_pausedForMidi)
+        {
+            RuntimeExercise.ResetCapturedInputs();
+            _stepIndex = 0;
+            _lastSelectedNote = null;
+        }
+        _pausedForMidi = false;
+        await CaptureBrowserTimelineOriginAsync();
+        _timelineStartedAt = DateTime.UtcNow;
+        _isActive = true;
+        _lastInputCorrect = null;
+        await InvokeAsync(StateHasChanged);
+    }
     private Task HandlePianoNote(MusicalNote note) => CaptureInputAsync(VirtualPianoInputAdapter.Create(note, RuntimeExercise.StartedAt, DateTime.UtcNow, _timelineStartedAt));
     private Task HandleKeyDown(KeyboardEventArgs args)
     {
@@ -108,8 +142,27 @@
     }
     private Task HandleMidiMessageAsync(MidiInputMessage message)
     {
-        var input = MidiInputAdapter.TryCreate(message, RuntimeExercise.StartedAt, DateTime.UtcNow, _timelineStartedAt);
-        return input is null ? Task.CompletedTask : CaptureInputAsync(input);
+        var input = _browserTimelineOriginMilliseconds is { } origin
+            ? MidiInputAdapter.TryCreate(message, DateTime.UtcNow, origin)
+            : null;
+        if (!_isActive || _completed || input is null) return Task.CompletedTask;
+        RuntimeExercise.CaptureMidiEvent(input);
+        if (input.Type != InputEventType.Note)
+        {
+            return Task.CompletedTask;
+        }
+        return CaptureInputAsync(input);
+    }
+    private void HandleMidiDeviceStateChanged(string? deviceId, bool connected)
+    {
+        if (connected || !_isActive) return;
+        _isActive = false;
+        _pausedForMidi = true;
+        _stepIndex = 0;
+        _lastSelectedNote = null;
+        RuntimeExercise.ResetCapturedInputs();
+        MidiInput.SetTimelineOrigin(null);
+        _ = InvokeAsync(StateHasChanged);
     }
     private async Task CaptureInputAsync(ExerciseInputEvent input)
     {
@@ -122,5 +175,9 @@
         if (_stepIndex == StepCount) { _isActive = false; _completed = true; await OnCompleted.InvokeAsync(DateTime.UtcNow); }
     }
     private string GetStepClass(int index) => index < _stepIndex ? "is-complete" : _isActive && index == _stepIndex ? "is-active" : string.Empty;
-    public void Dispose() => _midiRegistration?.Dispose();
+    public void Dispose()
+    {
+        MidiInput.SelectedDeviceStateChanged -= HandleMidiDeviceStateChanged;
+        _midiRegistration?.Dispose();
+    }
 }

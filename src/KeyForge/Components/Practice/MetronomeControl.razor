@@ -33,7 +33,7 @@
         <div class="metronome-control__actions">
             @if (!_isRunning)
             {
-                <button class="kf-button kf-button--primary" type="button" @onclick="StartAsync">@UiText.StartMetronome</button>
+                <button class="kf-button kf-button--primary" type="button" @ref="_startButton" @onclick="StartAsync">@UiText.StartMetronome</button>
             }
             else
             {
@@ -64,27 +64,43 @@
     private bool _isRunning;
     private bool _audioFailed;
     private int _currentBeat;
+    private ElementReference _startButton;
+    private bool _activationPrepared;
+    private bool _disposed;
+    private bool _countInCompleted;
 
     private int CurrentBpm => RuntimeExercise.SelectedBpm ?? RuntimeExercise.Definition.Tempo?.DefaultBpm ?? 0;
     private int VisualBeatCount => Math.Max(Configuration.CountInBeats, 4);
-    private bool IsCountingIn => _isRunning && _currentBeat <= Configuration.CountInBeats;
+    private bool IsCountingIn => _isRunning && !_countInCompleted;
     private string StatusLabel => !_isRunning ? UiText.MetronomeReady : IsCountingIn ? UiText.CountingIn : UiText.MetronomeActive;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_isRunning && !_activationPrepared && Configuration is { Enabled: true, Audio: true })
+        {
+            _activationPrepared = true;
+            await Audio.PrepareActivationAsync(_startButton);
+        }
+    }
 
     private async Task StartAsync()
     {
-        if (_isRunning || CurrentBpm <= 0)
+        if (_disposed || _isRunning || CurrentBpm <= 0)
         {
             return;
         }
 
+        _isRunning = true;
         _audioFailed = false;
+        _countInCompleted = Configuration.CountInBeats == 0;
         if (Configuration.Audio && !await Audio.InitializeAsync())
         {
             _audioFailed = true;
         }
 
+        if (_disposed) return;
+
         _runCancellation = new CancellationTokenSource();
-        _isRunning = true;
         _currentBeat = 0;
         await OnRunningChanged.InvokeAsync(true);
         _ = RunAsync(_runCancellation.Token);
@@ -102,6 +118,7 @@
             }
 
             cancellationToken.ThrowIfCancellationRequested();
+            _countInCompleted = true;
             await OnCountInCompleted.InvokeAsync();
             if (StopAfterCountIn)
             {
@@ -144,10 +161,15 @@
         }
 
         _isRunning = false;
+        _activationPrepared = false;
         _currentBeat = 0;
         await Audio.StopActiveNotesAsync();
-        await OnRunningChanged.InvokeAsync(false);
+        if (!_disposed) await OnRunningChanged.InvokeAsync(false);
     }
 
-    public async ValueTask DisposeAsync() => await StopAsync();
+    public async ValueTask DisposeAsync()
+    {
+        _disposed = true;
+        await StopAsync();
+    }
 }

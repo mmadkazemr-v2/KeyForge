@@ -26,15 +26,17 @@ public sealed class MidiPracticeProcessTests
         var service = new PracticeSessionService(catalog, progression, new ExerciseChallengeGenerator(), new ExerciseEvaluator(), new ExerciseScorer(), recorder);
         var session = service.StartSession(lesson.Id)!;
         var runtime = service.StartExercise(session);
+        long sequence = 0;
         foreach (var expected in runtime.Challenge.ExpectedInputs)
         {
             var input = MidiInputAdapter.TryCreate(new MidiInputMessage
             {
-                DeviceId = "controller", Status = 0x90,
+                DeviceId = "controller", DeviceName = "V61 MKII", Status = 0x90,
                 Data1 = MusicalNote.Parse(expected.Value).MidiNumber,
-                Data2 = 110, TimestampMilliseconds = 0
-            }, runtime.StartedAt, runtime.StartedAt.AddMilliseconds(100));
+                Data2 = 110, TimestampMilliseconds = 12_500 + sequence, Sequence = ++sequence
+            }, runtime.StartedAt.AddMilliseconds(500), 12_000);
 
+            runtime.CaptureMidiEvent(input!);
             runtime.CaptureInput(input!);
         }
         var result = service.SubmitAttempt(session, runtime, runtime.StartedAt.AddSeconds(1));
@@ -46,7 +48,9 @@ public sealed class MidiPracticeProcessTests
         {
             Assert.Equal(InputSource.Midi, input.Source);
             Assert.Equal(110, input.Velocity);
+            Assert.Equal(TimeSpan.FromMilliseconds(500d + input.Sequence!.Value - 1), input.Offset);
         });
+        Assert.All(runtime.MidiEvents, input => Assert.Equal("V61 MKII", input.DeviceName));
         Assert.Equal(1, store.GetProgress(lesson.Id)!.AttemptCount);
         Assert.Equal(100, store.GetProgress(lesson.Id)!.BestScore);
     }

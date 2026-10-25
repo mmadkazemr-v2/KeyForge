@@ -2,92 +2,139 @@ let midiAccess;
 let dotNetReference;
 let selectedInput;
 let selectedDeviceId;
+let selectedDeviceName;
+let selectedDeviceManufacturer;
+let errorStatus;
+let eventSequence = 0;
+let messageDispatch = Promise.resolve();
+let disposed = false;
 
 export function isSupported() {
     return Boolean(navigator.requestMIDIAccess);
 }
 
-export async function enable(reference) {
-    if (!isSupported()) {
-        return unsupportedState();
-    }
+export function getBrowserTimestamp() {
+    return performance.now();
+}
 
+export async function enable(reference) {
+    if (!isSupported()) return unsupportedState();
     dotNetReference = reference;
+    disposed = false;
     try {
         midiAccess ??= await navigator.requestMIDIAccess();
         midiAccess.onstatechange = notifyDevicesChanged;
-        const devices = getDevices();
-        if (!selectedDeviceId && devices.length > 0) {
-            setSelectedInput(devices[0].id);
-        }
         return getState();
     } catch (error) {
+        const denied = error?.name === 'NotAllowedError' || error?.name === 'SecurityError';
         return {
             enabled: false,
-            status: error?.name === 'NotAllowedError' ? 2 : 5,
+            status: denied ? 2 : 5,
             selectedDeviceId: null,
+            selectedDeviceName: null,
+            selectedDeviceManufacturer: null,
+            errorMessage: error?.message ?? String(error),
             devices: []
         };
     }
 }
 
-export function selectInput(deviceId) {
-    if (!midiAccess) {
-        return { enabled: false, status: 0, selectedDeviceId: null, devices: [] };
+export async function selectInput(deviceId) {
+    if (!midiAccess) return { ...getState(), status: 0 };
+    const input = midiAccess.inputs.get(deviceId);
+    if (!input || input.state !== 'connected') return getState();
+    await detachSelectedInput();
+    selectedDeviceId = input.id;
+    selectedDeviceName = input.name ?? input.id;
+    selectedDeviceManufacturer = input.manufacturer ?? null;
+    errorStatus = undefined;
+    try {
+        await input.open();
+        if (disposed || selectedDeviceId !== input.id || input.state !== 'connected') return getState();
+        selectedInput = input;
+        input.onmidimessage = handleMidiMessage;
+    } catch (error) {
+        errorStatus = { status: 7, message: error?.message ?? String(error) };
+        selectedInput = undefined;
     }
-
-    setSelectedInput(deviceId);
     return getState();
 }
 
-export function dispose() {
-    if (selectedInput) {
-        selectedInput.onmidimessage = null;
-    }
-    selectedInput = undefined;
+export async function dispose() {
+    disposed = true;
+    await detachSelectedInput();
     selectedDeviceId = undefined;
-    if (midiAccess) {
-        midiAccess.onstatechange = null;
-    }
+    selectedDeviceName = undefined;
+    selectedDeviceManufacturer = undefined;
+    if (midiAccess) midiAccess.onstatechange = null;
     dotNetReference = undefined;
 }
 
-function setSelectedInput(deviceId) {
-    if (selectedInput) {
-        selectedInput.onmidimessage = null;
-    }
-
-    selectedInput = midiAccess?.inputs.get(deviceId);
-    selectedDeviceId = selectedInput ? deviceId : undefined;
-    if (selectedInput) {
-        selectedInput.onmidimessage = handleMidiMessage;
-    }
-}
-
 function handleMidiMessage(event) {
-    if (!dotNetReference || !event?.data) {
-        return;
-    }
-
+    if (disposed || !dotNetReference || !event?.data || !selectedInput || selectedInput.state !== 'connected') return;
     const [status = 0, data1 = 0, data2 = 0] = event.data;
-    dotNetReference.invokeMethodAsync('HandleMidiMessage', {
+    const message = {
         deviceId: selectedDeviceId ?? '',
+        deviceName: selectedDeviceManufacturer
+            ? `${selectedDeviceManufacturer} ${selectedDeviceName ?? ''}`.trim()
+            : selectedDeviceName ?? '',
         status,
         data1,
         data2,
-        timestampMilliseconds: event.timeStamp ?? performance.now()
-    });
+        timestampMilliseconds: Number.isFinite(event.timeStamp) ? event.timeStamp : performance.now(),
+        sequence: ++eventSequence
+    };
+    messageDispatch = messageDispatch
+        .then(() => {
+            if (!disposed && selectedInput?.state === 'connected' && selectedDeviceId === message.deviceId) {
+                return dotNetReference?.invokeMethodAsync('HandleMidiMessage', message);
+            }
+        })
+        .catch(() => undefined);
 }
 
-function notifyDevicesChanged() {
-    if (selectedDeviceId && (!midiAccess.inputs.has(selectedDeviceId) || selectedInput?.state !== 'connected')) {
-        if (selectedInput) {
-            selectedInput.onmidimessage = null;
+async function notifyDevicesChanged() {
+    if (disposed || !midiAccess) return;
+    if (selectedDeviceId) {
+        const candidate = midiAccess.inputs.get(selectedDeviceId);
+        if (candidate?.state === 'connected' && !selectedInput) {
+            selectedDeviceName = candidate.name ?? selectedDeviceName;
+            selectedDeviceManufacturer = candidate.manufacturer ?? selectedDeviceManufacturer;
+            try {
+                await candidate.open();
+                if (!disposed && selectedDeviceId === candidate.id && candidate.state === 'connected') {
+                    selectedInput = candidate;
+                    candidate.onmidimessage = handleMidiMessage;
+                    errorStatus = undefined;
+                }
+            } catch (error) {
+                errorStatus = { status: 7, message: error?.message ?? String(error) };
+            }
+        } else if (selectedInput && (selectedInput.state !== 'connected' || !midiAccess.inputs.has(selectedDeviceId))) {
+            await detachSelectedInput();
         }
-        selectedInput = undefined;
-        selectedDeviceId = undefined;
     }
-    dotNetReference?.invokeMethodAsync('HandleMidiDevicesChanged', getState());
+    await notifyState();
+}
+
+async function notifyState() {
+    try {
+        await dotNetReference?.invokeMethodAsync('HandleMidiDevicesChanged', getState());
+    } catch {
+        // A disconnected Blazor circuit no longer needs device-state updates.
+    }
+}
+
+async function detachSelectedInput() {
+    const previous = selectedInput;
+    selectedInput = undefined;
+    if (!previous) return;
+    previous.onmidimessage = null;
+    try {
+        await previous.close();
+    } catch {
+        // The device can disappear while its port is being closed.
+    }
 }
 
 function getDevices() {
@@ -98,14 +145,29 @@ function getDevices() {
 
 function getState() {
     const devices = getDevices();
+    let status = 0;
+    if (midiAccess) {
+        if (errorStatus) status = errorStatus.status;
+        else if (selectedDeviceId && selectedInput?.state === 'connected') status = 4;
+        else if (selectedDeviceId) status = 6;
+        else if (devices.length === 0) status = 3;
+        else status = 8;
+    }
     return {
         enabled: Boolean(midiAccess),
-        status: devices.length === 0 ? 3 : selectedInput ? 4 : 3,
+        status,
         selectedDeviceId: selectedDeviceId ?? null,
+        selectedDeviceName: selectedDeviceName ?? null,
+        selectedDeviceManufacturer: selectedDeviceManufacturer ?? null,
+        errorMessage: errorStatus?.message ?? null,
         devices
     };
 }
 
 function unsupportedState() {
-    return { enabled: false, status: 1, selectedDeviceId: null, devices: [] };
+    return {
+        enabled: false, status: 1, selectedDeviceId: null,
+        selectedDeviceName: null, selectedDeviceManufacturer: null,
+        errorMessage: null, devices: []
+    };
 }

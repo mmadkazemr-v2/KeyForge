@@ -1,5 +1,3 @@
-using KeyForge.Components.Practice;
-
 namespace KeyForge.Components.Localization;
 
 /// <summary>
@@ -32,6 +30,19 @@ public static class UiText
         "درس‌های ساختاریافته را دنبال کنید، تمرین‌ها را انجام دهید و پیشرفت خود را ببینید.",
         "Follow structured lessons, complete exercises, and see your progress.");
     public static string BrowseLessons => Select("مشاهده درس‌ها", "Browse lessons");
+    public static string HomeHighlightsTitle => Select("چگونه کار می‌کند", "How it works");
+    public static string HomeHighlightLessonsTitle => Select("درس‌های ساختاریافته", "Structured lessons");
+    public static string HomeHighlightLessonsDescription => Select(
+        "هر درس تمرین‌های کوتاه و هدفمند دارد و با ترتیب مشخصی باز می‌شود.",
+        "Each lesson contains short, focused exercises and unlocks in order.");
+    public static string HomeHighlightPracticeTitle => Select("تمرین تعاملی", "Interactive practice");
+    public static string HomeHighlightPracticeDescription => Select(
+        "با پیانوی مجازی، مترونوم و بازخورد فوری تمرین کنید.",
+        "Practice with a virtual piano, a metronome, and instant feedback.");
+    public static string HomeHighlightProgressTitle => Select("پیگیری پیشرفت", "Progress tracking");
+    public static string HomeHighlightProgressDescription => Select(
+        "وضعیت تکمیل هر درس و بهترین امتیاز شما همیشه در دسترس است.",
+        "Lesson completion status and your best score stay at hand.");
     public static string NotationUnavailable => Select(
         "نمایش نت برای این ورودی در دسترس نیست.",
         "Notation is unavailable for this input.");
@@ -40,10 +51,28 @@ public static class UiText
         "ابتدا صدا را فعال کنید، سپس نت‌ها و کلیک مترونوم را بررسی کنید.",
         "Enable audio first, then verify notes and the metronome click.");
     public static string EnableAudio => Select("فعال‌سازی صدا", "Enable audio");
+    public static string AudioActivating => Select("در حال فعال‌سازی صدا…", "Activating audio…");
     public static string AudioNotEnabled => Select("صدا هنوز فعال نشده است", "Audio is not enabled yet");
     public static string AudioReady => Select("صدا آماده است", "Audio is ready");
     public static string AudioUnavailable => Select("صدا در این مرورگر در دسترس نیست", "Audio is unavailable in this browser");
+    public static string AudioBlocked => Select(
+        "صدا فعال نشد. تنظیمات صدای این سایت را در مرورگر بررسی کنید.",
+        "Audio could not be activated. Check this site's sound settings in your browser.");
+    public static string GetAudioStatusLabel(AudioPlaybackState state) => state switch
+    {
+        AudioPlaybackState.Ready => AudioReady,
+        AudioPlaybackState.Failed => AudioUnavailable,
+        AudioPlaybackState.Initializing => AudioActivating,
+        _ => AudioNotEnabled
+    };
+    public static string GetAudioFailureMessage(AudioFailureReason reason) => reason switch
+    {
+        AudioFailureReason.BrowserBlocked => AudioBlocked,
+        AudioFailureReason.ContextClosed => Select("صدا بسته شده است. صفحه را دوباره بارگذاری کنید.", "Audio was closed. Reload the page to restore it."),
+        _ => AudioUnavailable
+    };
     public static string Midi => Select("میدی", "MIDI");
+    public static string OptionalMidi => Select("اختیاری — برای پیانوی دیجیتال", "Optional — for digital pianos");
     public static string EnableMidi => Select("فعال‌سازی میدی", "Enable MIDI");
     public static string MidiDevice => Select("دستگاه میدی", "MIDI device");
     public static string MidiConnected => Select("دستگاه میدی متصل است", "MIDI device connected");
@@ -52,6 +81,10 @@ public static class UiText
     public static string MidiNotSupported => Select("میدی در این مرورگر پشتیبانی نمی‌شود", "MIDI is not supported in this browser");
     public static string MidiDisabled => Select("میدی غیرفعال است", "MIDI is disabled");
     public static string MidiConnectionError => Select("اتصال میدی ممکن نشد", "MIDI could not be connected");
+    public static string MidiDeviceDisconnected => Select("دستگاه انتخاب‌شده قطع شده است", "Selected MIDI device disconnected");
+    public static string MidiDeviceOpenFailure => Select("باز کردن ورودی میدی ممکن نشد", "Could not open the selected MIDI input");
+    public static string MidiSelectDevice => Select("یک ورودی میدی انتخاب کنید", "Select a MIDI input");
+    public static string MidiPerformancePaused => Select("تمرین با قطع دستگاه میدی متوقف شد. پس از اتصال دوباره، تمرین را از نو آغاز کنید.", "Practice paused because the selected MIDI device disconnected. Reconnect it and restart the exercise.");
     public static string SelectedMidiDevice => Select("دستگاه انتخاب‌شده", "Selected device");
     public static string MidiInputStatus => Select("وضعیت ورودی", "Input status");
     public static string MidiInputActive => Select("ورودی میدی فعال است", "MIDI input active");
@@ -128,14 +161,6 @@ public static class UiText
         $"تمرین {FormatNumber(current)} از {FormatNumber(total)}",
         $"Exercise {current} of {total}");
     public static string CurrentExercise => Select("تمرین فعلی", "Current exercise");
-    public static string RuntimeChallenge => Select("چالش تعاملی", "Interactive challenge");
-    public static string RuntimeChallengeInstructions => Select(
-        "نت خواسته‌شده را با نام علمی آن وارد کنید.",
-        "Enter the requested note using scientific pitch notation.");
-    public static string RuntimeAnswer => Select("پاسخ شما", "Your answer");
-    public static string TargetNote => Select("نت هدف", "Target note");
-    public static string RuntimeAnswerHint => Select("برای نمونه: C4 یا F#3", "For example: C4 or F#3");
-    public static string EvaluateAnswer => Select("بررسی پاسخ", "Evaluate answer");
     public static string RuntimeUnavailable => Select("حالت تعاملی در راه است", "Interactive mode is coming");
     public static string RuntimeUnavailableDescription => Select(
         "اجرای تعاملی این نوع تمرین هنوز آماده نیست. برای ادامه، به تمرین بعدی بروید.",
@@ -176,6 +201,11 @@ public static class UiText
     public static string ExtraInputs => Select("ورودی‌های اضافه", "Extra inputs");
     public static string IdentifyTheNote => Select("نت شنیده‌شده را پیدا کنید", "Identify the note you hear");
     public static string EarTrainingInstructions => Select("صدا را پخش کنید و سپس نت شنیده‌شده را روی پیانو انتخاب کنید.", "Play the sound, then select the note you heard on the piano.");
+    public static string IdentifyTheInterval => Select("فاصلهٔ شنیده‌شده را پیدا کنید", "Identify the interval you hear");
+    public static string IntervalRecognitionInstructions => Select(
+        "دو نت پشت‌سرهم پخش می‌شود؛ فاصلهٔ میان آن‌ها را از گزینه‌ها انتخاب کنید.",
+        "Two notes play one after the other; choose the distance between them.");
+    public static string SelectHeardInterval => Select("فاصله‌ای که شنیدید را انتخاب کنید", "Select the interval you heard");
     public static string AudioPrompt => Select("پخش صدای تمرین", "Exercise audio playback");
     public static string ListenThenChoose => Select("با دقت گوش دهید، سپس پاسخ خود را انتخاب کنید.", "Listen carefully, then choose your answer.");
     public static string PlayAudio => Select("پخش صدا", "Play audio");
@@ -198,6 +228,7 @@ public static class UiText
     public static string OctavePractice => Select("تمرین اکتاو", "Octave practice");
     public static string PlayTheTargetNote => Select("نت هدف را روی پیانو بنوازید یا انتخاب کنید.", "Play or select the target note on the piano.");
     public static string SourceNote => Select("نت آغاز", "Source note");
+    public static string TargetNote => Select("نت هدف", "Target note");
     public static string TargetInterval => Select("فاصلهٔ هدف", "Target interval");
     public static string TargetOctaves => Select("فاصلهٔ اکتاو", "Octave span");
     public static string GetIntervalInstruction(string interval, ExerciseDirection direction) => Select(
@@ -223,6 +254,25 @@ public static class UiText
     public static string ContinueQuestions => Select("ادامه", "Continue");
     public static string CorrectAnswers => Select("پاسخ‌های درست", "Correct answers");
     public static string IncorrectAnswers => Select("پاسخ‌های نادرست", "Incorrect answers");
+    public static string YourAnswer => Select("پاسخ شما", "Your answer");
+
+    /// <summary>Presentation-only interval name for a standard abbreviation such as "M3". Case-sensitive.</summary>
+    public static string GetIntervalName(string interval) => interval.Trim() switch
+    {
+        "P1" => Select("هم‌صدا", "Unison"),
+        "m2" => Select("دوم کوچک", "Minor second"),
+        "M2" => Select("دوم بزرگ", "Major second"),
+        "m3" => Select("سوم کوچک", "Minor third"),
+        "M3" => Select("سوم بزرگ", "Major third"),
+        "P4" => Select("چهارم درست", "Perfect fourth"),
+        "P5" => Select("پنجم درست", "Perfect fifth"),
+        "m6" => Select("ششم کوچک", "Minor sixth"),
+        "M6" => Select("ششم بزرگ", "Major sixth"),
+        "m7" => Select("هفتم کوچک", "Minor seventh"),
+        "M7" => Select("هفتم بزرگ", "Major seventh"),
+        "P8" => Select("اکتاو", "Octave"),
+        _ => interval
+    };
     public static string GetStaffAriaLabel(ClefType clef) => Select(
         $"حامل موسیقی با کلید {GetClef(clef)} و یک نت هدف",
         $"Music staff with {GetClef(clef)} clef and one target note");

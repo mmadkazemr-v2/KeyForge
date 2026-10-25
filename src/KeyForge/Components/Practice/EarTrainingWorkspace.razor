@@ -4,6 +4,12 @@
 @inject IAudioPlaybackService Audio
 @inject MidiInputRouter MidiInput
 
+@if (IsIntervalRecognitionMode)
+{
+    <IntervalRecognitionWorkspace @key="@RuntimeExercise" RuntimeExercise="RuntimeExercise" OnCompleted="OnCompleted" />
+}
+else
+{
 <div class="kf-practice-workspace ear-training-workspace" tabindex="0" @onkeydown="HandleKeyDown" aria-labelledby="ear-training-title">
     <header class="kf-practice-workspace__header note-reading-workspace__header">
         <div>
@@ -24,12 +30,15 @@
 
     <section class="kf-practice-input ear-training-workspace__playback" aria-label="@UiText.AudioPrompt">
         <p class="kf-text-secondary">@UiText.ListenThenChoose</p>
-        <button class="kf-button kf-button--primary" type="button" disabled="@IsAnswered" @onclick="PlayCurrentNoteAsync">
-            @(_hasPlayed ? UiText.ReplayAudio : UiText.PlayAudio)
-        </button>
-        @if (_audioFailed)
+        @if (AudioReady)
         {
-            <p class="metronome-control__error" role="alert">@UiText.AudioUnavailable</p>
+            <button class="kf-button kf-button--primary" type="button" disabled="@IsAnswered" @onclick="PlayCurrentNoteAsync">
+                @(_hasPlayed ? UiText.ReplayAudio : UiText.PlayAudio)
+            </button>
+        }
+        else
+        {
+            <AudioActivationControl />
         }
     </section>
 
@@ -69,6 +78,7 @@
         </section>
     }
 </div>
+}
 
 @code {
     [Parameter, EditorRequired] public RuntimeExercise RuntimeExercise { get; set; } = null!;
@@ -78,11 +88,13 @@
     private ExerciseInputEvent? _pendingInput;
     private MusicalNote? _selectedNote;
     private bool _hasPlayed;
-    private bool _audioFailed;
+    private double? _browserTimelineOriginMilliseconds;
     private IDisposable? _midiRegistration;
 
     private int QuestionCount => RuntimeExercise.Challenge.ExpectedInputs.Count;
     private int CurrentQuestionNumber => _questionIndex + 1;
+    private bool IsIntervalRecognitionMode =>
+        RuntimeExercise.Definition is EarTrainingExerciseDefinition { TaskType: EarTrainingTask.IntervalRecognition };
     private ExpectedInput CurrentExpectedInput => RuntimeExercise.Challenge.ExpectedInputs[_questionIndex];
     private MusicalNote CurrentNote => MusicalNote.Parse(CurrentExpectedInput.Value);
     private IReadOnlyList<MusicalNote> AvailableNotes => EarTrainingChallengeGenerator.GetAvailableNotes(
@@ -97,12 +109,26 @@
         ? "note-reading-feedback note-reading-feedback--correct"
         : "note-reading-feedback note-reading-feedback--incorrect";
 
-    protected override void OnInitialized() => _midiRegistration = MidiInput.Register(HandleMidiMessageAsync);
+    protected override void OnInitialized()
+    {
+        _midiRegistration = MidiInput.Register(HandleMidiMessageAsync);
+        Audio.StateChanged += RefreshAudio;
+    }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _browserTimelineOriginMilliseconds = await MidiInput.CaptureBrowserTimestampAsync();
+            MidiInput.SetTimelineOrigin(_browserTimelineOriginMilliseconds);
+        }
+    }
+    private void RefreshAudio() => _ = InvokeAsync(StateHasChanged);
+
+    private bool AudioReady => Audio.State == AudioPlaybackState.Ready;
 
     private async Task PlayCurrentNoteAsync()
     {
-        _audioFailed = !await Audio.InitializeAsync() || !await Audio.PlayNoteAsync(CurrentNote);
-        _hasPlayed = !_audioFailed;
+        _hasPlayed = await Audio.PlayNoteAsync(CurrentNote);
     }
 
     private void HandlePianoNote(MusicalNote note)
@@ -131,11 +157,12 @@
 
     private Task HandleMidiMessageAsync(MidiInputMessage message)
     {
-        if (!IsAnswered)
-        {
-            var input = MidiInputAdapter.TryCreate(message, RuntimeExercise.StartedAt, DateTime.UtcNow);
-            if (input is not null) SetPendingInput(input);
-        }
+        var input = _browserTimelineOriginMilliseconds is { } origin
+            ? MidiInputAdapter.TryCreate(message, DateTime.UtcNow, origin)
+            : null;
+        if (input is null) return Task.CompletedTask;
+        RuntimeExercise.CaptureMidiEvent(input);
+        if (!IsAnswered && input.Type == InputEventType.Note) SetPendingInput(input);
         return Task.CompletedTask;
     }
 
@@ -162,6 +189,7 @@
 
     public async ValueTask DisposeAsync()
     {
+        Audio.StateChanged -= RefreshAudio;
         _midiRegistration?.Dispose();
         await Audio.StopActiveNotesAsync();
     }

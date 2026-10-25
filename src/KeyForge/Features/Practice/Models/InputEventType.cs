@@ -4,6 +4,9 @@ namespace KeyForge.Features.Practice.Models;
 public enum InputEventType
 {
     Note,
+    NoteOff,
+    ControlChange,
+    PitchBend,
     Key,
     Beat,
     Choice

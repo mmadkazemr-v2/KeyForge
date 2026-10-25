@@ -4,8 +4,11 @@ namespace KeyForge.Components.Practice;
 public sealed class MidiInputMessage
 {
     public required string DeviceId { get; init; }
+    public string? DeviceName { get; init; }
     public required int Status { get; init; }
     public required int Data1 { get; init; }
     public required int Data2 { get; init; }
+    public int Channel => (Status & 0x0F) + 1;
     public double TimestampMilliseconds { get; init; }
+    public long Sequence { get; init; }
 }

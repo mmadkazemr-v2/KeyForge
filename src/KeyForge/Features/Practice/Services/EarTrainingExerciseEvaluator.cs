@@ -1,6 +1,6 @@
 namespace KeyForge.Features.Practice.Services;
 
-/// <summary>Evaluates pitch-identification answers independently of input source.</summary>
+/// <summary>Evaluates ear-training answers independently of input source.</summary>
 public sealed class EarTrainingExerciseEvaluator
 {
     public const int SuccessScore = NoteReadingExerciseEvaluator.SuccessScore;
@@ -12,7 +12,9 @@ public sealed class EarTrainingExerciseEvaluator
         ArgumentNullException.ThrowIfNull(challenge);
         ArgumentNullException.ThrowIfNull(inputEvents);
 
-        if (challenge.EarTraining?.TaskType != EarTrainingTask.PitchMatching ||
+        var taskType = challenge.EarTraining?.TaskType;
+        var isIntervalTask = taskType == EarTrainingTask.IntervalRecognition;
+        if ((taskType != EarTrainingTask.PitchMatching && !isIntervalTask) ||
             challenge.ExpectedInputs.Count == 0)
         {
             return new ExerciseEvaluationResult
@@ -31,7 +33,8 @@ public sealed class EarTrainingExerciseEvaluator
                 QuestionNumber = index + 1,
                 ExpectedNote = expected.Value,
                 ActualNote = actual?.Value,
-                IsCorrect = actual is not null && IsCorrect(expected, actual)
+                IsCorrect = actual is not null &&
+                    (isIntervalTask ? IsCorrectInterval(expected, actual) : IsCorrect(expected, actual))
             };
         }).ToArray();
         var details = new EarTrainingEvaluationDetails { Questions = questions };
@@ -52,4 +55,15 @@ public sealed class EarTrainingExerciseEvaluator
 
     public static bool IsCorrect(ExpectedInput expected, ExerciseInputEvent actual) =>
         NoteReadingExerciseEvaluator.IsCorrect(expected, actual);
+
+    /// <summary>Interval answers are compared as exact choice values; minor and major differ only by case.</summary>
+    public static bool IsCorrectInterval(ExpectedInput expected, ExerciseInputEvent actual)
+    {
+        ArgumentNullException.ThrowIfNull(expected);
+        ArgumentNullException.ThrowIfNull(actual);
+
+        return expected.Type == InputEventType.Choice &&
+            actual.Type == InputEventType.Choice &&
+            string.Equals(expected.Value.Trim(), actual.Value.Trim(), StringComparison.Ordinal);
+    }
 }

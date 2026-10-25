@@ -6,6 +6,7 @@ public sealed class MetronomeTimingTests
 {
     [Theory]
     [InlineData(60, 1000)]
+    [InlineData(80, 750)]
     [InlineData(120, 500)]
     [InlineData(240, 250)]
     public void GetBeatInterval_UsesSelectedBpm(int bpm, int expectedMilliseconds)

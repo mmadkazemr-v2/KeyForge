@@ -90,6 +90,7 @@
     private int _questionIndex;
     private ExerciseInputEvent? _pendingInput;
     private MusicalNote? _selectedNote;
+    private double? _browserTimelineOriginMilliseconds;
     private IDisposable? _midiRegistration;
 
     private NoteReadingExerciseDefinition Definition =>
@@ -116,6 +117,14 @@
         : "note-reading-feedback note-reading-feedback--incorrect";
 
     protected override void OnInitialized() => _midiRegistration = MidiInput.Register(HandleMidiMessageAsync);
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _browserTimelineOriginMilliseconds = await MidiInput.CaptureBrowserTimestampAsync();
+            MidiInput.SetTimelineOrigin(_browserTimelineOriginMilliseconds);
+        }
+    }
 
     private void HandlePianoNote(MusicalNote note)
     {
@@ -152,11 +161,12 @@
 
     private Task HandleMidiMessageAsync(MidiInputMessage message)
     {
-        if (!IsAnswered)
-        {
-            var input = MidiInputAdapter.TryCreate(message, RuntimeExercise.StartedAt, DateTime.UtcNow);
-            if (input is not null) SetPendingInput(input);
-        }
+        var input = _browserTimelineOriginMilliseconds is { } origin
+            ? MidiInputAdapter.TryCreate(message, DateTime.UtcNow, origin)
+            : null;
+        if (input is null) return Task.CompletedTask;
+        RuntimeExercise.CaptureMidiEvent(input);
+        if (!IsAnswered && input.Type == InputEventType.Note) SetPendingInput(input);
         return Task.CompletedTask;
     }
 

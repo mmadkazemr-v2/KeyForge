@@ -82,18 +82,40 @@ public sealed class IntervalChallengeGenerator
             ? index % 2 == 0 ? ExerciseDirection.Ascending : ExerciseDirection.Descending
             : configuredDirection;
 
-    private static int GetSemitones(string interval) => interval.Trim().ToUpperInvariant() switch
+    /// <summary>Resolves the per-question direction, alternating when the exercise allows both.</summary>
+    public static ExerciseDirection ResolveDirection(ExerciseDirection configuredDirection, int index) =>
+        SelectDirection(configuredDirection, index);
+
+    /// <summary>Returns whether the interval abbreviation is supported by the interactive runtimes.</summary>
+    public static bool IsSupportedInterval(string? interval) => TryGetSemitones(interval, out _);
+
+    private static int GetSemitones(string interval) =>
+        TryGetSemitones(interval, out var semitones)
+            ? semitones
+            : throw new InvalidOperationException($"Interval '{interval}' is not supported by the interactive runtime.");
+
+    private static bool TryGetSemitones(string? interval, out int semitones)
     {
-        "P1" => 0,
-        "M2" => 2,
-        "M3" => 4,
-        "P4" => 5,
-        "P5" => 7,
-        "M6" => 9,
-        "M7" => 11,
-        "P8" => 12,
-        _ => throw new InvalidOperationException($"Interval '{interval}' is not supported by the interactive runtime.")
-    };
+        // Interval abbreviations are case-sensitive: lowercase means minor,
+        // uppercase means major or perfect (m3 vs M3).
+        semitones = interval?.Trim() switch
+        {
+            "P1" => 0,
+            "m2" => 1,
+            "M2" => 2,
+            "m3" => 3,
+            "M3" => 4,
+            "P4" => 5,
+            "P5" => 7,
+            "m6" => 8,
+            "M6" => 9,
+            "m7" => 10,
+            "M7" => 11,
+            "P8" => 12,
+            _ => -1
+        };
+        return semitones >= 0;
+    }
 
     private sealed record GeneratedIntervalQuestion(
         string Interval,

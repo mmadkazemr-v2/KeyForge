@@ -1,6 +1,4 @@
 @page "/"
-@using KeyForge.Components.Audio
-@inject IWebHostEnvironment HostEnvironment
 
 <PageTitle>@UiText.Home - @UiText.ProductName</PageTitle>
 
@@ -13,7 +11,26 @@
     <a class="kf-button kf-button--primary" href="/lessons">@UiText.BrowseLessons</a>
 </header>
 
-@if (HostEnvironment.IsDevelopment())
-{
-    <AudioVerification />
-}
+<section aria-labelledby="home-highlights-title">
+    <h2 id="home-highlights-title" class="kf-section-title">@UiText.HomeHighlightsTitle</h2>
+    <div class="kf-card-grid">
+        <article class="kf-card">
+            <div class="kf-card__body">
+                <h3 class="kf-card__title">@UiText.HomeHighlightLessonsTitle</h3>
+                <p class="kf-card__description">@UiText.HomeHighlightLessonsDescription</p>
+            </div>
+        </article>
+        <article class="kf-card">
+            <div class="kf-card__body">
+                <h3 class="kf-card__title">@UiText.HomeHighlightPracticeTitle</h3>
+                <p class="kf-card__description">@UiText.HomeHighlightPracticeDescription</p>
+            </div>
+        </article>
+        <article class="kf-card">
+            <div class="kf-card__body">
+                <h3 class="kf-card__title">@UiText.HomeHighlightProgressTitle</h3>
+                <p class="kf-card__description">@UiText.HomeHighlightProgressDescription</p>
+            </div>
+        </article>
+    </div>
+</section>

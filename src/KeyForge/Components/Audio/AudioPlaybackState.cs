@@ -4,6 +4,7 @@ namespace KeyForge.Components.Audio;
 public enum AudioPlaybackState
 {
     Uninitialized,
+    Initializing,
     Ready,
     Failed
 }

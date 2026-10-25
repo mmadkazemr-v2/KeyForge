@@ -1,7 +1,3 @@
-using Microsoft.AspNetCore.Localization;
-using KeyForge.Components.Audio;
-using KeyForge.Components.Practice;
-
 var builder = WebApplication.CreateBuilder(args);
 
 // ── Configuration ──────────────────────────────────────────────────
