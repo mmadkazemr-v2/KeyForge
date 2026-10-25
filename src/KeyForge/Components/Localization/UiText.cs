@@ -22,6 +22,7 @@ public static class UiText
     public static string LanguageSelector => Select("انتخاب زبان", "Select language");
     public static string Home => Select("خانه", "Home");
     public static string Lessons => Select("درس‌ها", "Lessons");
+    public static string KeyboardLab => Select("آزمایشگاه کیبورد", "Keyboard Lab");
     public static string NavigationMenu => Select("منوی اصلی", "Main menu");
 
     public static string HomeEyebrow => Select("تمرین هدفمند پیانو", "Focused piano practice");
@@ -89,6 +90,27 @@ public static class UiText
     public static string MidiInputStatus => Select("وضعیت ورودی", "Input status");
     public static string MidiInputActive => Select("ورودی میدی فعال است", "MIDI input active");
     public static string LastMidiNote => Select("آخرین نت میدی", "Last MIDI note");
+    public static string DeviceManufacturer => Select("سازنده دستگاه", "Manufacturer");
+    public static string MidiChannel => Select("کانال میدی", "MIDI channel");
+    public static string LastMidiEvent => Select("آخرین رویداد", "Last event");
+    public static string MidiNoteOn => "NoteOn";
+    public static string MidiNoteOff => "NoteOff";
+    public static string MidiControlChange => "Control Change";
+    public static string MidiPitchBend => "Pitch Bend";
+    public static string MidiEvent => "MIDI event";
+    public static string KeyboardLabDescription => Select(
+        "بدون امتیازدهی آزاد بنوازید، صدای تمرین را عوض کنید و ورودی میدی را بررسی کنید.",
+        "Play freely without scoring, change practice sounds, and inspect MIDI input.");
+    public static string PracticeSounds => Select("صداهای تمرین", "Practice sounds");
+    public static string PracticeSoundNotice => Select(
+        "این صداها با Tone.js ساخته شده‌اند و نمونه‌برداری از ساز واقعی نیستند.",
+        "These Tone.js practice sounds are synthesized approximations, not sampled instruments.");
+    public static string FreePlayKeyboard => Select("کیبورد آزاد", "Free-play keyboard");
+    public static string StandaloneMetronome => Select("مترونوم", "Metronome");
+    public static string SustainTemporary => Select("نگه‌داشتن صدا (آزمایشی)", "Temporary sustain test");
+    public static string FreePlayNoProgress => Select(
+        "نواختن در این صفحه در آمار درس‌ها یا تمرین‌ها ثبت نمی‌شود.",
+        "Playing here does not create lesson attempts or affect progress.");
     public static string NoMidiActivity => Select("بدون فعالیت", "No activity");
     public static string Velocity => Select("شدت نواختن", "Velocity");
     public static string Sustain => Select("پدال نگه‌دارنده", "Sustain");

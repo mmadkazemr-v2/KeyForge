@@ -111,7 +111,9 @@
 
         if (IsMidiActive(note))
         {
-            classes.Add("piano-keyboard__key--midi-active");
+            classes.Add(MidiState.SustainedNotes.Contains(note)
+                ? "piano-keyboard__key--midi-sustained"
+                : "piano-keyboard__key--midi-active");
         }
 
         return string.Join(' ', classes);

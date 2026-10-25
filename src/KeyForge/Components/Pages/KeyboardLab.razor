@@ -1,0 +1,180 @@
+@page "/keyboard-lab"
+@rendermode InteractiveServer
+@implements IAsyncDisposable
+@using KeyForge.Components.Audio
+@inject IAudioPlaybackService Audio
+@inject MidiInputRouter InputRouter
+@inject MidiPracticeInputState MidiState
+
+<PageTitle>@UiText.KeyboardLab - @UiText.ProductName</PageTitle>
+
+<header class="kf-page-header">
+    <div>
+        <p class="kf-meta">@UiText.FreePlayKeyboard</p>
+        <h1 class="kf-page-title">@UiText.KeyboardLab</h1>
+        <p class="kf-page-header__description">@UiText.KeyboardLabDescription</p>
+    </div>
+    <AudioActivationControl />
+</header>
+
+<div class="kf-content-stack keyboard-lab">
+    <section class="kf-card" aria-labelledby="keyboard-lab-midi-title">
+        <div class="kf-card__body">
+            <div class="kf-card__header">
+                <h2 id="keyboard-lab-midi-title" class="kf-card__title">@UiText.MidiDevice</h2>
+                <span class="kf-status-badge @MidiStatusClass">@MidiStatusText</span>
+            </div>
+            <MidiInputControl LivePlayEnabled="true" LivePracticeSound="_selectedPreset" />
+        </div>
+    </section>
+
+    <section class="kf-card" aria-labelledby="keyboard-lab-sound-title">
+        <div class="kf-card__body">
+            <div class="kf-card__header">
+                <div>
+                    <h2 id="keyboard-lab-sound-title" class="kf-card__title">@UiText.PracticeSounds</h2>
+                    <p class="kf-card__description">@_selectedPreset.Description</p>
+                </div>
+                <label class="keyboard-lab__preset">
+                    <span class="kf-meta">@UiText.PracticeSounds</span>
+                    <select value="@_selectedPreset.Id" @onchange="ChangePresetAsync" aria-label="@UiText.PracticeSounds">
+                        @foreach (var preset in InstrumentPresetCatalog.All)
+                        {
+                            <option value="@preset.Id">@preset.Name</option>
+                        }
+                    </select>
+                </label>
+            </div>
+            <p class="kf-text-muted">@UiText.PracticeSoundNotice</p>
+        </div>
+    </section>
+
+    <section class="kf-card keyboard-lab__keyboard" aria-labelledby="keyboard-lab-keyboard-title">
+        <div class="kf-card__body">
+            <div class="kf-card__header">
+                <h2 id="keyboard-lab-keyboard-title" class="kf-card__title">@UiText.VirtualPiano</h2>
+                <span class="kf-meta">@UiText.FreePlayKeyboard</span>
+            </div>
+            <PianoKeyboard FirstNote="_firstNote"
+                           LastNote="_lastNote"
+                           OnNoteSelected="PlayVirtualNoteAsync" />
+        </div>
+    </section>
+
+    <section class="kf-card" aria-labelledby="keyboard-lab-status-title">
+        <div class="kf-card__body">
+            <h2 id="keyboard-lab-status-title" class="kf-card__title">@UiText.MidiInputActive</h2>
+            <dl class="keyboard-lab__diagnostics" aria-live="polite">
+                <div><dt>@UiText.LastMidiEvent</dt><dd>@(_lastEvent ?? UiText.NoMidiActivity)</dd></div>
+                <div><dt>@UiText.LastMidiNote</dt><dd><bdi>@(MidiState.LastNote?.Value ?? UiText.NoMidiActivity)</bdi></dd></div>
+                <div><dt>@UiText.Velocity</dt><dd>@(MidiState.LastVelocity?.ToString(CultureInfo.InvariantCulture) ?? UiText.NoMidiActivity)</dd></div>
+                <div><dt>@UiText.MidiChannel</dt><dd>@(_lastChannel is { } channel ? UiText.FormatNumber(channel) : UiText.NoMidiActivity)</dd></div>
+                <div><dt>@UiText.Sustain</dt><dd>@(MidiState.IsSustainDown ? UiText.PedalDown : UiText.PedalUp)</dd></div>
+            </dl>
+            <p class="kf-text-muted">@UiText.FreePlayNoProgress</p>
+        </div>
+    </section>
+
+    <section class="kf-card keyboard-lab__metronome" aria-labelledby="keyboard-lab-metronome-title">
+        <div class="kf-card__body">
+            <div class="kf-card__header">
+                <h2 id="keyboard-lab-metronome-title" class="kf-card__title">@UiText.StandaloneMetronome</h2>
+                <div class="keyboard-lab__tempo" aria-label="@UiText.Tempo">
+                    <button class="kf-button kf-button--secondary" type="button" aria-label="@UiText.DecreaseTempo"
+                            disabled="@(_bpm <= 30 || _metronomeRunning)" @onclick="() => ChangeBpm(-1)">−</button>
+                    <output><bdi>@UiText.GetBpmLabel(_bpm)</bdi></output>
+                    <button class="kf-button kf-button--secondary" type="button" aria-label="@UiText.IncreaseTempo"
+                            disabled="@(_bpm >= 240 || _metronomeRunning)" @onclick="() => ChangeBpm(1)">+</button>
+                </div>
+            </div>
+            <MetronomeControl StandaloneBpm="_bpm" Configuration="_metronomeConfiguration" OnRunningChanged="SetMetronomeRunning" />
+        </div>
+    </section>
+</div>
+
+@code {
+    private readonly MusicalNote _firstNote = MusicalNote.Parse("C2");
+    private readonly MusicalNote _lastNote = MusicalNote.Parse("C7");
+    private readonly MetronomeConfiguration _metronomeConfiguration = new()
+    {
+        Enabled = true,
+        Audio = true,
+        Visual = false,
+        CountInBeats = 0
+    };
+    private IDisposable? _midiRegistration;
+    private InstrumentPreset _selectedPreset = InstrumentPresetCatalog.Default;
+    private string? _lastEvent;
+    private int? _lastChannel;
+    private int _bpm = 80;
+    private bool _midiConnected;
+    private bool _metronomeRunning;
+
+    private string MidiStatusText => _midiConnected ? UiText.MidiConnected : UiText.MidiDisabled;
+    private string MidiStatusClass => _midiConnected ? "kf-status-badge--available" : "kf-status-badge--locked";
+
+    protected override void OnInitialized()
+    {
+        MidiState.Changed += HandleMidiStateChanged;
+        InputRouter.SelectedDeviceStateChanged += HandleSelectedDeviceChanged;
+        _midiRegistration = InputRouter.Register(HandleMidiMessageAsync);
+    }
+
+    private async Task ChangePresetAsync(ChangeEventArgs args)
+    {
+        if (args.Value is not string presetId) return;
+        InstrumentPreset preset;
+        try { preset = InstrumentPresetCatalog.Get(presetId); }
+        catch (ArgumentException) { return; }
+
+        await Audio.StopActiveNotesAsync();
+        _selectedPreset = preset;
+        await Audio.SetInstrumentPresetAsync(preset);
+    }
+
+    private async Task PlayVirtualNoteAsync(MusicalNote note)
+    {
+        await Audio.PlayNoteAsync(note);
+    }
+
+    private void ChangeBpm(int direction) => _bpm = Math.Clamp(_bpm + direction * 5, 30, 240);
+
+    private void SetMetronomeRunning(bool running) => _metronomeRunning = running;
+
+    private Task HandleMidiMessageAsync(MidiInputMessage message)
+    {
+        _lastChannel = message.Channel;
+        _lastEvent = (message.Status & 0xF0) switch
+        {
+            0x90 when message.Data2 > 0 => UiText.MidiNoteOn,
+            0x80 or 0x90 => UiText.MidiNoteOff,
+            0xB0 when message.Data1 == 64 => UiText.Sustain,
+            0xB0 => UiText.MidiControlChange,
+            0xE0 => UiText.MidiPitchBend,
+            _ => UiText.MidiEvent
+        };
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private void HandleSelectedDeviceChanged(string? deviceId, bool connected)
+    {
+        _midiConnected = connected;
+        if (!connected)
+        {
+            _ = Audio.StopActiveNotesAsync();
+            _lastChannel = null;
+            _lastEvent = null;
+        }
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private void HandleMidiStateChanged() => _ = InvokeAsync(StateHasChanged);
+
+    public async ValueTask DisposeAsync()
+    {
+        MidiState.Changed -= HandleMidiStateChanged;
+        InputRouter.SelectedDeviceStateChanged -= HandleSelectedDeviceChanged;
+        _midiRegistration?.Dispose();
+        await Audio.StopActiveNotesAsync();
+    }
+}

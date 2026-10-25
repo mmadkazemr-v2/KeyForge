@@ -14,6 +14,36 @@ public sealed class AudioPlaybackServiceTests
     }
 
     [Fact]
+    public void InstrumentPresetCatalog_HasUniqueIdsAndBasicPianoDefault()
+    {
+        Assert.Equal(8, InstrumentPresetCatalog.All.Count);
+        Assert.Equal(InstrumentPresetCatalog.All.Count,
+            InstrumentPresetCatalog.All.Select(preset => preset.Id).Distinct(StringComparer.Ordinal).Count());
+        Assert.Equal("basic-piano", InstrumentPresetCatalog.Default.Id);
+        Assert.Equal(InstrumentPresetCatalog.Default, InstrumentPresetCatalog.Get("basic-piano"));
+    }
+
+    [Fact]
+    public void InstrumentPresetCatalog_RejectsUnknownPreset()
+    {
+        Assert.Throws<ArgumentException>(() => InstrumentPresetCatalog.Get("unknown"));
+    }
+
+    [Fact]
+    public async Task SetInstrumentPresetAsync_ConfiguresExistingAudioModuleWithoutStartingAudio()
+    {
+        var runtime = new FakeJavaScriptRuntime();
+        await using var service = new AudioPlaybackService(runtime);
+
+        Assert.True(await service.SetInstrumentPresetAsync(InstrumentPresetCatalog.Get("synth-lead")));
+
+        Assert.Equal(AudioPlaybackState.Uninitialized, service.State);
+        Assert.Single(runtime.Imports);
+        Assert.Equal("setInstrumentPreset", Assert.Single(runtime.Module.Calls).Identifier);
+        Assert.Equal("synth-lead", Assert.IsType<InstrumentPreset>(Assert.Single(runtime.Module.Calls[0].Arguments)).Id);
+    }
+
+    [Fact]
     public async Task InitializeAsync_SetsReadyState_AndIsIdempotent()
     {
         var runtime = new FakeJavaScriptRuntime();

@@ -2,6 +2,13 @@ let toneLoadPromise;
 let initialization;
 let synth;
 let clickSynth;
+let instrumentPreset = {
+    id: 'basic-piano', engine: 'Synth', oscillator: 'triangle', volume: -12,
+    attack: 0.005, decay: 0.28, sustain: 0.12, release: 0.18, octaveOffset: 0
+};
+const activeMidiNotes = new Set();
+const sustainedMidiNotes = new Set();
+let sustainDown = false;
 let pendingSequenceTimers = [];
 let generation = 0;
 const activationButtons = new WeakSet();
@@ -12,6 +19,28 @@ function cancelPendingSequence() {
     }
     pendingSequenceTimers = [];
     synth?.releaseAll();
+}
+
+function createPracticeSynth(Tone) {
+    const Voice = Tone[instrumentPreset.engine];
+    if (typeof Voice !== 'function') throw new Error(`Unsupported Tone.js synth '${instrumentPreset.engine}'.`);
+    synth = new Tone.PolySynth(Voice, {
+        volume: instrumentPreset.volume,
+        oscillator: { type: instrumentPreset.oscillator },
+        envelope: {
+            attack: instrumentPreset.attack,
+            decay: instrumentPreset.decay,
+            sustain: instrumentPreset.sustain,
+            release: instrumentPreset.release
+        }
+    }).toDestination();
+}
+
+function releaseMidiNotes() {
+    if (activeMidiNotes.size > 0) synth?.triggerRelease([...activeMidiNotes]);
+    activeMidiNotes.clear();
+    sustainedMidiNotes.clear();
+    sustainDown = false;
 }
 
 function loadTone() {
@@ -113,7 +142,7 @@ async function startTone(Tone, currentGeneration) {
     }
     if (currentGeneration !== generation) return 'unavailable';
     if (context.state !== 'running') return context.state;
-    synth ??= new Tone.PolySynth(Tone.Synth, { volume: -12 }).toDestination();
+    if (!synth) createPracticeSynth(Tone);
     clickSynth ??= new Tone.MembraneSynth({
         volume: -18,
         pitchDecay: 0.01,
@@ -142,6 +171,58 @@ export function playNote(note) {
     synth.triggerAttackRelease(note, '8n');
 }
 
+export function setInstrumentPreset(preset) {
+    if (!preset || typeof preset.id !== 'string') throw new Error('A valid practice sound is required.');
+    if (preset.id === instrumentPreset.id) return;
+    releaseMidiNotes();
+    instrumentPreset = { ...preset };
+    if (synth) {
+        synth.dispose();
+        synth = undefined;
+        if (getState() === 'running') createPracticeSynth(globalThis.Tone);
+    }
+}
+
+function midiNoteName(midiNumber) {
+    const names = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+    const adjusted = midiNumber + (Number(instrumentPreset.octaveOffset) || 0) * 12;
+    return `${names[adjusted % 12]}${Math.floor(adjusted / 12) - 1}`;
+}
+
+// Called locally by the existing Web MIDI adapter; musical audio never crosses Blazor interop.
+export function handleMidiInput(status, data1, data2) {
+    requireRunning();
+    if (!synth) throw new Error('Audio is not initialized.');
+    if (![status, data1, data2].every(Number.isInteger) || data1 < 0 || data1 > 127 || data2 < 0 || data2 > 127) return;
+    const command = status & 0xf0;
+    const note = midiNoteName(data1);
+    if (command === 0x90 && data2 > 0) {
+        sustainedMidiNotes.delete(note);
+        activeMidiNotes.add(note);
+        synth.triggerAttack(note, undefined, data2 / 127);
+    } else if (command === 0x80 || (command === 0x90 && data2 === 0)) {
+        if (sustainDown) sustainedMidiNotes.add(note);
+        else {
+            activeMidiNotes.delete(note);
+            synth.triggerRelease(note);
+        }
+    } else if (command === 0xb0 && data1 === 64) {
+        const down = data2 >= 64;
+        if (sustainDown && !down) {
+            for (const heldNote of sustainedMidiNotes) {
+                activeMidiNotes.delete(heldNote);
+                synth.triggerRelease(heldNote);
+            }
+            sustainedMidiNotes.clear();
+        }
+        sustainDown = down;
+    }
+}
+
+export function releaseLiveMidiNotes() {
+    releaseMidiNotes();
+}
+
 export function playSequence(notes) {
     requireRunning();
     if (!synth) {
@@ -163,6 +244,7 @@ export function playSequence(notes) {
 
 export function stopActiveNotes() {
     cancelPendingSequence();
+    releaseMidiNotes();
     clickSynth?.triggerRelease();
 }
 
@@ -179,6 +261,7 @@ export function dispose() {
     generation++;
     initialization = undefined;
     cancelPendingSequence();
+    releaseMidiNotes();
     synth?.dispose();
     clickSynth?.dispose();
     synth = undefined;

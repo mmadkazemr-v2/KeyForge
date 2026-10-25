@@ -147,6 +147,29 @@ public sealed class AudioPlaybackService(IJSRuntime javascript) : IAudioPlayback
         }
     }
 
+    public async Task<bool> SetInstrumentPresetAsync(InstrumentPreset preset)
+    {
+        ArgumentNullException.ThrowIfNull(preset);
+        if (_disposed) return false;
+
+        try
+        {
+            _module ??= await javascript.InvokeAsync<IJSObjectReference>(
+                "import", "./Components/Audio/AudioPlaybackService.js");
+            if (_disposed) return false;
+            await _module.InvokeVoidAsync("setInstrumentPreset", preset);
+            return true;
+        }
+        catch (JSException ex)
+        {
+            return Fail(AudioFailureReason.Unavailable, $"Practice sound selection failed: {ex.Message}");
+        }
+        catch (JSDisconnectedException)
+        {
+            return Fail(AudioFailureReason.Unavailable);
+        }
+    }
+
     public async Task<bool> PlaySequenceAsync(IReadOnlyList<AudioSequenceNote> sequence)
     {
         ArgumentNullException.ThrowIfNull(sequence);

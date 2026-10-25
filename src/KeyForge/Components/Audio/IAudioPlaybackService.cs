@@ -13,6 +13,7 @@ public interface IAudioPlaybackService
     /// <summary>Preloads the audio library and binds unlock to this button's browser click. Does not start audio.</summary>
     Task PrepareActivationAsync(Microsoft.AspNetCore.Components.ElementReference button);
     Task<bool> InitializeAsync();
+    Task<bool> SetInstrumentPresetAsync(InstrumentPreset preset);
     Task<bool> PlayNoteAsync(MusicalNote note);
 
     /// <summary>

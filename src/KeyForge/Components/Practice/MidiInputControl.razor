@@ -1,4 +1,5 @@
 @namespace KeyForge.Components.Practice
+@using KeyForge.Components.Audio
 @implements IAsyncDisposable
 @inject IJSRuntime JavaScript
 @inject MidiInputRouter InputRouter
@@ -44,8 +45,11 @@
             <div><dt>@UiText.MidiInputStatus</dt><dd>@StatusLabel</dd></div>
             @if (_status is MidiInputStatus.Connected)
             {
+                <div><dt>@UiText.DeviceManufacturer</dt><dd>@(_selectedDeviceManufacturer ?? UiText.NoMidiActivity)</dd></div>
                 <div><dt>@UiText.LastMidiNote</dt><dd><bdi>@(MidiState.LastNote?.Value ?? UiText.NoMidiActivity)</bdi></dd></div>
                 <div><dt>@UiText.Velocity</dt><dd>@VelocityLabel</dd></div>
+                <div><dt>@UiText.MidiChannel</dt><dd>@(_lastChannel is { } channel ? UiText.FormatNumber(channel) : UiText.NoMidiActivity)</dd></div>
+                <div><dt>@UiText.LastMidiEvent</dt><dd>@(_lastEvent ?? UiText.NoMidiActivity)</dd></div>
                 <div><dt>@UiText.Sustain</dt><dd>@(MidiState.IsSustainDown ? UiText.PedalDown : UiText.PedalUp)</dd></div>
             }
         </dl>
@@ -63,10 +67,21 @@
     private IReadOnlyList<MidiDeviceDescriptor> _devices = [];
     private string? _selectedDeviceId;
     private string? _selectedDeviceName;
+    private string? _selectedDeviceManufacturer;
     private string? _errorMessage;
+    private int? _lastChannel;
+    private string? _lastEvent;
+    private bool? _configuredLivePlay;
+    private string? _configuredPresetId;
     private MidiInputStatus _status = MidiInputStatus.Disabled;
     private bool _enabled;
     private IDisposable? _browserClockRegistration;
+
+    [Parameter]
+    public bool LivePlayEnabled { get; set; }
+
+    [Parameter]
+    public InstrumentPreset? LivePracticeSound { get; set; }
 
     private string StatusLabel => _status switch
     {
@@ -94,27 +109,37 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!firstRender)
+        if (firstRender)
         {
-            return;
-        }
-
-        try
-        {
-            _module = await JavaScript.InvokeAsync<IJSObjectReference>("import", "./Components/Practice/MidiInputControl.razor.js");
-            _browserClockRegistration = InputRouter.RegisterBrowserClock(async () =>
-                await _module.InvokeAsync<double>("getBrowserTimestamp"));
-            var supported = await _module.InvokeAsync<bool>("isSupported");
-            if (!supported)
+            try
             {
-                _status = MidiInputStatus.Unsupported;
+                _module = await JavaScript.InvokeAsync<IJSObjectReference>("import", "./Components/Practice/MidiInputControl.razor.js");
+                _browserClockRegistration = InputRouter.RegisterBrowserClock(async () =>
+                    await _module.InvokeAsync<double>("getBrowserTimestamp"));
+                var supported = await _module.InvokeAsync<bool>("isSupported");
+                if (!supported) _status = MidiInputStatus.Unsupported;
+                await InvokeAsync(StateHasChanged);
+            }
+            catch (JSException)
+            {
+                _status = MidiInputStatus.Error;
                 await InvokeAsync(StateHasChanged);
             }
         }
-        catch (JSException)
+
+        if (_module is not null && (_configuredLivePlay != LivePlayEnabled ||
+            _configuredPresetId != LivePracticeSound?.Id))
         {
-            _status = MidiInputStatus.Error;
-            await InvokeAsync(StateHasChanged);
+            try
+            {
+                await _module.InvokeVoidAsync("configureLivePlay", LivePlayEnabled, LivePracticeSound);
+                _configuredLivePlay = LivePlayEnabled;
+                _configuredPresetId = LivePracticeSound?.Id;
+            }
+            catch (JSException exception)
+            {
+                _errorMessage = exception.Message;
+            }
         }
     }
 
@@ -161,6 +186,16 @@
     public async Task HandleMidiMessage(MidiInputMessage message)
     {
         if (!InputRouter.Accepts(message)) return;
+        _lastChannel = message.Channel;
+        _lastEvent = (message.Status & 0xF0) switch
+        {
+            0x90 when message.Data2 > 0 => UiText.MidiNoteOn,
+            0x80 or 0x90 => UiText.MidiNoteOff,
+            0xB0 when message.Data1 == 64 => UiText.Sustain,
+            0xB0 => UiText.MidiControlChange,
+            0xE0 => UiText.MidiPitchBend,
+            _ => UiText.MidiEvent
+        };
         var presentationEvent = MidiInputAdapter.TryCreatePresentationEvent(message);
         if (presentationEvent is not null)
         {
@@ -182,6 +217,8 @@
         if (!string.Equals(_selectedDeviceId, state.SelectedDeviceId, StringComparison.Ordinal))
         {
             MidiState.Reset();
+            _lastChannel = null;
+            _lastEvent = null;
         }
         _enabled = state.Enabled;
         _devices = state.Devices ?? [];
@@ -190,6 +227,7 @@
             string.IsNullOrWhiteSpace(state.SelectedDeviceManufacturer)
                 ? state.SelectedDeviceName
                 : $"{state.SelectedDeviceManufacturer} {state.SelectedDeviceName}";
+        _selectedDeviceManufacturer = state.SelectedDeviceManufacturer;
         _errorMessage = state.ErrorMessage;
         _status = state.Status;
         InputRouter.SetSelectedDevice(state.SelectedDeviceId, state.Status is MidiInputStatus.Connected);
@@ -211,6 +249,7 @@
         {
             try
             {
+                await _module.InvokeVoidAsync("configureLivePlay", false, null);
                 await _module.InvokeVoidAsync("dispose");
             }
             catch (JSDisconnectedException)

@@ -8,6 +8,18 @@ let errorStatus;
 let eventSequence = 0;
 let messageDispatch = Promise.resolve();
 let disposed = false;
+let livePlayEnabled = false;
+let liveAudioModule;
+
+export async function configureLivePlay(enabled, preset) {
+    livePlayEnabled = Boolean(enabled);
+    if (!livePlayEnabled) {
+        liveAudioModule?.releaseLiveMidiNotes();
+        return;
+    }
+    liveAudioModule ??= await import('../Audio/AudioPlaybackService.js');
+    if (preset) liveAudioModule.setInstrumentPreset(preset);
+}
 
 export function isSupported() {
     return Boolean(navigator.requestMIDIAccess);
@@ -84,6 +96,12 @@ function handleMidiMessage(event) {
         timestampMilliseconds: Number.isFinite(event.timeStamp) ? event.timeStamp : performance.now(),
         sequence: ++eventSequence
     };
+    // Tone runs directly in this browser callback for playable latency. The
+    // same input still reaches Blazor for diagnostics and keyboard display.
+    if (livePlayEnabled && liveAudioModule) {
+        try { liveAudioModule.handleMidiInput(status, data1, data2); }
+        catch { /* Keep MIDI diagnostics flowing if audio is unavailable. */ }
+    }
     messageDispatch = messageDispatch
         .then(() => {
             if (!disposed && selectedInput?.state === 'connected' && selectedDeviceId === message.deviceId) {
@@ -126,6 +144,7 @@ async function notifyState() {
 }
 
 async function detachSelectedInput() {
+    liveAudioModule?.releaseLiveMidiNotes();
     const previous = selectedInput;
     selectedInput = undefined;
     if (!previous) return;

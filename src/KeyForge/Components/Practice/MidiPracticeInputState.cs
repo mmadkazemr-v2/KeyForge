@@ -9,6 +9,7 @@ public sealed class MidiPracticeInputState
     public event Action? Changed;
 
     public IReadOnlySet<MusicalNote> ActiveNotes => _pressedNotes.Concat(_sustainedNotes).ToHashSet();
+    public IReadOnlySet<MusicalNote> SustainedNotes => _sustainedNotes;
     public MusicalNote? LastNote { get; private set; }
     public int? LastVelocity { get; private set; }
     public bool IsSustainDown { get; private set; }

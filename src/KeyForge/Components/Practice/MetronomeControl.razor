@@ -3,7 +3,7 @@
 @implements IAsyncDisposable
 @inject IAudioPlaybackService Audio
 
-@if (Configuration is { Enabled: true })
+@if (IsEnabled)
 {
     <section class="metronome-control" aria-labelledby="@($"{_id}-title")">
         <div class="metronome-control__header">
@@ -14,7 +14,7 @@
             <span class="kf-status-badge kf-status-badge--available">@StatusLabel</span>
         </div>
 
-        @if (Configuration.Visual)
+        @if (ActiveConfiguration.Visual)
         {
             <div class="metronome-control__visual" aria-live="polite" aria-label="@UiText.MetronomeBeat">
                 @for (var beat = 1; beat <= VisualBeatCount; beat++)
@@ -44,11 +44,14 @@
 }
 
 @code {
-    [Parameter, EditorRequired]
-    public required RuntimeExercise RuntimeExercise { get; set; }
+    [Parameter]
+    public RuntimeExercise? RuntimeExercise { get; set; }
 
-    [Parameter, EditorRequired]
-    public required MetronomeConfiguration Configuration { get; set; }
+    [Parameter]
+    public MetronomeConfiguration? Configuration { get; set; }
+
+    [Parameter]
+    public int? StandaloneBpm { get; set; }
 
     [Parameter]
     public bool StopAfterCountIn { get; set; }
@@ -69,14 +72,17 @@
     private bool _disposed;
     private bool _countInCompleted;
 
-    private int CurrentBpm => RuntimeExercise.SelectedBpm ?? RuntimeExercise.Definition.Tempo?.DefaultBpm ?? 0;
-    private int VisualBeatCount => Math.Max(Configuration.CountInBeats, 4);
+    private MetronomeConfiguration ActiveConfiguration => Configuration ?? new MetronomeConfiguration
+        { Enabled = true, Audio = true, Visual = false };
+    private bool IsEnabled => Configuration?.Enabled == true || StandaloneBpm is not null;
+    private int CurrentBpm => StandaloneBpm ?? RuntimeExercise?.SelectedBpm ?? RuntimeExercise?.Definition.Tempo?.DefaultBpm ?? 0;
+    private int VisualBeatCount => Math.Max(ActiveConfiguration.CountInBeats, 4);
     private bool IsCountingIn => _isRunning && !_countInCompleted;
     private string StatusLabel => !_isRunning ? UiText.MetronomeReady : IsCountingIn ? UiText.CountingIn : UiText.MetronomeActive;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!_isRunning && !_activationPrepared && Configuration is { Enabled: true, Audio: true })
+        if (IsEnabled && !_isRunning && !_activationPrepared && ActiveConfiguration.Audio)
         {
             _activationPrepared = true;
             await Audio.PrepareActivationAsync(_startButton);
@@ -92,8 +98,8 @@
 
         _isRunning = true;
         _audioFailed = false;
-        _countInCompleted = Configuration.CountInBeats == 0;
-        if (Configuration.Audio && !await Audio.InitializeAsync())
+        _countInCompleted = ActiveConfiguration.CountInBeats == 0;
+        if (ActiveConfiguration.Audio && !await Audio.InitializeAsync())
         {
             _audioFailed = true;
         }
@@ -111,7 +117,7 @@
         try
         {
             var interval = MetronomeTiming.GetBeatInterval(CurrentBpm);
-            foreach (var beat in MetronomeTiming.GetCountInBeats(Configuration.CountInBeats))
+            foreach (var beat in MetronomeTiming.GetCountInBeats(ActiveConfiguration.CountInBeats))
             {
                 await TickAsync(beat, cancellationToken);
                 await Task.Delay(interval, cancellationToken);
@@ -143,7 +149,7 @@
         cancellationToken.ThrowIfCancellationRequested();
         _currentBeat = beat;
         await InvokeAsync(StateHasChanged);
-        if (Configuration.Audio && !_audioFailed && !await Audio.PlayMetronomeClickAsync())
+        if (ActiveConfiguration.Audio && !_audioFailed && !await Audio.PlayMetronomeClickAsync())
         {
             _audioFailed = true;
             await InvokeAsync(StateHasChanged);

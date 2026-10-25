@@ -11,17 +11,18 @@ function tone(state = 'suspended') {
     const nodes = [];
     let starts = 0;
     class Synth {
-        constructor(...options) { this.options = options; this.notes = []; nodes.push(this); }
+        constructor(...options) { this.options = options; this.notes = []; this.attacks = []; this.releases = []; nodes.push(this); }
         toDestination() { this.connected = true; return this; }
         triggerAttackRelease(...note) { this.notes.push(note); }
+        triggerAttack(...note) { this.attacks.push(note); }
         releaseAll() { this.released = true; }
-        triggerRelease() { this.released = true; }
+        triggerRelease(...note) { this.released = true; this.releases.push(note); }
         dispose() { this.disposed = true; }
     }
     globalThis.Tone = {
         getContext: () => context,
         start: async () => { starts++; context.state = 'running'; },
-        PolySynth: Synth, Synth, MembraneSynth: Synth
+        PolySynth: Synth, Synth, FMSynth: Synth, AMSynth: Synth, MembraneSynth: Synth
     };
     return { context, nodes, starts: () => starts };
 }
@@ -124,6 +125,34 @@ test('stop cancels queued notes and releases both paths; disposal is idempotent'
     assert.throws(() => audio.playNote('C4'), /not initialized/);
     await audio.initialize();
     assert.equal(runtime.nodes.length, 4);
+});
+
+test('live MIDI notes preserve velocity, NoteOff releases, sustain defers release, and presets switch safely', async () => {
+    const runtime = tone('running');
+    const audio = await load();
+    await audio.initialize();
+
+    audio.handleMidiInput(0x90, 60, 30);
+    audio.handleMidiInput(0x90, 64, 120);
+    assert.deepEqual(runtime.nodes[0].attacks, [['C4', undefined, 30 / 127], ['E4', undefined, 120 / 127]]);
+    audio.handleMidiInput(0x80, 60, 0);
+    assert.deepEqual(runtime.nodes[0].releases, [['C4']]);
+
+    audio.handleMidiInput(0xb0, 64, 127);
+    audio.handleMidiInput(0x90, 67, 84);
+    audio.handleMidiInput(0x90, 67, 0);
+    assert.deepEqual(runtime.nodes[0].releases, [['C4']]);
+    audio.handleMidiInput(0xb0, 64, 0);
+    assert.deepEqual(runtime.nodes[0].releases, [['C4'], ['G4']]);
+
+    audio.handleMidiInput(0x90, 60, 100);
+    audio.setInstrumentPreset({ id: 'synth-lead', engine: 'FMSynth', oscillator: 'sawtooth', volume: -18,
+        attack: 0.003, decay: 0.12, sustain: 0.4, release: 0.1, octaveOffset: 0 });
+    assert.equal(runtime.nodes[0].disposed, true);
+    assert.equal(runtime.nodes[0].released, true);
+    assert.equal(runtime.nodes[2].options[0], runtime.nodes[0].options[0]);
+    assert.deepEqual(runtime.nodes[2].options[1].oscillator, { type: 'sawtooth' });
+    assert.equal(runtime.nodes[2].options[1].volume, -18);
 });
 
 test('disposal during initialization does not resurrect synths', async () => {
