@@ -1,6 +1,18 @@
 const activeRuns = new Map();
 
-const sleep = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
+const sleep = (run, milliseconds) => new Promise(resolve => {
+    if (run.cancelled || milliseconds <= 0) {
+        resolve();
+        return;
+    }
+
+    run.wakeSleep = resolve;
+    run.pendingTimer = setTimeout(() => {
+        run.pendingTimer = undefined;
+        run.wakeSleep = undefined;
+        resolve();
+    }, milliseconds);
+});
 
 function formatNumber(value, digits) {
     return String(value).replace(/[0-9]/g, digit => digits[Number(digit)]);
@@ -57,7 +69,9 @@ export async function startRhythm(
         timelineStartedAt: 0,
         pendingInputs: [],
         keyHandler: null,
-        flashTimer: 0
+        flashTimer: 0,
+        pendingTimer: undefined,
+        wakeSleep: undefined
     };
     activeRuns.set(workspaceId, run);
     let metronomeAudio;
@@ -105,11 +119,11 @@ export async function startRhythm(
     };
     document.addEventListener("keydown", run.keyHandler);
 
-    void runRhythmTimeline(run, root, dotNetReference, timelineEvents, pulseOffsetsMilliseconds, durationMilliseconds, labels, metronomeAudio)
+void runRhythmTimeline(workspaceId, run, root, dotNetReference, timelineEvents, pulseOffsetsMilliseconds, durationMilliseconds, labels, metronomeAudio)
         .catch(() => stopRhythm(workspaceId));
 }
 
-async function runRhythmTimeline(run, root, dotNetReference, timelineEvents, pulseOffsetsMilliseconds, durationMilliseconds, labels, metronomeAudio) {
+async function runRhythmTimeline(workspaceId, run, root, dotNetReference, timelineEvents, pulseOffsetsMilliseconds, durationMilliseconds, labels, metronomeAudio) {
     let eventIndex = 0;
     let pulseIndex = 0;
     while (eventIndex < timelineEvents.length || pulseIndex < pulseOffsetsMilliseconds.length) {
@@ -120,7 +134,7 @@ async function runRhythmTimeline(run, root, dotNetReference, timelineEvents, pul
             ? pulseOffsetsMilliseconds[pulseIndex]
             : Number.POSITIVE_INFINITY;
         const nextOffset = Math.min(eventOffset, pulseOffset);
-        await sleep(Math.max(0, run.timelineStartedAt + nextOffset - performance.now()));
+        await sleep(run, Math.max(0, run.timelineStartedAt + nextOffset - performance.now()));
         if (run.cancelled) return;
 
         if (eventOffset <= pulseOffset) {
@@ -142,7 +156,7 @@ async function runRhythmTimeline(run, root, dotNetReference, timelineEvents, pul
     }
 
     const endTarget = run.timelineStartedAt + durationMilliseconds;
-    await sleep(Math.max(0, endTarget - performance.now()));
+    await sleep(run, Math.max(0, endTarget - performance.now()));
     if (run.cancelled) return;
 
     run.active = false;
@@ -154,6 +168,7 @@ async function runRhythmTimeline(run, root, dotNetReference, timelineEvents, pul
     if (!run.cancelled) {
         await dotNetReference.invokeMethodAsync("CompleteRhythm");
     }
+    if (activeRuns.get(workspaceId) === run) activeRuns.delete(workspaceId);
 }
 
 export function stopRhythm(workspaceId) {
@@ -165,6 +180,13 @@ export function stopRhythm(workspaceId) {
     run.cancelled = true;
     run.active = false;
     clearTimeout(run.flashTimer);
+    if (run.pendingTimer !== undefined) {
+        clearTimeout(run.pendingTimer);
+        run.pendingTimer = undefined;
+        const wake = run.wakeSleep;
+        run.wakeSleep = undefined;
+        wake?.();
+    }
     if (run.keyHandler) {
         document.removeEventListener("keydown", run.keyHandler);
     }

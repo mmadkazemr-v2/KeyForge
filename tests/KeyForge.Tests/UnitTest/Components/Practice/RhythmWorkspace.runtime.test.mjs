@@ -72,7 +72,7 @@ async function withRuntime(eventCount, callback) {
             now = target;
             await flush();
         };
-        await callback({ runtime, dotNet, calls, root, listeners, activeEvents, advanceTo, labels });
+        await callback({ runtime, dotNet, calls, root, listeners, activeEvents, advanceTo, labels, pendingTimerCount: () => timers.size });
     } finally {
         for (const [name, descriptor] of saved)
             if (descriptor) Object.defineProperty(globalThis, name, descriptor);
@@ -140,5 +140,58 @@ test('External metronome mode keeps visual rhythm timing but suppresses KeyForge
         assert.equal(activeEvents.length, 2);
         assert.equal(calls.filter(call => call.name === 'AudioClick').length, 0);
         assert.equal(calls.some(call => call.name === 'CompleteRhythm'), true);
+    });
+});
+
+test('stop cancels the pending rhythm deadline and prevents orphaned metronome clicks', async () => {
+    await withRuntime(4, async ({ runtime, dotNet, calls, advanceTo, labels, pendingTimerCount }) => {
+        const running = runtime.startRhythm('rhythm', dotNet,
+            [0, 1000, 2000, 3000].map(offsetMilliseconds => ({ offsetMilliseconds })),
+            [0, 1000, 2000, 3000], 4000, labels);
+        await running;
+        await flush();
+        assert.equal(calls.filter(call => call.name === 'AudioClick').length, 1);
+        assert.equal(pendingTimerCount(), 1);
+
+        runtime.stopRhythm('rhythm');
+        assert.equal(pendingTimerCount(), 0);
+        await advanceTo(20_000);
+
+        assert.equal(calls.filter(call => call.name === 'AudioClick').length, 1);
+        assert.equal(calls.some(call => call.name === 'CompleteRhythm'), false);
+    });
+});
+
+test('restarting a workspace cancels its previous scheduler and keeps one active input listener', async () => {
+    await withRuntime(4, async ({ runtime, dotNet, calls, advanceTo, labels, listeners }) => {
+        const timeline = [0, 1000, 2000, 3000].map(offsetMilliseconds => ({ offsetMilliseconds }));
+        const pulses = [0, 1000, 2000, 3000];
+        await runtime.startRhythm('rhythm', dotNet, timeline, pulses, 4000, labels);
+        await flush();
+        await runtime.startRhythm('rhythm', dotNet, timeline, pulses, 4000, labels);
+        await flush();
+
+        assert.equal(listeners.has('keydown'), true);
+        await advanceTo(16_000);
+
+        assert.deepEqual(calls.filter(call => call.name === 'AudioClick').map(call => call.at),
+            [12_000, 12_000, 13_000, 14_000, 15_000]);
+        assert.equal(calls.filter(call => call.name === 'CompleteRhythm').length, 1);
+        assert.equal(listeners.has('keydown'), false);
+    });
+});
+
+test('exercise startup resolves at the browser timeline origin instead of waiting for exercise completion', async () => {
+    await withRuntime(2, async ({ runtime, dotNet, calls, labels, pendingTimerCount }) => {
+        await runtime.startRhythm('rhythm', dotNet,
+            [{ offsetMilliseconds: 0 }, { offsetMilliseconds: 1000 }], [0, 1000], 2000, labels);
+        await flush();
+
+        assert.equal(calls.some(call => call.name === 'NotifyRhythmStarted'), true);
+        assert.equal(calls.some(call => call.name === 'CompleteRhythm'), false);
+        assert.equal(pendingTimerCount(), 1);
+        runtime.stopRhythm('rhythm');
+        await flush();
+        assert.equal(pendingTimerCount(), 0);
     });
 });
