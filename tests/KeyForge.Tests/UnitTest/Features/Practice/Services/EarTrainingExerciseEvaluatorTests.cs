@@ -90,6 +90,32 @@ public sealed class EarTrainingExerciseEvaluatorTests
     }
 
     [Fact]
+    public void Evaluate_CorrectAndIncorrectChordChoices_AreScoredAsAnswers()
+    {
+        var result = new EarTrainingExerciseEvaluator().Evaluate(
+            ChordChallenge("major", "minor", "major"),
+            [ChoiceInput("major"), ChoiceInput("major"), ChoiceInput("major")]);
+
+        Assert.True(result.IsSuccessful);
+        Assert.Equal(67, result.Score);
+        Assert.Equal(2, result.EarTraining!.CorrectAnswerCount);
+        Assert.Equal("minor", result.EarTraining.Questions[1].ExpectedNote);
+        Assert.Equal("major", result.EarTraining.Questions[1].ActualNote);
+    }
+
+    [Fact]
+    public void Evaluate_ChordAnswerMustBeAValidChoiceAndChoiceTyped()
+    {
+        var challenge = ChordChallenge("major");
+        var result = new EarTrainingExerciseEvaluator().Evaluate(challenge,
+            [ChoiceInput("diminished"), Input("major")]);
+
+        Assert.False(result.IsSuccessful);
+        Assert.Equal(0, result.Score);
+        Assert.Equal(ExerciseEvaluationFeedback.Incorrect, result.Feedback);
+    }
+
+    [Fact]
     public void Evaluate_UnsupportedChallenge_IsSafe()
     {
         var challenge = new ExerciseChallenge
@@ -126,6 +152,14 @@ public sealed class EarTrainingExerciseEvaluatorTests
             AvailableNotes = [],
             IntervalChoices = intervals
         }
+    };
+
+    private static ExerciseChallenge ChordChallenge(params string[] qualities) => new()
+    {
+        ExerciseId = "ear-chord-01",
+        ExerciseType = ExerciseType.EarTraining,
+        ExpectedInputs = qualities.Select(quality => new ExpectedInput { Type = InputEventType.Choice, Value = quality }).ToArray(),
+        EarTraining = new EarTrainingChallengeDetails { TaskType = EarTrainingTask.ChordRecognition, AvailableNotes = [] }
     };
 
     private static ExerciseInputEvent Input(string value, InputSource source = InputSource.VirtualPiano) => new()

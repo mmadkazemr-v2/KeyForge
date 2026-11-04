@@ -16,6 +16,9 @@ public interface IAudioPlaybackService
     Task<bool> SetInstrumentPresetAsync(InstrumentPreset preset);
     Task<bool> PlayNoteAsync(MusicalNote note);
 
+    /// <summary>Plays a simultaneous chord as an explicitly requested learning stimulus.</summary>
+    Task<bool> PlayChordAsync(IReadOnlyList<MusicalNote> notes);
+
     /// <summary>
     /// Plays the given notes sequentially at their configured delays. Starting a
     /// new sequence cancels any previously scheduled sequence before it sounds.

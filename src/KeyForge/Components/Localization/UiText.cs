@@ -266,6 +266,19 @@ public static class UiText
     public static string IdentifyTheNote => Select("نت شنیده‌شده را پیدا کنید", "Identify the note you hear");
     public static string EarTrainingInstructions => Select("صدا را پخش کنید و سپس نت شنیده‌شده را روی پیانو انتخاب کنید.", "Play the sound, then select the note you heard on the piano.");
     public static string IdentifyTheInterval => Select("فاصلهٔ شنیده‌شده را پیدا کنید", "Identify the interval you hear");
+    public static string IdentifyChordQuality => Select("ماژور یا مینور بودن آکورد را تشخیص دهید", "Identify the chord quality");
+    public static string ChordRecognitionInstructions => Select(
+        "آکورد را پخش کنید و سپس انتخاب کنید که ماژور است یا مینور.",
+        "Play the chord, then choose whether it sounds major or minor.");
+    public static string ChooseChordQuality => Select("کیفیت آکورد را انتخاب کنید", "Choose the chord quality");
+    public static string ChordQuality => Select("کیفیت آکورد", "Chord quality");
+    public static string PlayChord => Select("پخش آکورد", "Play chord");
+    public static string GetChordQuality(string quality) => quality.Trim().ToLowerInvariant() switch
+    {
+        "major" => Select("ماژور", "Major"),
+        "minor" => Select("مینور", "Minor"),
+        _ => quality
+    };
     public static string IntervalRecognitionInstructions => Select(
         "دو نت پشت‌سرهم پخش می‌شود؛ فاصلهٔ میان آن‌ها را از گزینه‌ها انتخاب کنید.",
         "Two notes play one after the other; choose the distance between them.");

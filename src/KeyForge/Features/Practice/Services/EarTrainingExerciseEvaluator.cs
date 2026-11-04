@@ -14,7 +14,8 @@ public sealed class EarTrainingExerciseEvaluator
 
         var taskType = challenge.EarTraining?.TaskType;
         var isIntervalTask = taskType == EarTrainingTask.IntervalRecognition;
-        if ((taskType != EarTrainingTask.PitchMatching && !isIntervalTask) ||
+        var isChordTask = taskType == EarTrainingTask.ChordRecognition;
+        if ((taskType != EarTrainingTask.PitchMatching && !isIntervalTask && !isChordTask) ||
             challenge.ExpectedInputs.Count == 0)
         {
             return new ExerciseEvaluationResult
@@ -34,7 +35,8 @@ public sealed class EarTrainingExerciseEvaluator
                 ExpectedNote = expected.Value,
                 ActualNote = actual?.Value,
                 IsCorrect = actual is not null &&
-                    (isIntervalTask ? IsCorrectInterval(expected, actual) : IsCorrect(expected, actual))
+                    (isIntervalTask ? IsCorrectInterval(expected, actual) :
+                        isChordTask ? IsCorrectChord(expected, actual) : IsCorrect(expected, actual))
             };
         }).ToArray();
         var details = new EarTrainingEvaluationDetails { Questions = questions };
@@ -65,5 +67,17 @@ public sealed class EarTrainingExerciseEvaluator
         return expected.Type == InputEventType.Choice &&
             actual.Type == InputEventType.Choice &&
             string.Equals(expected.Value.Trim(), actual.Value.Trim(), StringComparison.Ordinal);
+    }
+
+    /// <summary>Chord answers are exact, choice-typed major/minor labels.</summary>
+    public static bool IsCorrectChord(ExpectedInput expected, ExerciseInputEvent actual)
+    {
+        ArgumentNullException.ThrowIfNull(expected);
+        ArgumentNullException.ThrowIfNull(actual);
+
+        return expected.Type == InputEventType.Choice && actual.Type == InputEventType.Choice &&
+            (string.Equals(actual.Value.Trim(), "major", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(actual.Value.Trim(), "minor", StringComparison.OrdinalIgnoreCase)) &&
+            string.Equals(expected.Value.Trim(), actual.Value.Trim(), StringComparison.OrdinalIgnoreCase);
     }
 }

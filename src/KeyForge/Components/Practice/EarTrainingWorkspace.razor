@@ -8,6 +8,10 @@
 {
     <IntervalRecognitionWorkspace @key="@RuntimeExercise" RuntimeExercise="RuntimeExercise" OnCompleted="OnCompleted" />
 }
+else if (IsChordRecognitionMode)
+{
+    <ChordRecognitionWorkspace @key="@RuntimeExercise" RuntimeExercise="RuntimeExercise" OnCompleted="OnCompleted" />
+}
 else
 {
 <div class="kf-practice-workspace ear-training-workspace" tabindex="0" @onkeydown="HandleKeyDown" aria-labelledby="ear-training-title">
@@ -95,6 +99,8 @@ else
     private int CurrentQuestionNumber => _questionIndex + 1;
     private bool IsIntervalRecognitionMode =>
         RuntimeExercise.Definition is EarTrainingExerciseDefinition { TaskType: EarTrainingTask.IntervalRecognition };
+    private bool IsChordRecognitionMode =>
+        RuntimeExercise.Definition is EarTrainingExerciseDefinition { TaskType: EarTrainingTask.ChordRecognition };
     private ExpectedInput CurrentExpectedInput => RuntimeExercise.Challenge.ExpectedInputs[_questionIndex];
     private MusicalNote CurrentNote => MusicalNote.Parse(CurrentExpectedInput.Value);
     private IReadOnlyList<MusicalNote> AvailableNotes => EarTrainingChallengeGenerator.GetAvailableNotes(
@@ -157,6 +163,8 @@ else
 
     private Task HandleMidiMessageAsync(MidiInputMessage message)
     {
+        // Chord-recognition answers are explicit choice buttons; MIDI note events must not become answers.
+        if (IsChordRecognitionMode) return Task.CompletedTask;
         var input = _browserTimelineOriginMilliseconds is { } origin
             ? MidiInputAdapter.TryCreate(message, DateTime.UtcNow, origin)
             : null;

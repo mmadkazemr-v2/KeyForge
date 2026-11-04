@@ -106,6 +106,27 @@ public sealed class AudioPlaybackServiceTests
     }
 
     [Fact]
+    public async Task PlayChordAsync_PassesSimultaneousNotesToExistingAudioModule()
+    {
+        var runtime = new FakeJavaScriptRuntime();
+        await using var service = new AudioPlaybackService(runtime);
+        await service.InitializeAsync();
+
+        Assert.True(await service.PlayChordAsync([MusicalNote.Parse("C4"), MusicalNote.Parse("E4"), MusicalNote.Parse("G4")]));
+
+        var call = Assert.Single(runtime.Module.Calls, call => call.Identifier == "playChord");
+        Assert.Equal(new[] { "C4", "E4", "G4" }, Assert.IsType<string[]>(Assert.Single(call.Arguments)));
+    }
+
+    [Fact]
+    public async Task PlayChordAsync_RequiresInitializedAudioAndValidChord()
+    {
+        await using var service = new AudioPlaybackService(new FakeJavaScriptRuntime());
+        Assert.False(await service.PlayChordAsync([MusicalNote.Parse("C4"), MusicalNote.Parse("E4")]));
+        await Assert.ThrowsAsync<ArgumentException>(() => service.PlayChordAsync([MusicalNote.Parse("C4")]));
+    }
+
+    [Fact]
     public async Task PlaySequenceAsync_MapsNotesAndDelaysInOrder()
     {
         var runtime = new FakeJavaScriptRuntime();

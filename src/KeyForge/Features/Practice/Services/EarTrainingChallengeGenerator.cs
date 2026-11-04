@@ -8,6 +8,7 @@ public sealed class EarTrainingChallengeGenerator
         ["P1", "m2", "M2", "m3", "M3", "P4", "P5", "m6", "M6", "m7", "M7", "P8"];
 
     private static readonly int[] MajorScaleOffsets = [0, 2, 4, 5, 7, 9, 11];
+    public static readonly IReadOnlyList<string> DefaultChordChoices = ["major", "minor"];
 
     public ExerciseChallenge Create(EarTrainingExerciseDefinition exercise)
     {
@@ -22,6 +23,7 @@ public sealed class EarTrainingChallengeGenerator
         {
             EarTrainingTask.PitchMatching => CreatePitchMatching(exercise),
             EarTrainingTask.IntervalRecognition => CreateIntervalRecognition(exercise),
+            EarTrainingTask.ChordRecognition => CreateChordRecognition(exercise),
             _ => CreateUnsupported(exercise)
         };
     }
@@ -102,6 +104,66 @@ public sealed class EarTrainingChallengeGenerator
                 IntervalChoices = intervals,
                 IntervalQuestions = questions
             }
+        };
+    }
+
+    private ExerciseChallenge CreateChordRecognition(EarTrainingExerciseDefinition exercise)
+    {
+        if (exercise.Keys.Count == 0)
+        {
+            throw new InvalidOperationException("Chord-recognition exercises must configure one or more major key centers.");
+        }
+
+        var roots = exercise.Keys.Select(ParseMajorKeyRoot).ToArray();
+        var questions = Enumerable.Range(0, exercise.Rounds)
+            .Select(index => CreateChordQuestion(roots[index % roots.Length],
+                DefaultChordChoices[(index / roots.Length) % DefaultChordChoices.Count]))
+            .ToArray();
+
+        return new ExerciseChallenge
+        {
+            ExerciseId = exercise.Id,
+            ExerciseType = exercise.Type,
+            ExpectedInputs = questions.Select(question => new ExpectedInput
+            {
+                Type = InputEventType.Choice,
+                Value = question.Quality
+            }).ToArray(),
+            EarTraining = new EarTrainingChallengeDetails
+            {
+                TaskType = exercise.TaskType,
+                AvailableNotes = questions.SelectMany(question => question.Notes).Distinct().ToArray(),
+                ChordQuestions = questions,
+                ChordChoices = DefaultChordChoices
+            }
+        };
+    }
+
+    private static MusicalNote ParseMajorKeyRoot(string key)
+    {
+        var parts = key.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length != 2 || !string.Equals(parts[1], "major", StringComparison.OrdinalIgnoreCase) ||
+            !MusicalNote.TryParse($"{parts[0]}4", out var root))
+        {
+            throw new InvalidOperationException(
+                $"Chord-recognition key '{key}' is unsupported. Configure key centers such as 'C major' or 'G major'.");
+        }
+
+        return root;
+    }
+
+    private static EarTrainingChordQuestion CreateChordQuestion(MusicalNote root, string quality)
+    {
+        var third = string.Equals(quality, "major", StringComparison.Ordinal) ? 4 : 3;
+        return new EarTrainingChordQuestion
+        {
+            RootNote = root.Value,
+            Quality = quality,
+            Notes = [
+                root.Value,
+                MusicalNote.FromMidiNumber(root.MidiNumber + third).Value,
+                MusicalNote.FromMidiNumber(root.MidiNumber + 7).Value
+            ]
         };
     }
 

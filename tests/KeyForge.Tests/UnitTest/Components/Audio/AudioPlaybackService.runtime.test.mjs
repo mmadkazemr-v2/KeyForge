@@ -43,6 +43,27 @@ test('uses the Tone 15 context property and shares note/click nodes across repea
     assert.equal(runtime.nodes[1].notes[0][0], 'C6');
 });
 
+test('explicit chord stimulus plays a simultaneous triad and does not enable live MIDI monitoring', async () => {
+    const runtime = tone('running');
+    const audio = await load();
+    await audio.initialize();
+    audio.playChord(['C4', 'E4', 'G4']);
+    assert.deepEqual(runtime.nodes[0].notes[0], [['C4', 'E4', 'G4'], '2n']);
+    assert.deepEqual(runtime.nodes[0].attacks, []);
+    assert.equal(runtime.starts(), 0);
+});
+
+test('chord stimulus rejects invalid choices and stops pending sequence playback', async () => {
+    const runtime = tone('running');
+    const audio = await load();
+    await audio.initialize();
+    audio.playSequence([{ note: 'C4', delayMilliseconds: 50 }]);
+    audio.playChord(['C4', 'E4', 'G4']);
+    assert.throws(() => audio.playChord(['C4']), /valid chord stimulus/);
+    await new Promise(resolve => setTimeout(resolve, 60));
+    assert.equal(runtime.nodes[0].notes.length, 1);
+});
+
 test('preparation does not unlock audio; the native click reaches start synchronously', async () => {
     const runtime = tone();
     const audio = await load();

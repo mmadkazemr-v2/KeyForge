@@ -147,6 +147,30 @@ public sealed class AudioPlaybackService(IJSRuntime javascript) : IAudioPlayback
         }
     }
 
+    public async Task<bool> PlayChordAsync(IReadOnlyList<MusicalNote> notes)
+    {
+        ArgumentNullException.ThrowIfNull(notes);
+        if (notes.Count is < 2 or > 8 || notes.Any(note => note is null))
+        {
+            throw new ArgumentException("A chord stimulus must contain between two and eight notes.", nameof(notes));
+        }
+        if (!IsReady()) return false;
+
+        try
+        {
+            await _module!.InvokeVoidAsync("playChord", new object?[] { notes.Select(note => note.Value).ToArray() });
+            return true;
+        }
+        catch (JSException ex)
+        {
+            return Fail(AudioFailureReason.Unavailable, $"Chord playback failed: {ex.Message}");
+        }
+        catch (JSDisconnectedException)
+        {
+            return Fail(AudioFailureReason.Unavailable);
+        }
+    }
+
     public async Task<bool> SetInstrumentPresetAsync(InstrumentPreset preset)
     {
         ArgumentNullException.ThrowIfNull(preset);

@@ -39,17 +39,59 @@ public sealed class EarTrainingChallengeGeneratorTests
     }
 
     [Fact]
+    public void Create_ChordRecognition_GeneratesDeterministicMajorAndMinorTriads()
+    {
+        var exercise = new EarTrainingExerciseDefinition
+        {
+            Id = "ear-01",
+            TaskType = EarTrainingTask.ChordRecognition,
+            Rounds = 10,
+            Keys = ["C major", "G major"]
+        };
+        var generator = new EarTrainingChallengeGenerator();
+        var challenge = generator.Create(exercise);
+        var repeated = generator.Create(exercise);
+
+        Assert.Equal(10, challenge.ExpectedInputs.Count);
+        Assert.Equal(EarTrainingTask.ChordRecognition, challenge.EarTraining!.TaskType);
+        Assert.Equal(["major", "minor"], challenge.EarTraining.ChordChoices);
+        Assert.Equal(challenge.ExpectedInputs.Select(input => input.Value),
+            repeated.ExpectedInputs.Select(input => input.Value));
+        Assert.Equal(challenge.EarTraining.ChordQuestions.SelectMany(question => question.Notes),
+            repeated.EarTraining!.ChordQuestions.SelectMany(question => question.Notes));
+        Assert.Equal(["C4", "E4", "G4"], challenge.EarTraining.ChordQuestions[0].Notes);
+        Assert.Equal("major", challenge.EarTraining.ChordQuestions[0].Quality);
+        Assert.Equal(["G4", "B4", "D5"], challenge.EarTraining.ChordQuestions[1].Notes);
+        Assert.Equal("major", challenge.EarTraining.ChordQuestions[1].Quality);
+        Assert.Equal("C4", challenge.EarTraining.ChordQuestions[2].RootNote);
+        Assert.Equal("minor", challenge.EarTraining.ChordQuestions[2].Quality);
+        Assert.Equal(["G4", "A#4", "D5"], challenge.EarTraining.ChordQuestions[3].Notes);
+        Assert.Equal("minor", challenge.EarTraining.ChordQuestions[3].Quality);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("C minor")]
+    [InlineData("H major")]
+    public void Create_ChordRecognition_RejectsUnsupportedChordKeys(string key)
+    {
+        Assert.Throws<InvalidOperationException>(() => new EarTrainingChallengeGenerator().Create(new EarTrainingExerciseDefinition
+        {
+            Id = "ear-01", TaskType = EarTrainingTask.ChordRecognition, Rounds = 2,
+            Keys = string.IsNullOrEmpty(key) ? [] : [key]
+        }));
+    }
+
+    [Fact]
     public void Create_UnsupportedTask_ReturnsSafeUnsupportedChallenge()
     {
         var challenge = new EarTrainingChallengeGenerator().Create(new EarTrainingExerciseDefinition
         {
-            Id = "ear-01",
-            TaskType = EarTrainingTask.ChordRecognition,
-            Rounds = 4
+            Id = "ear-01", TaskType = EarTrainingTask.ScaleRecognition, Rounds = 4
         });
 
         Assert.Empty(challenge.ExpectedInputs);
-        Assert.Equal(EarTrainingTask.ChordRecognition, challenge.EarTraining!.TaskType);
+        Assert.Equal(EarTrainingTask.ScaleRecognition, challenge.EarTraining!.TaskType);
     }
 
     [Fact]

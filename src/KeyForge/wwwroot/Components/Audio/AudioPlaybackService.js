@@ -171,6 +171,18 @@ export function playNote(note) {
     synth.triggerAttackRelease(note, '8n');
 }
 
+// Educational chord playback is explicit and separate from live MIDI monitoring.
+export function playChord(notes) {
+    requireRunning();
+    if (!synth || !Array.isArray(notes) || notes.length < 2 || notes.length > 8 ||
+        notes.some(note => typeof note !== 'string' || !note)) {
+        throw new Error('A valid chord stimulus is required.');
+    }
+
+    cancelPendingSequence();
+    synth.triggerAttackRelease(notes, '2n');
+}
+
 export function setInstrumentPreset(preset) {
     if (!preset || typeof preset.id !== 'string') throw new Error('A valid practice sound is required.');
     if (preset.id === instrumentPreset.id) return;
