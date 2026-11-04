@@ -1,6 +1,8 @@
 namespace KeyForge.Features.Practice.Services;
 
-/// <summary>Evaluates note order and optional beat timing for the two sequence drills.</summary>
+/// <summary>
+/// Evaluates note order and optional beat timing for the two sequence drills.
+/// </summary>
 public sealed class SequenceExerciseEvaluator
 {
     private const int ExtraInputPenalty = 5;
@@ -25,10 +27,20 @@ public sealed class SequenceExerciseEvaluator
         var correct = 0;
         var incorrect = 0;
         var timingErrors = new List<double>();
-        for (var index = 0; index < Math.Min(expected.Length, actual.Length); index++)
+        var noteEvaluations = new List<SequenceNoteEvaluation>();
+        for (var index = 0; index < expected.Length; index++)
         {
-            var noteMatches = string.Equals(expected[index].Value, actual[index].Value, StringComparison.OrdinalIgnoreCase);
-            var timingMatches = !requireTiming || IsWithinTimingTolerance(expected[index], actual[index], timingErrors);
+            var actualInput = index < actual.Length ? actual[index] : null;
+            var noteMatches = actualInput is not null &&
+                              string.Equals(expected[index].Value, actualInput.Value, StringComparison.OrdinalIgnoreCase);
+            var timingError = actualInput is not null && expected[index].ExpectedOffset is { } expectedOffset
+                ? actualInput.Offset - expectedOffset
+                : (TimeSpan?)null;
+            if (timingError.HasValue)
+                timingErrors.Add(timingError.Value.TotalMilliseconds);
+            var timingMatches = actualInput is not null &&
+                                (!requireTiming || !timingError.HasValue ||
+                                 Math.Abs(timingError.Value.TotalMilliseconds) <= RhythmExerciseEvaluator.AcceptableToleranceMilliseconds);
             if (noteMatches && timingMatches)
             {
                 correct++;
@@ -37,6 +49,20 @@ public sealed class SequenceExerciseEvaluator
             {
                 incorrect++;
             }
+
+            noteEvaluations.Add(new SequenceNoteEvaluation
+            {
+                NoteNumber = index + 1,
+                ExpectedNote = expected[index].Value,
+                ActualNote = actualInput?.Value,
+                ExpectedOffset = expected[index].ExpectedOffset,
+                ActualOffset = timingError.HasValue ? actualInput!.Offset : null,
+                TimingError = timingError,
+                IsPitchCorrect = noteMatches,
+                IsTimingCorrect = timingError.HasValue
+                    ? Math.Abs(timingError.Value.TotalMilliseconds) <= RhythmExerciseEvaluator.AcceptableToleranceMilliseconds
+                    : null
+            });
         }
 
         var missed = expected.Length - Math.Min(expected.Length, actual.Length);
@@ -50,7 +76,13 @@ public sealed class SequenceExerciseEvaluator
             IncorrectInputCount = incorrect,
             ExtraInputCount = extra,
             AverageAbsoluteTimingErrorMilliseconds = timingErrors.Count == 0 ? null : timingErrors.Average(Math.Abs),
-            TimingTendency = GetTimingTendency(timingErrors)
+            TimingTendency = GetTimingTendency(timingErrors),
+            Notes = noteEvaluations,
+            UnexpectedNotes = actual.Skip(expected.Length).Select(input => new UnexpectedSequenceNote
+            {
+                ActualNote = input.Value,
+                ActualOffset = input.Offset
+            }).ToArray()
         };
 
         return new ExerciseEvaluationResult
@@ -65,18 +97,6 @@ public sealed class SequenceExerciseEvaluator
             FingerIndependence = exerciseType == ExerciseType.FingerIndependence ? details : null,
             Sequence = exerciseType == ExerciseType.Sequence ? details : null
         };
-    }
-
-    private static bool IsWithinTimingTolerance(ExpectedInput expected, ExerciseInputEvent actual, List<double> errors)
-    {
-        if (!expected.ExpectedOffset.HasValue)
-        {
-            return true;
-        }
-
-        var error = (actual.Offset - expected.ExpectedOffset.Value).TotalMilliseconds;
-        errors.Add(error);
-        return Math.Abs(error) <= RhythmExerciseEvaluator.AcceptableToleranceMilliseconds;
     }
 
     private static RhythmTimingTendency GetTimingTendency(IReadOnlyList<double> errors)

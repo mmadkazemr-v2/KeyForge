@@ -50,6 +50,11 @@ export async function renderStaff(element, request) {
     clearStaff(element);
     element.dir = 'ltr';
 
+    if (request.rhythmMeasures?.length) {
+        renderRhythm(VexFlow, element, request);
+        return;
+    }
+
     const width = Math.max(320, Math.round(element.getBoundingClientRect().width || 480));
     const height = 176;
     const renderer = new VexFlow.Renderer(element, VexFlow.Renderer.Backends.SVG);
@@ -70,6 +75,36 @@ export async function renderStaff(element, request) {
     });
 
     VexFlow.Formatter.FormatAndDraw(context, stave, [note]);
+}
+
+function renderRhythm(VexFlow, element, request) {
+    const ink = getComputedStyle(element).getPropertyValue('--kf-color-text-primary').trim() || '#f4f1f8';
+    for (const measure of request.rhythmMeasures) {
+        const row = document.createElement('div');
+        element.appendChild(row);
+        const width = Math.max(320, Math.round(element.getBoundingClientRect().width || 480), 110 + measure.length * 34);
+        const renderer = new VexFlow.Renderer(row, VexFlow.Renderer.Backends.SVG);
+        renderer.resize(width, 160);
+        const context = renderer.getContext();
+        context.setFillStyle(ink);
+        context.setStrokeStyle(ink);
+        const stave = new VexFlow.Stave(12, 20, width - 24);
+        stave.addClef('percussion').addTimeSignature(request.timeSignature).setContext(context).draw();
+        const notes = measure.map(item => {
+            const note = new VexFlow.StaveNote({ keys: ['b/4'], duration: item.duration });
+            if (item.dotted) VexFlow.Dot.buildAndAttach([note], { all: true });
+            return note;
+        });
+        const groups = request.timeSignature === '6/8'
+            ? [new VexFlow.Fraction(3, 8)]
+            : [new VexFlow.Fraction(1, 4)];
+        const beams = VexFlow.Beam.generateBeams(notes, { groups });
+        VexFlow.Formatter.FormatAndDraw(context, stave, notes);
+        beams.forEach(beam => beam.setContext(context).draw());
+        // Keep dense sixteenth-note measures legible on narrow viewports.
+        const svg = row.querySelector('svg');
+        if (svg) svg.style.minWidth = `${width}px`;
+    }
 }
 
 export function clearStaff(element) {

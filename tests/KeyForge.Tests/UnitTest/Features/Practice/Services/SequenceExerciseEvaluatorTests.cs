@@ -13,6 +13,43 @@ public sealed class SequenceExerciseEvaluatorTests
         Assert.True(result.IsSuccessful);
         Assert.Equal(100, result.Score);
         Assert.Equal(2, result.Speed!.CorrectInputCount);
+        Assert.Equal([true, true], result.Speed.Notes.Select(note => note.IsPitchCorrect));
+        Assert.Equal([0d, 0d], result.Speed.Notes.Select(note => note.TimingError!.Value.TotalMilliseconds));
+    }
+
+    [Fact]
+    public void Evaluate_SpeedDiagnostics_SeparatesWrongPitchFromLateTiming()
+    {
+        var result = new SequenceExerciseEvaluator().Evaluate(
+            Challenge(ExerciseType.Speed, timing: true, "C4", "E4"),
+            [Input("D4", 0), Input("E4", 650)],
+            ExerciseType.Speed,
+            requireTiming: true);
+
+        var notes = result.Speed!.Notes;
+        Assert.False(notes[0].IsPitchCorrect);
+        Assert.True(notes[0].IsTimingCorrect);
+        Assert.True(notes[1].IsPitchCorrect);
+        Assert.False(notes[1].IsTimingCorrect);
+        Assert.Equal(150, notes[1].TimingError!.Value.TotalMilliseconds);
+        Assert.Equal("D4", notes[0].ActualNote);
+        Assert.Equal(1, result.Speed.CorrectPitchCount);
+        Assert.Equal(1, result.Speed.CorrectTimingCount);
+    }
+
+    [Fact]
+    public void Evaluate_SpeedDiagnostics_MissingNoteHasExpectedPitchAndOnset()
+    {
+        var result = new SequenceExerciseEvaluator().Evaluate(
+            Challenge(ExerciseType.Speed, timing: true, "C4", "E4"),
+            [Input("C4", 0)],
+            ExerciseType.Speed,
+            requireTiming: true);
+
+        Assert.Null(result.Speed!.Notes[1].ActualNote);
+        Assert.Null(result.Speed.Notes[1].ActualOffset);
+        Assert.Equal("E4", result.Speed.Notes[1].ExpectedNote);
+        Assert.Equal(TimeSpan.FromMilliseconds(500), result.Speed.Notes[1].ExpectedOffset);
     }
 
     [Fact]
@@ -25,6 +62,7 @@ public sealed class SequenceExerciseEvaluatorTests
         Assert.Equal(28, result.Score);
         Assert.Equal(1, result.Speed!.CorrectInputCount);
         Assert.Equal(1, result.Speed.ExtraInputCount);
+        Assert.Equal("E4", Assert.Single(result.Speed.UnexpectedNotes).ActualNote);
     }
 
     [Fact]
@@ -81,11 +119,12 @@ public sealed class SequenceExerciseEvaluatorTests
         ExerciseId = "sequence-01",
         ExerciseType = type,
         ExpectedInputs = notes.Select((note, index) => new ExpectedInput
-        {
-            Type = InputEventType.Note,
-            Value = note,
-            ExpectedOffset = timing ? TimeSpan.FromMilliseconds(index * 500) : null
-        }).ToArray(),
+            {
+                Type = InputEventType.Note,
+                Value = note,
+                ExpectedOffset = timing ? TimeSpan.FromMilliseconds(index * 500) : null
+            }).ToList()
+            .AsReadOnly(),
         Speed = type == ExerciseType.Speed ? new SpeedChallengeDetails { Pattern = SpeedPattern.Scale, ExpectedNotes = notes } : null,
         FingerIndependence = type == ExerciseType.FingerIndependence ? new FingerIndependenceChallengeDetails { Hand = PracticeHand.Right, Fingers = [1, 2], ExpectedNotes = notes } : null
     };

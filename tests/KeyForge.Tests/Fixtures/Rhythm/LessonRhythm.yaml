@@ -1,0 +1,77 @@
+# Test-only authoring fixture, excluded from the production lesson catalog.
+id: rhythm-authoring-fixture
+title: Rhythm authoring fixture
+level: beginner
+order: 1
+unlock: { mode: immediate }
+completion: { requireAllExercises: true }
+exercises:
+  - id: mixed-with-rest
+    type: rhythm
+    title: Non-uniform rhythm with a rest
+    timeSignature: 4/4
+    tempo: { defaultBpm: 120 }
+    metronome: { enabled: true, audio: true, visual: true, countInBeats: 2 }
+    measures:
+      - pattern:
+          - { duration: quarter }
+          - { duration: eighth }
+          - { duration: eighth }
+          - { duration: quarter, rest: true }
+          - { duration: quarter }
+      - pattern:
+          - { duration: dottedQuarter }
+          - { duration: eighth }
+          - { duration: half }
+  - id: sixteenths
+    type: rhythm
+    title: Sixteenth-note grid
+    timeSignature: 4/4
+    tempo: { defaultBpm: 60 }
+    pattern:
+      - { duration: sixteenth }
+      - { duration: sixteenth }
+      - { duration: sixteenth }
+      - { duration: sixteenth }
+      - { duration: sixteenth }
+      - { duration: sixteenth }
+      - { duration: sixteenth }
+      - { duration: sixteenth }
+      - { duration: sixteenth }
+      - { duration: sixteenth }
+      - { duration: sixteenth }
+      - { duration: sixteenth }
+      - { duration: sixteenth }
+      - { duration: sixteenth }
+      - { duration: sixteenth }
+      - { duration: sixteenth }
+  - id: six-eight
+    type: rhythm
+    title: Six eighth notes in 6/8
+    timeSignature: 6/8
+    tempo: { defaultBpm: 80 }
+    pattern:
+      - { duration: eighth }
+      - { duration: eighth }
+      - { duration: eighth }
+      - { duration: eighth }
+      - { duration: eighth }
+      - { duration: eighth }
+  - id: longer-values
+    type: rhythm
+    title: Whole and dotted values
+    timeSignature: 4/4
+    tempo: { defaultBpm: 60 }
+    measures:
+      - pattern:
+          - { duration: whole }
+      - pattern:
+          - { duration: whole, rest: true }
+      - pattern:
+          - { duration: dottedHalf }
+          - { duration: quarter }
+      - pattern:
+          - { duration: dottedEighth }
+          - { duration: sixteenth }
+          - { duration: half }
+          - { duration: quarter }

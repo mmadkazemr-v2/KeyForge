@@ -4,6 +4,40 @@ namespace KeyForge.Tests.UnitTest.Components.Music;
 
 public sealed class VexFlowNotationMapperTests
 {
+    [Theory]
+    [InlineData(RhythmDuration.Whole, false, "w", false)]
+    [InlineData(RhythmDuration.Half, false, "h", false)]
+    [InlineData(RhythmDuration.Quarter, false, "q", false)]
+    [InlineData(RhythmDuration.Eighth, false, "8", false)]
+    [InlineData(RhythmDuration.Sixteenth, false, "16", false)]
+    [InlineData(RhythmDuration.DottedHalf, false, "hd", true)]
+    [InlineData(RhythmDuration.DottedQuarter, false, "qd", true)]
+    [InlineData(RhythmDuration.DottedEighth, false, "8d", true)]
+    [InlineData(RhythmDuration.Quarter, true, "qr", false)]
+    [InlineData(RhythmDuration.DottedQuarter, true, "qdr", true)]
+    public void MapRhythm_UsesVexFlowDurationsRestsAndDots(
+        RhythmDuration duration, bool rest, string token, bool dotted)
+    {
+        var rhythm = new RhythmChallengeDetails
+        {
+            Duration = TimeSpan.FromSeconds(4),
+            PulseOffsets = [],
+            Events = [new RhythmTimelineEvent
+            {
+                Duration = duration, IsRest = rest, MeasureNumber = 1,
+                StartOffset = TimeSpan.Zero, Length = TimeSpan.FromSeconds(1), StartSixteenthUnits = 0
+            }]
+        };
+
+        var request = VexFlowNotationMapper.MapRhythm(rhythm, "4/4");
+
+        var item = Assert.Single(Assert.Single(request.RhythmMeasures!));
+        Assert.Equal(token, item.Duration);
+        Assert.Equal(dotted, item.Dotted);
+        Assert.Equal("4/4", request.TimeSignature);
+        Assert.Equal("percussion", request.Clef);
+    }
+
     [Fact]
     public void TryMap_TrebleClef_MapsComponentParametersToInteropInput()
     {

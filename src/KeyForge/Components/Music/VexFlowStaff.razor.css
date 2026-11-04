@@ -13,6 +13,7 @@
 .vexflow-staff__canvas {
     width: 100%;
     min-height: calc(var(--kf-space-6) * 5);
+    overflow-x: auto;
 }
 
 .vexflow-staff__canvas ::deep svg {

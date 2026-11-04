@@ -1,6 +1,8 @@
 namespace KeyForge.Features.Practice.Services;
 
-/// <summary>Matches captured beat inputs to expected pulses and scores timing accuracy.</summary>
+/// <summary>
+/// Matches captured beat inputs to expected pulses and scores timing accuracy.
+/// </summary>
 public sealed class RhythmExerciseEvaluator
 {
     public const double ExcellentToleranceMilliseconds = 40;
@@ -26,7 +28,8 @@ public sealed class RhythmExerciseEvaluator
             .OrderBy(input => input.ExpectedOffset)
             .ToList();
 
-        if (expectedBeats.Count == 0)
+        if (expectedBeats.Count == 0 &&
+            !(challenge.Rhythm?.Events.Count > 0 && challenge.Rhythm.Events.All(item => item.IsRest)))
         {
             return new ExerciseEvaluationResult
             {
@@ -43,6 +46,7 @@ public sealed class RhythmExerciseEvaluator
         var matches = new ExerciseInputEvent?[expectedBeats.Count];
         var timingErrors = new TimeSpan?[expectedBeats.Count];
         var extraHits = 0;
+        var unexpectedHitOffsets = new List<TimeSpan>();
 
         foreach (var hit in actualHits)
         {
@@ -50,6 +54,7 @@ public sealed class RhythmExerciseEvaluator
             if (nearestIndex < 0)
             {
                 extraHits++;
+                unexpectedHitOffsets.Add(hit.Offset);
                 continue;
             }
 
@@ -57,6 +62,7 @@ public sealed class RhythmExerciseEvaluator
             if (Math.Abs(error.TotalMilliseconds) > AcceptableToleranceMilliseconds)
             {
                 extraHits++;
+                unexpectedHitOffsets.Add(hit.Offset);
                 continue;
             }
 
@@ -98,6 +104,7 @@ public sealed class RhythmExerciseEvaluator
                 SuccessfulHitCount = matchedErrors.Count,
                 MissedBeatCount = beatResults.Count(beat => beat.Accuracy == RhythmHitAccuracy.Miss),
                 ExtraHitCount = extraHits,
+                UnexpectedHitOffsets = unexpectedHitOffsets,
                 AverageTimingErrorMilliseconds = averageError,
                 AverageAbsoluteTimingErrorMilliseconds = matchedErrors.Count == 0
                     ? null
@@ -168,7 +175,7 @@ public sealed class RhythmExerciseEvaluator
             RhythmHitAccuracy.Acceptable => AcceptablePoints,
             _ => 0
         });
-        var baseScore = (int)Math.Round(earnedPoints / (double)beats.Count);
+        var baseScore = beats.Count == 0 ? 100 : (int)Math.Round(earnedPoints / (double)beats.Count);
 
         return Math.Clamp(baseScore - extraHits * ExtraHitPenalty, 0, 100);
     }

@@ -227,6 +227,23 @@ else if (CurrentExercise is { } exercise)
                             <dd>@UiText.GetRhythmTimingTendency(rhythm.TimingTendency)</dd>
                         </div>
                     </dl>
+                    <div class="practice-result-events" role="region" aria-label="@UiText.ExpectedBeats">
+                        @foreach (var beat in rhythm.Beats)
+                        {
+                            <dl class="practice-result-events__item">
+                                <div><dt>@UiText.ExpectedOnset</dt><dd>@UiText.FormatOffset(beat.ExpectedOffset)</dd></div>
+                                <div><dt>@UiText.ActualOnset</dt><dd>@UiText.FormatOffset(beat.ActualOffset)</dd></div>
+                                <div><dt>@UiText.SignedTimingError</dt><dd>@UiText.FormatTimingError(beat.TimingError?.TotalMilliseconds)</dd></div>
+                                <div><dt>@UiText.TimingAccuracy</dt><dd>@beat.Accuracy</dd></div>
+                            </dl>
+                        }
+                        @foreach (var offset in rhythm.UnexpectedHitOffsets)
+                        {
+                            <dl class="practice-result-events__item">
+                                <div><dt>@UiText.ExtraHits</dt><dd>@UiText.FormatOffset(offset)</dd></div>
+                            </dl>
+                        }
+                    </div>
                 }
                 @if (_result.Evaluation.NoteReading is { } noteReading)
                 {
@@ -269,6 +286,11 @@ else if (CurrentExercise is { } exercise)
                             <div><dt>@UiText.ExpectedSequence</dt><dd><bdi>@string.Join(UiText.ListSeparator, SequenceExpectedNotes)</bdi></dd></div>
                         }
                         <div><dt>@UiText.CorrectInputs</dt><dd>@UiText.FormatNumber(sequence.CorrectInputCount)</dd></div>
+                        @if (sequence.Notes.Count > 0 && sequence.Notes.Any(note => note.ExpectedOffset.HasValue))
+                        {
+                            <div><dt>@UiText.PitchAccuracy</dt><dd>@UiText.FormatNumber(sequence.CorrectPitchCount) / @UiText.FormatNumber(sequence.ExpectedInputCount)</dd></div>
+                            <div><dt>@UiText.TimingAccuracy</dt><dd>@UiText.FormatNumber(sequence.CorrectTimingCount) / @UiText.FormatNumber(sequence.ExpectedInputCount)</dd></div>
+                        }
                         <div><dt>@UiText.MissedInputs</dt><dd>@UiText.FormatNumber(sequence.MissedInputCount)</dd></div>
                         <div><dt>@UiText.IncorrectInputs</dt><dd>@UiText.FormatNumber(sequence.IncorrectInputCount)</dd></div>
                         <div><dt>@UiText.ExtraInputs</dt><dd>@UiText.FormatNumber(sequence.ExtraInputCount)</dd></div>
@@ -278,6 +300,33 @@ else if (CurrentExercise is { } exercise)
                             <div><dt>@UiText.TimingTendency</dt><dd>@UiText.GetRhythmTimingTendency(sequence.TimingTendency)</dd></div>
                         }
                     </dl>
+                    @if (sequence.Notes.Count > 0 && sequence.Notes.Any(note => note.ExpectedOffset.HasValue))
+                    {
+                        <div class="practice-result-events" role="region" aria-label="@UiText.ExpectedSequence">
+                            @foreach (var note in sequence.Notes)
+                            {
+                                <dl class="practice-result-events__item">
+                                    <div><dt>@UiText.ExpectedNote</dt><dd><bdi>@note.ExpectedNote</bdi></dd></div>
+                                    <div><dt>@UiText.YourNote</dt><dd><bdi>@(note.ActualNote ?? UiText.Missed)</bdi></dd></div>
+                                    <div><dt>@UiText.ExpectedOnset</dt><dd>@UiText.FormatOffset(note.ExpectedOffset)</dd></div>
+                                    <div><dt>@UiText.ActualOnset</dt><dd>@UiText.FormatOffset(note.ActualOffset)</dd></div>
+                                    <div><dt>@UiText.SignedTimingError</dt><dd>@UiText.FormatTimingError(note.TimingError?.TotalMilliseconds)</dd></div>
+                                    <div><dt>@UiText.PitchAccuracy</dt><dd>@(note.IsPitchCorrect ? UiText.Correct : UiText.Incorrect)</dd></div>
+                                    @if (note.IsTimingCorrect.HasValue)
+                                    {
+                                        <div><dt>@UiText.TimingAccuracy</dt><dd>@(note.IsTimingCorrect.Value ? UiText.Correct : UiText.Incorrect)</dd></div>
+                                    }
+                                </dl>
+                            }
+                            @foreach (var extra in sequence.UnexpectedNotes)
+                            {
+                                <dl class="practice-result-events__item">
+                                    <div><dt>@UiText.ExtraInputs</dt><dd><bdi>@extra.ActualNote</bdi></dd></div>
+                                    <div><dt>@UiText.ActualOnset</dt><dd>@UiText.FormatOffset(extra.ActualOffset)</dd></div>
+                                </dl>
+                            }
+                        </div>
+                    }
                 }
                 <div class="practice-actions">
                     <button class="kf-button kf-button--secondary" type="button" @onclick="RetryCurrentExercise">

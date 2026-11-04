@@ -30,17 +30,28 @@
 
     <div class="rhythm-workspace__instruction">
         <kbd>K</kbd>
-        <span>@UiText.PressKOnEachBeat</span>
+        <span>@(HasAuthoredPattern ? UiText.PlayAuthoredRhythm : UiText.PressKOnEachBeat)</span>
         <span class="kf-meta">
             @UiText.CapturedHits: <bdi data-rhythm-hit-count>@UiText.FormatNumber(0)</bdi>
         </span>
     </div>
 
-    <ol class="rhythm-beats" aria-label="@UiText.BeatProgression">
-        @for (var index = 0; index < BeatCount; index++)
+    @if (HasAuthoredPattern)
+    {
+        <VexFlowStaff Rhythm="RuntimeExercise.Challenge.Rhythm" TimeSignature="@(((RhythmExerciseDefinition)RuntimeExercise.Definition).TimeSignature)" />
+    }
+
+    <ol class="rhythm-beats @(HasAuthoredPattern ? "rhythm-beats--authored" : null)" dir="ltr" aria-label="@UiText.BeatProgression">
+        @for (var index = 0; index < TimelineEvents.Count; index++)
         {
-            <li data-rhythm-beat="@index">
+            var timelineEvent = TimelineEvents[index];
+            <li data-rhythm-beat="@index" class="@(timelineEvent.IsRest ? "is-rest" : null)" title="@GetRhythmLabel(timelineEvent)">
                 <span>@UiText.FormatNumber(index + 1)</span>
+                @if (HasAuthoredPattern)
+                {
+                    <span class="kf-meta">@GetRhythmLabel(timelineEvent)</span>
+                    <span class="kf-meta">@UiText.FormatTimingError(timelineEvent.StartOffset.TotalMilliseconds)</span>
+                }
             </li>
         }
     </ol>
@@ -106,9 +117,10 @@
     private bool _pausedForMidi;
     private IDisposable? _midiRegistration;
 
-    private int BeatCount => RuntimeExercise.Challenge.ExpectedInputs.Count;
-    private double BeatIntervalMilliseconds =>
-        RhythmChallengeGenerator.CalculateBeatInterval(RuntimeExercise.SelectedBpm ?? 0).TotalMilliseconds;
+    private IReadOnlyList<RhythmTimelineEvent> TimelineEvents => RuntimeExercise.Challenge.Rhythm?.Events ?? [];
+    private IReadOnlyList<TimeSpan> PulseOffsets => RuntimeExercise.Challenge.Rhythm?.PulseOffsets ?? [];
+    private TimeSpan TimelineDuration => RuntimeExercise.Challenge.Rhythm?.Duration ?? TimeSpan.Zero;
+    private bool HasAuthoredPattern => RuntimeExercise.Definition is RhythmExerciseDefinition { Pattern: not null } or RhythmExerciseDefinition { Measures: not null };
 
     private Task HandleTempoChanged(int _) => InvokeAsync(StateHasChanged);
 
@@ -153,8 +165,13 @@
                 "startRhythm",
                 _workspaceId,
                 _dotNetReference,
-                BeatIntervalMilliseconds,
-                BeatCount,
+                TimelineEvents.Select(item => new
+                {
+                    offsetMilliseconds = item.StartOffset.TotalMilliseconds,
+                    isRest = item.IsRest
+                }).ToArray(),
+                PulseOffsets.Select(offset => offset.TotalMilliseconds).ToArray(),
+                TimelineDuration.TotalMilliseconds,
                 new
                 {
                     active = UiText.RhythmActive,
@@ -169,6 +186,9 @@
             _startFailed = true;
         }
     }
+
+    private static string GetRhythmLabel(RhythmTimelineEvent item) =>
+        UiText.GetRhythmEventLabel(item.Duration, item.IsRest);
 
     [JSInvokable]
     public Task NotifyRhythmStarted(double browserTimestampMilliseconds)

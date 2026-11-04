@@ -38,13 +38,14 @@ function showBeat(root, index, beatCount) {
 export async function startRhythm(
     workspaceId,
     dotNetReference,
-    beatIntervalMilliseconds,
-    beatCount,
+    timelineEvents,
+    pulseOffsetsMilliseconds,
+    durationMilliseconds,
     labels) {
     stopRhythm(workspaceId);
 
     const root = document.getElementById(workspaceId);
-    if (!root || beatCount <= 0 || beatIntervalMilliseconds <= 0) {
+    if (!root || !timelineEvents?.length || durationMilliseconds <= 0) {
         return;
     }
 
@@ -95,18 +96,33 @@ export async function startRhythm(
     };
     document.addEventListener("keydown", run.keyHandler);
 
-    for (let index = 0; index < beatCount; index++) {
-        const target = run.timelineStartedAt + index * beatIntervalMilliseconds;
-        await sleep(Math.max(0, target - performance.now()));
+    let eventIndex = 0;
+    let pulseIndex = 0;
+    while (eventIndex < timelineEvents.length || pulseIndex < pulseOffsetsMilliseconds.length) {
+        const eventOffset = eventIndex < timelineEvents.length
+            ? timelineEvents[eventIndex].offsetMilliseconds
+            : Number.POSITIVE_INFINITY;
+        const pulseOffset = pulseIndex < pulseOffsetsMilliseconds.length
+            ? pulseOffsetsMilliseconds[pulseIndex]
+            : Number.POSITIVE_INFINITY;
+        const nextOffset = Math.min(eventOffset, pulseOffset);
+        await sleep(Math.max(0, run.timelineStartedAt + nextOffset - performance.now()));
         if (run.cancelled) return;
-        showBeat(root, index, beatCount);
-        setText(root, "[data-rhythm-countdown]", formatNumber(index + 1, labels.digits));
-        if (labels.audio) {
-            void dotNetReference.invokeMethodAsync("PlayRhythmMetronomeClick");
+
+        if (eventOffset <= pulseOffset) {
+            showBeat(root, eventIndex, timelineEvents.length);
+            setText(root, "[data-rhythm-countdown]", formatNumber(eventIndex + 1, labels.digits));
+            eventIndex++;
+        }
+        if (pulseOffset <= eventOffset) {
+            if (labels.audio) {
+                void dotNetReference.invokeMethodAsync("PlayRhythmMetronomeClick");
+            }
+            pulseIndex++;
         }
     }
 
-    const endTarget = run.timelineStartedAt + beatCount * beatIntervalMilliseconds;
+    const endTarget = run.timelineStartedAt + durationMilliseconds;
     await sleep(Math.max(0, endTarget - performance.now()));
     if (run.cancelled) return;
 

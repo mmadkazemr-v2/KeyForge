@@ -109,6 +109,10 @@ internal static class YamlLessonValidator
             .Where(pair => pair.Key is YamlScalarNode { Value: "id" })
             .Select(pair => pair.Value as YamlScalarNode)
             .FirstOrDefault()?.Value ?? "unknown";
+        if (typeScalar.Value == "rhythm")
+        {
+            ValidateRhythmNode(mapping, lessonId, exerciseId);
+        }
         // Scale enum values are checked here so an unsupported value gets a useful field path
         // instead of a generic enum-deserialization error.
         foreach (var pair in mapping.Children.Where(pair => pair.Key is YamlScalarNode { Value: "scale" }))
@@ -146,6 +150,60 @@ internal static class YamlLessonValidator
                 $"Lesson '{lessonId}', exercise '{exerciseId}', field 'hand' has unsupported value '{hand}'.");
     }
 
+    private static void ValidateRhythmNode(YamlMappingNode exercise, string lessonId, string exerciseId)
+    {
+        var pattern = GetValue(exercise, "pattern");
+        var measures = GetValue(exercise, "measures");
+        if (pattern is not null && measures is not null)
+            throw new YamlLessonParseException($"Lesson '{lessonId}', exercise '{exerciseId}': use either 'pattern' or 'measures', not both.");
+
+        if (pattern is not null)
+            ValidateRhythmPattern(pattern, "pattern", lessonId, exerciseId);
+
+        if (measures is YamlSequenceNode measureSequence)
+        {
+            for (var index = 0; index < measureSequence.Children.Count; index++)
+            {
+                if (measureSequence.Children[index] is not YamlMappingNode measure)
+                    throw new YamlLessonParseException($"Lesson '{lessonId}', exercise '{exerciseId}', field 'measures[{index}]' must be a mapping.");
+                var measurePattern = GetValue(measure, "pattern");
+                if (measurePattern is null)
+                    throw new YamlLessonParseException($"Lesson '{lessonId}', exercise '{exerciseId}', field 'measures[{index}].pattern' is required.");
+                ValidateRhythmPattern(measurePattern, $"measures[{index}].pattern", lessonId, exerciseId);
+            }
+        }
+        else if (measures is not null)
+        {
+            throw new YamlLessonParseException($"Lesson '{lessonId}', exercise '{exerciseId}', field 'measures' must be a sequence.");
+        }
+    }
+
+    private static void ValidateRhythmPattern(YamlNode node, string field, string lessonId, string exerciseId)
+    {
+        if (node is not YamlSequenceNode sequence || sequence.Children.Count == 0)
+            throw new YamlLessonParseException($"Lesson '{lessonId}', exercise '{exerciseId}', field '{field}' must be a non-empty sequence.");
+
+        var supportedDurations = new HashSet<string>(
+            ["whole", "half", "quarter", "eighth", "sixteenth", "dottedHalf", "dottedQuarter", "dottedEighth"],
+            StringComparer.Ordinal);
+        for (var index = 0; index < sequence.Children.Count; index++)
+        {
+            if (sequence.Children[index] is not YamlMappingNode item)
+                throw new YamlLessonParseException($"Lesson '{lessonId}', exercise '{exerciseId}', field '{field}[{index}]' must be a mapping with a duration.");
+            var duration = GetValue(item, "duration") as YamlScalarNode;
+            if (duration?.Value is null || !supportedDurations.Contains(duration.Value))
+                throw new YamlLessonParseException($"Lesson '{lessonId}', exercise '{exerciseId}', field '{field}[{index}].duration' has an unknown or missing duration.");
+            var rest = GetValue(item, "rest");
+            if (rest is not null && rest is not YamlScalarNode { Value: "true" or "false" })
+                throw new YamlLessonParseException($"Lesson '{lessonId}', exercise '{exerciseId}', field '{field}[{index}].rest' must be true or false.");
+        }
+    }
+
+    private static YamlNode? GetValue(YamlMappingNode mapping, string key) => mapping.Children
+        .Where(pair => pair.Key is YamlScalarNode scalar && scalar.Value == key)
+        .Select(pair => pair.Value)
+        .FirstOrDefault();
+
     private static void ValidateExerciseConfiguration(ExerciseDefinition exercise)
     {
         switch (exercise)
@@ -178,6 +236,9 @@ internal static class YamlLessonValidator
                         throw new InvalidOperationException("field 'range' must be an ordered natural-note range.");
                     }
                 }
+                break;
+            case RhythmExerciseDefinition rhythm:
+                rhythm.Validate();
                 break;
             case SequenceExerciseDefinition sequence:
                 if ((sequence.Sequence is null) == (sequence.Scale is null))

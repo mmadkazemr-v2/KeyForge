@@ -1,10 +1,31 @@
 using System.Globalization;
 using KeyForge.Components.Exercises;
+using KeyForge.Components.Localization;
 
 namespace KeyForge.Tests.UnitTest.Components.Exercises;
 
 public sealed class ExercisePresentationMapperTests
 {
+    [Fact]
+    public void Rhythm_AuthoredMeasuresShowTheirActualDurationsAndMeasureCount()
+    {
+        using var _ = new CultureScope("en");
+        var exercise = new RhythmExerciseDefinition
+        {
+            Measures =
+            [
+                new() { Pattern = [new() { Duration = RhythmDuration.DottedHalf }, new() { Duration = RhythmDuration.Quarter, Rest = true }] },
+                new() { Pattern = [new() { Duration = RhythmDuration.Whole }] }
+            ]
+        };
+
+        var items = ExercisePresentationMapper.Map(exercise);
+
+        AssertItem(items, "Note values", "Dotted half, Quarter, Whole");
+        AssertItem(items, "Pattern count", "2");
+        Assert.Equal("Quarter rest", UiText.GetRhythmEventLabel(RhythmDuration.Quarter, true));
+    }
+
     [Fact]
     public void Rhythm_MapsRhythmConfigurationInEnglish()
     {

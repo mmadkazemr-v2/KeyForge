@@ -2,6 +2,27 @@ namespace KeyForge.Tests.UnitTest.Features.Practice.Services;
 
 public sealed class RhythmChallengeGeneratorTests
 {
+    [Fact]
+    public void Create_LongSixteenthSequenceAtNonDivisibleBpmDoesNotAccumulateRoundedIntervals()
+    {
+        var exercise = new RhythmExerciseDefinition
+        {
+            Id = "long-rhythm",
+            Tempo = new TempoConfiguration { DefaultBpm = 137 },
+            Measures = Enumerable.Range(0, 100).Select(_ => new RhythmMeasureDefinition
+            {
+                Pattern = Enumerable.Range(0, 16).Select(_ => new RhythmPatternEvent
+                    { Duration = RhythmDuration.Sixteenth }).ToList()
+            }).ToList()
+        };
+
+        var challenge = new RhythmChallengeGenerator().Create(exercise);
+
+        Assert.Equal(1599, challenge.Rhythm!.Events[^1].StartSixteenthUnits);
+        Assert.Equal(1_750_729_927, challenge.ExpectedInputs[^1].ExpectedOffset!.Value.Ticks);
+        Assert.Equal(1_751_824_818, challenge.Rhythm.Duration.Ticks);
+    }
+
     [Theory]
     [InlineData(120, 500)]
     [InlineData(80, 750)]

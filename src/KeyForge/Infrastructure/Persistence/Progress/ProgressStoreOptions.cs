@@ -5,7 +5,9 @@ namespace KeyForge.Infrastructure.Persistence.Progress;
 /// </summary>
 public class ProgressStoreOptions
 {
-    /// <summary>Configuration section that carries these options.</summary>
+    /// <summary>
+    /// Configuration section that carries these options.
+    /// </summary>
     public const string SectionName = "KeyForge:ProgressStore";
 
     /// <summary>

@@ -1,6 +1,8 @@
 namespace KeyForge.Features.Practice.Models;
 
-/// <summary>A generated question for one runtime exercise.</summary>
+/// <summary>
+/// A generated question for one runtime exercise.
+/// </summary>
 public sealed class ExerciseChallenge
 {
     public required string ExerciseId { get; init; }
@@ -13,4 +15,5 @@ public sealed class ExerciseChallenge
     public SpeedChallengeDetails? Speed { get; init; }
     public FingerIndependenceChallengeDetails? FingerIndependence { get; init; }
     public SequenceChallengeDetails? Sequence { get; init; }
+    public RhythmChallengeDetails? Rhythm { get; init; }
 }

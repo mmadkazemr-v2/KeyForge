@@ -45,6 +45,17 @@ public sealed class NoteReadingExerciseEvaluatorTests
     }
 
     [Fact]
+    public void Evaluate_PitchOnlyExercise_IgnoresInputTiming()
+    {
+        var result = new NoteReadingExerciseEvaluator().Evaluate(
+            Challenge("C4"),
+            [Input("C4", offset: TimeSpan.FromSeconds(30))]);
+
+        Assert.True(result.IsSuccessful);
+        Assert.Equal(100, result.Score);
+    }
+
+    [Fact]
     public void IsCorrect_PreservesOctave()
     {
         var expected = new ExpectedInput { Type = InputEventType.Note, Value = "C4" };
@@ -57,17 +68,20 @@ public sealed class NoteReadingExerciseEvaluatorTests
         ExerciseId = "note-01",
         ExerciseType = ExerciseType.NoteReading,
         ExpectedInputs = notes.Select(note => new ExpectedInput
-        {
-            Type = InputEventType.Note,
-            Value = note
-        }).ToArray()
+            {
+                Type = InputEventType.Note,
+                Value = note
+            }).ToList()
+            .AsReadOnly()
     };
 
     private static ExerciseInputEvent Input(
         string value,
-        InputSource source = InputSource.VirtualPiano) => new()
+        InputSource source = InputSource.VirtualPiano,
+        TimeSpan? offset = null) => new()
     {
         Timestamp = StartedAt,
+        Offset = offset ?? TimeSpan.Zero,
         Source = source,
         Type = InputEventType.Note,
         Value = value

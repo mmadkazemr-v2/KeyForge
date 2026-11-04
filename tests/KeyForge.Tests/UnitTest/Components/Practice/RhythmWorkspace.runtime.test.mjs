@@ -1,0 +1,128 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import { test } from 'node:test';
+
+const modulePath = new URL('../../../../../src/KeyForge/Components/Practice/RhythmWorkspace.razor.js', import.meta.url);
+const flush = async () => { for (let index = 0; index < 12; index++) await Promise.resolve(); };
+
+async function withRuntime(eventCount, callback) {
+    const saved = new Map(['document', 'performance', 'setTimeout', 'clearTimeout']
+        .map(name => [name, Object.getOwnPropertyDescriptor(globalThis, name)]));
+    let now = 12_000; // Count-in has already finished before the rhythm runtime starts.
+    let nextId = 0;
+    const timers = new Map();
+    const activeEvents = [];
+    const calls = [];
+    const listeners = new Map();
+    const classes = () => ({ add() {}, remove() {}, toggle() {} });
+    const progress = { setAttribute() {}, querySelector: () => ({ style: { setProperty() {} } }) };
+    const text = new Map();
+    const markers = Array.from({ length: eventCount }, (_, index) => ({
+        dataset: { rhythmBeat: String(index) },
+        classList: {
+            ...classes(),
+            toggle(name, active) { if (name === 'is-active' && active) activeEvents.push([index, now]); }
+        }
+    }));
+    const root = {
+        dataset: {}, classList: classes(), focus() {},
+        querySelector(selector) {
+            if (selector === '[data-rhythm-progress]') return progress;
+            if (!text.has(selector)) text.set(selector, { textContent: '' });
+            return text.get(selector);
+        },
+        querySelectorAll: () => markers
+    };
+    const replacements = {
+        document: {
+            getElementById: () => root,
+            addEventListener: (name, handler) => listeners.set(name, handler),
+            removeEventListener: (name, handler) => { if (listeners.get(name) === handler) listeners.delete(name); }
+        },
+        performance: { now: () => now },
+        setTimeout: (handler, delay) => {
+            const id = ++nextId;
+            timers.set(id, { at: now + Math.max(0, delay), handler });
+            return id;
+        },
+        clearTimeout: id => timers.delete(id)
+    };
+    for (const [name, value] of Object.entries(replacements))
+        Object.defineProperty(globalThis, name, { configurable: true, writable: true, value });
+
+    try {
+        const source = await readFile(modulePath, 'utf8');
+        const runtime = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}#${Math.random()}`);
+        const dotNet = { async invokeMethodAsync(name, ...args) { calls.push({ name, args, at: now }); } };
+        const advanceTo = async target => {
+            await flush();
+            while (true) {
+                const next = [...timers.entries()].filter(([, timer]) => timer.at <= target)
+                    .sort((left, right) => left[1].at - right[1].at || left[0] - right[0])[0];
+                if (!next) break;
+                timers.delete(next[0]);
+                now = next[1].at;
+                next[1].handler();
+                await flush();
+            }
+            now = target;
+            await flush();
+        };
+        await callback({ runtime, dotNet, calls, root, listeners, activeEvents, advanceTo });
+    } finally {
+        for (const [name, descriptor] of saved)
+            if (descriptor) Object.defineProperty(globalThis, name, descriptor);
+            else delete globalThis[name];
+    }
+}
+
+const labels = { active: 'Active', evaluating: 'Evaluating', digits: '0123456789', audio: true };
+
+test('non-uniform event display follows compiled offsets while metronome keeps its own pulse grid', async () => {
+    await withRuntime(5, async ({ runtime, dotNet, calls, activeEvents, advanceTo, listeners }) => {
+        const offsets = [0, 1000, 1500, 2000, 3000];
+        const running = runtime.startRhythm('rhythm', dotNet,
+            offsets.map(offsetMilliseconds => ({ offsetMilliseconds, isRest: false })),
+            [0, 1000, 2000, 3000], 4000, labels);
+        await advanceTo(16_000);
+        await running;
+
+        assert.deepEqual(activeEvents, offsets.map((offset, index) => [index, 12_000 + offset]));
+        assert.deepEqual(calls.filter(call => call.name === 'PlayRhythmMetronomeClick').map(call => call.at),
+            [12_000, 13_000, 14_000, 15_000]);
+        assert.equal(calls.find(call => call.name === 'CompleteRhythm').at, 16_000);
+        assert.equal(listeners.has('keydown'), false);
+    });
+});
+
+test('post-count-in browser origin is used for keyboard offsets and rest-window hits are forwarded for scoring', async () => {
+    await withRuntime(4, async ({ runtime, dotNet, calls, advanceTo, listeners }) => {
+        const running = runtime.startRhythm('rhythm', dotNet,
+            [0, 1000, 2000, 3000].map((offsetMilliseconds, index) => ({ offsetMilliseconds, isRest: index === 1 })),
+            [0, 1000, 2000, 3000], 4000, labels);
+        await advanceTo(13_500);
+        listeners.get('keydown')({ code: 'KeyK', repeat: false, preventDefault() {} });
+        await advanceTo(16_000);
+        await running;
+
+        assert.equal(calls.find(call => call.name === 'NotifyRhythmStarted').args[0], 12_000);
+        assert.equal(calls.find(call => call.name === 'CaptureRhythmKeyboardInput').args[2], 1500);
+        assert.equal(calls.filter(call => call.name === 'CaptureRhythmKeyboardInput').length, 1);
+    });
+});
+
+test('disconnect pause cancels pending timeline work and does not complete an interrupted attempt', async () => {
+    await withRuntime(2, async ({ runtime, dotNet, calls, advanceTo, listeners, root }) => {
+        const running = runtime.startRhythm('rhythm', dotNet,
+            [{ offsetMilliseconds: 0 }, { offsetMilliseconds: 1000 }], [0, 1000], 2000, labels);
+        await advanceTo(12_500);
+        runtime.setRhythmPaused('rhythm', 'Ready');
+        await advanceTo(14_000);
+        await running;
+
+        assert.equal(root.dataset.state, 'ready');
+        assert.equal(listeners.has('keydown'), false);
+        assert.equal(calls.some(call => call.name === 'CompleteRhythm'), false);
+        assert.equal(calls.filter(call => call.name === 'PlayRhythmMetronomeClick').length, 1);
+    });
+});

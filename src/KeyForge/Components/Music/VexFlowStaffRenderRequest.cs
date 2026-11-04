@@ -8,4 +8,11 @@ public sealed class VexFlowStaffRenderRequest
 {
     public required string Clef { get; init; }
     public required string NoteKey { get; init; }
+    public string? TimeSignature { get; init; }
+    public IReadOnlyList<IReadOnlyList<VexFlowRhythmEvent>>? RhythmMeasures { get; init; }
 }
+
+public sealed record VexFlowRhythmEvent(
+    string Duration,
+    bool Dotted
+);

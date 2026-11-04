@@ -81,6 +81,23 @@
     color: var(--kf-color-text-muted);
 }
 
+.rhythm-beats li .kf-meta {
+    padding-inline: var(--kf-space-2);
+    text-align: center;
+}
+
+.rhythm-beats--authored {
+    grid-template-columns: repeat(auto-fit, minmax(calc(var(--kf-space-6) * 3), 1fr));
+}
+
+.rhythm-beats--authored li {
+    padding-block: var(--kf-space-2);
+}
+
+.rhythm-beats li.is-rest {
+    border-style: dashed;
+}
+
 .rhythm-beats li.is-complete {
     color: var(--kf-color-text-secondary);
     border-color: var(--kf-color-primary-soft);

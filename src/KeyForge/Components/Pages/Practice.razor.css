@@ -148,6 +148,32 @@
     font-weight: 700;
 }
 
+.practice-result-events {
+    display: grid;
+    gap: var(--kf-space-2, 0.75rem);
+    margin-top: 1rem;
+}
+
+.practice-result-events__item {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+    gap: 0.75rem;
+    margin: 0;
+    padding: 0.75rem;
+    border: 1px solid var(--kf-border, #d9dee7);
+    border-radius: 0.75rem;
+}
+
+.practice-result-events__item dt {
+    color: var(--kf-text-secondary, #596273);
+    font-size: 0.8rem;
+}
+
+.practice-result-events__item dd {
+    margin: 0.15rem 0 0;
+    font-weight: 600;
+}
+
 @media (max-width: 47.99rem) {
     .practice-session {
         gap: var(--kf-space-4);

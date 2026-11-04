@@ -1,0 +1,96 @@
+id: lesson-04
+title: "Beginner rhythm and notes"
+description: "Build a steady pulse, read C–E, and combine notes with simple timing."
+level: beginner
+order: 4
+estimatedMinutes: 15
+
+unlock:
+  mode: immediate
+
+completion:
+  minimumScore: 70
+  requireAllExercises: true
+
+exercises:
+  - type: rhythm
+    id: steady-quarter-pulse
+    title: "Steady quarter-note pulse"
+    description: "Use one key throughout (C4 is a good choice). Follow the two four-beat measures at 60 BPM."
+    duration: 3
+    tempo: { defaultBpm: 60 }
+    metronome: { enabled: true, visual: true, audio: true, countInBeats: 4 }
+    difficulty: easy
+    timeSignature: "4/4"
+    measures:
+      - pattern:
+          - { duration: quarter }
+          - { duration: quarter }
+          - { duration: quarter }
+          - { duration: quarter }
+      - pattern:
+          - { duration: quarter }
+          - { duration: quarter }
+          - { duration: quarter }
+          - { duration: quarter }
+
+  - type: rhythm
+    id: mixed-basic-durations
+    title: "Quarter and half notes"
+    description: "Notice how the longer notes leave more time before the next attack."
+    duration: 3
+    tempo: { defaultBpm: 60 }
+    metronome: { enabled: true, visual: true, audio: true, countInBeats: 4 }
+    difficulty: easy
+    timeSignature: "4/4"
+    measures:
+      - pattern:
+          - { duration: half }
+          - { duration: quarter }
+          - { duration: quarter }
+      - pattern:
+          - { duration: whole }
+      - pattern:
+          - { duration: quarter }
+          - { duration: half }
+          - { duration: quarter }
+
+  - type: rhythm
+    id: basic-quarter-rest
+    title: "Leave room for a rest"
+    description: "Use one key for each note and stay silent during the quarter rest."
+    duration: 3
+    tempo: { defaultBpm: 60 }
+    metronome: { enabled: true, visual: true, audio: true, countInBeats: 4 }
+    difficulty: easy
+    timeSignature: "4/4"
+    pattern:
+      - { duration: quarter }
+      - { duration: quarter, rest: true }
+      - { duration: quarter }
+      - { duration: quarter }
+
+  - type: noteReading
+    id: read-c-d-e
+    title: "Read C, D, and E"
+    description: "Read the first C–D–E group, then try the varied C–E sequence. Rhythm is not scored here."
+    duration: 3
+    difficulty: easy
+    clef: treble
+    notes: [C4, D4, E4, D4, C4, E4]
+    count: 6
+    randomized: false
+    keySignature: "C major"
+
+  - type: speed
+    id: simple-melody-with-pulse
+    title: "Notes and pulse together"
+    description: "Play this original four-note melody slowly, one quarter note per metronome beat."
+    duration: 3
+    tempo: { defaultBpm: 60 }
+    metronome: { enabled: true, visual: true, audio: true, countInBeats: 4 }
+    difficulty: easy
+    pattern: scale
+    sequence: [C4, E4, D4, C4]
+    targetTempo: 60
+    repetitions: 1

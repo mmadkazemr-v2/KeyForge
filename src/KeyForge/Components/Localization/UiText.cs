@@ -201,6 +201,10 @@ public static class UiText
     public static string CapturedHits => Select("ضرب‌های ثبت‌شده", "Captured hits");
     public static string BeatProgression => Select("روند ضرب‌ها", "Beat progression");
     public static string RhythmProgress => Select("پیشرفت ریتم", "Rhythm progress");
+    public static string RhythmNotation => Select("نت‌نویسی ریتم", "Rhythm notation");
+    public static string PlayAuthoredRhythm => Select("برای هر نت کلید K را فشار دهید؛ در سکوت‌ها چیزی ننوازید.", "Press K for each note; stay silent during rests.");
+    public static string GetRhythmEventLabel(RhythmDuration duration, bool isRest) =>
+        $"{GetNoteValue(duration.ToString())}{(isRest ? Select("، سکوت", " rest") : string.Empty)}";
     public static string RhythmStartError => Select(
         "شروع تمرین ریتم ممکن نشد. دوباره تلاش کنید.",
         "The rhythm exercise could not start. Please try again.");
@@ -435,12 +439,24 @@ public static class UiText
         _ => Unknown
     };
 
+    public static string ExpectedOnset => Select("شروع مورد انتظار", "Expected onset");
+    public static string ActualOnset => Select("شروع اجراشده", "Actual onset");
+    public static string PitchAccuracy => Select("دقت نت", "Pitch accuracy");
+    public static string TimingAccuracy => Select("دقت زمانی", "Timing accuracy");
+    public static string SignedTimingError => Select("خطای زمانی علامت‌دار", "Signed timing error");
+    public static string Correct => Select("درست", "Correct");
+    public static string Incorrect => Select("نادرست", "Incorrect");
+    public static string Missed => Select("از دست رفته", "Missed");
+
     public static string GetBpmLabel(int bpm) =>
         $"{FormatNumber(bpm)} {BeatsPerMinute}";
 
     public static string FormatTimingError(double? milliseconds) => milliseconds.HasValue
         ? $"{FormatNumber((int)Math.Round(milliseconds.Value))} {Millisecond}"
         : NoTimingData;
+
+    public static string FormatOffset(TimeSpan? offset) =>
+        FormatTimingError(offset?.TotalMilliseconds);
 
     public static string GetRhythmTimingTendency(RhythmTimingTendency tendency) => tendency switch
     {
@@ -508,6 +524,9 @@ public static class UiText
         "quarter" => Select("سیاه", "Quarter"),
         "eighth" => Select("چنگ", "Eighth"),
         "sixteenth" => Select("دولاچنگ", "Sixteenth"),
+        "dottedhalf" => Select("سفید نقطه‌دار", "Dotted half"),
+        "dottedquarter" => Select("سیاه نقطه‌دار", "Dotted quarter"),
+        "dottedeighth" => Select("چنگ نقطه‌دار", "Dotted eighth"),
         _ => noteValue
     };
 

@@ -5,7 +5,7 @@
 <div class="vexflow-staff"
      dir="ltr"
      role="img"
-     aria-label="@UiText.GetStaffAriaLabel(Clef)">
+     aria-label="@(Rhythm is null ? UiText.GetStaffAriaLabel(Clef) : UiText.RhythmNotation)">
     @if (_renderRequest is not null && !_renderFailed)
     {
         <div class="vexflow-staff__canvas" @ref="_container"></div>
@@ -17,8 +17,14 @@
 </div>
 
 @code {
-    [Parameter, EditorRequired]
-    public MusicalNote Note { get; set; } = null!;
+    [Parameter]
+    public MusicalNote? Note { get; set; }
+
+    [Parameter]
+    public RhythmChallengeDetails? Rhythm { get; set; }
+
+    [Parameter]
+    public string TimeSignature { get; set; } = "4/4";
 
     [Parameter]
     public ClefType Clef { get; set; } = ClefType.Treble;
@@ -32,7 +38,14 @@
 
     protected override void OnParametersSet()
     {
-        VexFlowNotationMapper.TryMap(Clef, Note, out _renderRequest);
+        if (Rhythm is not null)
+        {
+            _renderRequest = VexFlowNotationMapper.MapRhythm(Rhythm, TimeSignature);
+        }
+        else
+        {
+            VexFlowNotationMapper.TryMap(Clef, Note, out _renderRequest);
+        }
         if (_renderRequest is null)
         {
             _lastRenderSignature = null;
@@ -104,5 +117,7 @@
 
     private string? GetRenderSignature() => _renderRequest is null
         ? null
-        : $"{_renderRequest.Clef}:{_renderRequest.NoteKey}";
+        : $"{_renderRequest.Clef}:{_renderRequest.NoteKey}:{_renderRequest.TimeSignature}:" +
+          string.Join("|", _renderRequest.RhythmMeasures?.Select(measure =>
+              string.Join(",", measure.Select(item => item.Duration))) ?? []);
 }

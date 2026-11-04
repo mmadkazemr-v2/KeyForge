@@ -74,14 +74,16 @@ public static class ExercisePresentationMapper
     {
         AddText(items, UiText.TimeSignature, exercise.TimeSignature, isTechnical: true);
 
-        if (exercise.NoteValues.Count > 0)
+        var authoredEvents = exercise.Pattern ?? exercise.Measures?.SelectMany(measure => measure.Pattern).ToList();
+        var noteValues = authoredEvents?.Select(item => item.Duration.ToString()).Distinct().ToList() ?? exercise.NoteValues;
+        if (noteValues.Count > 0)
         {
             items.Add(new ExercisePresentationItem(
                 UiText.NoteValues,
-                string.Join(UiText.ListSeparator, exercise.NoteValues.Select(UiText.GetNoteValue))));
+                string.Join(UiText.ListSeparator, noteValues.Select(UiText.GetNoteValue))));
         }
 
-        AddPositiveNumber(items, UiText.PatternCount, exercise.PatternCount);
+        AddPositiveNumber(items, UiText.PatternCount, exercise.Measures?.Count ?? (exercise.Pattern is null ? exercise.PatternCount : 1));
     }
 
     private static void AddNoteReadingMetadata(

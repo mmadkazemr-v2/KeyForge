@@ -16,6 +16,63 @@ public sealed class RhythmExerciseEvaluatorTests
     }
 
     [Fact]
+    public void Evaluate_NonUniformOnsetsKeepExistingToleranceBands()
+    {
+        var result = Evaluate([0, 500, 750, 1000, 1500],
+            [Hit(0), Hit(550), Hit(830), Hit(1100), Hit(1500)]);
+
+        Assert.Equal(84, result.Score);
+        Assert.Equal(5, result.Rhythm!.SuccessfulHitCount);
+        Assert.Equal(0, result.Rhythm.ExtraHitCount);
+        Assert.Equal([0d, 50d, 80d, 100d, 0d],
+            result.Rhythm.Beats.Select(beat => beat.TimingError!.Value.TotalMilliseconds));
+    }
+
+    [Fact]
+    public void Evaluate_RestInteriorIsExtraButFollowingOnsetKeepsEarlyTolerance()
+    {
+        var challenge = new RhythmChallengeGenerator().Create(new RhythmExerciseDefinition
+        {
+            Id = "rest-tolerance",
+            Tempo = new TempoConfiguration { DefaultBpm = 60 },
+            Pattern =
+            [
+                new RhythmPatternEvent { Duration = RhythmDuration.Quarter },
+                new RhythmPatternEvent { Duration = RhythmDuration.Quarter, Rest = true },
+                new RhythmPatternEvent { Duration = RhythmDuration.Quarter },
+                new RhythmPatternEvent { Duration = RhythmDuration.Quarter }
+            ]
+        });
+
+        var result = new RhythmExerciseEvaluator().Evaluate(challenge,
+            [Hit(0), Hit(1000), Hit(1960), Hit(3000)]);
+
+        Assert.Equal(1, result.Rhythm!.ExtraHitCount);
+        Assert.Equal(-40, result.Rhythm.Beats[1].TimingError!.Value.TotalMilliseconds);
+        Assert.Equal(3, result.Rhythm.SuccessfulHitCount);
+        Assert.Equal(95, result.Score);
+    }
+
+    [Theory]
+    [InlineData(false, 100, 0)]
+    [InlineData(true, 95, 1)]
+    public void Evaluate_RestOnlyMeasureEvaluatesSilenceAndUnexpectedHits(bool addHit, int score, int extras)
+    {
+        var challenge = new RhythmChallengeGenerator().Create(new RhythmExerciseDefinition
+        {
+            Id = "whole-rest",
+            Tempo = new TempoConfiguration { DefaultBpm = 60 },
+            Pattern = [new RhythmPatternEvent { Duration = RhythmDuration.Whole, Rest = true }]
+        });
+
+        var result = new RhythmExerciseEvaluator().Evaluate(challenge, addHit ? [Hit(1000)] : []);
+
+        Assert.Equal(score, result.Score);
+        Assert.Equal(0, result.Rhythm!.ExpectedBeatCount);
+        Assert.Equal(extras, result.Rhythm.ExtraHitCount);
+    }
+
+    [Fact]
     public void Evaluate_EarlyHit_PreservesNegativeTimingError()
     {
         var result = Evaluate([500], [Hit(440)]);
@@ -75,6 +132,7 @@ public sealed class RhythmExerciseEvaluatorTests
         Assert.Equal(95, result.Score);
         Assert.Equal(1, result.Rhythm!.SuccessfulHitCount);
         Assert.Equal(1, result.Rhythm.ExtraHitCount);
+        Assert.Equal(TimeSpan.FromMilliseconds(300), Assert.Single(result.Rhythm.UnexpectedHitOffsets));
     }
 
     [Fact]
@@ -87,8 +145,7 @@ public sealed class RhythmExerciseEvaluatorTests
         Assert.Equal(80, result.Score);
         Assert.Equal(3, result.Rhythm!.SuccessfulHitCount);
         Assert.Equal(0, result.Rhythm.MissedBeatCount);
-        Assert.Equal([0d, 50d, 100d], result.Rhythm.Beats.Select(
-            beat => beat.TimingError!.Value.TotalMilliseconds));
+        Assert.Equal([0d, 50d, 100d], result.Rhythm.Beats.Select(beat => beat.TimingError!.Value.TotalMilliseconds));
     }
 
     [Fact]
@@ -138,11 +195,12 @@ public sealed class RhythmExerciseEvaluatorTests
         ExerciseId = "rhythm-01",
         ExerciseType = ExerciseType.Rhythm,
         ExpectedInputs = expectedMilliseconds.Select(milliseconds => new ExpectedInput
-        {
-            Type = InputEventType.Beat,
-            Value = "beat",
-            ExpectedOffset = TimeSpan.FromMilliseconds(milliseconds)
-        }).ToList()
+            {
+                Type = InputEventType.Beat,
+                Value = "beat",
+                ExpectedOffset = TimeSpan.FromMilliseconds(milliseconds)
+            }).ToList()
+            .AsReadOnly()
     };
 
     private static ExerciseInputEvent Hit(
