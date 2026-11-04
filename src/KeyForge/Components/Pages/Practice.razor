@@ -116,7 +116,8 @@ else if (CurrentExercise is { } exercise)
                                OnTempoChanged="HandleTempoChanged" />
                 @if (_runtimeExercise.Definition.Metronome is { Enabled: true } metronome)
                 {
-                    <MetronomeControl RuntimeExercise="_runtimeExercise" Configuration="metronome" />
+                    <MetronomeControl RuntimeExercise="_runtimeExercise" Configuration="metronome"
+                                      AudioEnabled="_internalMidiAudioEnabled" />
                 }
             </section>
         }
@@ -347,7 +348,23 @@ else if (CurrentExercise is { } exercise)
                     <span class="practice-midi-panel__hint">@UiText.OptionalMidi</span>
                 </summary>
                 <div class="practice-midi-panel__content">
-                    <MidiInputControl />
+                    <fieldset class="practice-midi-mode">
+                        <legend>@UiText.MidiAudioMode</legend>
+                        <label>
+                            <input type="radio" name="midi-audio-mode" value="external"
+                                   checked="@(!_internalMidiAudioEnabled)"
+                                   @onchange="() => SetMidiAudioMode(false)" />
+                            @UiText.ExternalDawMode
+                        </label>
+                        <label>
+                            <input type="radio" name="midi-audio-mode" value="internal"
+                                   checked="@_internalMidiAudioEnabled"
+                                   @onchange="() => SetMidiAudioMode(true)" />
+                            @UiText.InternalAudioMode
+                        </label>
+                        <p class="kf-text-muted">@(_internalMidiAudioEnabled ? UiText.InternalAudioModeDescription : UiText.ExternalDawModeDescription)</p>
+                    </fieldset>
+                    <MidiInputControl LivePlayEnabled="_internalMidiAudioEnabled" />
                 </div>
             </details>
         }
@@ -367,6 +384,9 @@ else if (CurrentExercise is { } exercise)
     private SessionResult? _lastResult;
     private bool _isSubmitting;
     private bool _submissionError;
+    private bool _internalMidiAudioEnabled;
+
+    private void SetMidiAudioMode(bool enabled) => _internalMidiAudioEnabled = enabled;
 
     private ExerciseDefinition? CurrentExercise => _session?.GetCurrentExercise();
     private bool HasInteractiveChallenge => _runtimeExercise?.Challenge.ExpectedInputs.Count > 0;

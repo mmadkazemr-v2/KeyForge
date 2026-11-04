@@ -73,6 +73,26 @@ public static class UiText
         _ => AudioUnavailable
     };
     public static string Midi => Select("میدی", "MIDI");
+    public static string MidiAudioMode => Select("حالت صدای میدی", "MIDI audio mode");
+    public static string ExternalDawMode => Select("DAW خارجی (فقط امتیازدهی)", "External DAW (scoring only)");
+    public static string InternalAudioMode => Select("صدای داخلی KeyForge", "KeyForge internal audio");
+    public static string ExternalDawModeDescription => Select(
+        "KeyForge صدای پیانو تولید نمی‌کند؛ ورودی میدی برای امتیازدهی و نمایش حفظ می‌شود.",
+        "KeyForge piano audio is off. MIDI input, scoring, and visual feedback remain active.");
+    public static string InternalAudioModeDescription => Select(
+        "صدای ساز انتخاب‌شده در KeyForge برای نت‌های ورودی میدی پخش می‌شود.",
+        "KeyForge plays the selected instrument for incoming MIDI notes.");
+    public static string MidiLatencyDiagnostics => Select("عیب‌یابی تأخیر میدی", "MIDI latency diagnostics");
+    public static string EnableLatencyDiagnostics => Select("فعال‌سازی عیب‌یابی تأخیر (نمونه‌برداری محدود)", "Enable latency diagnostics (bounded sampling)");
+    public static string RefreshLatencyDiagnostics => Select("به‌روزرسانی آمار", "Refresh statistics");
+    public static string MidiCallbackDelay => Select("زمان‌مهر رویداد تا پردازش JS", "Event timestamp to JS processing");
+    public static string MidiCallbackDuration => Select("مدت پردازش callback جاوااسکریپت", "JavaScript callback processing duration");
+    public static string MidiInteropAckRoundTrip => Select("رفت‌وبرگشت تأیید Blazor", "Blazor interop acknowledgment round trip");
+    public static string DiagnosticInvalidSamples => Select("نمونه‌های نامعتبر", "Invalid samples");
+    public static string NoLatencySamples => Select("هنوز نمونه‌ای ثبت نشده است", "No samples collected yet");
+    public static string MidiLatencyLimitations => Select(
+        "رفت‌وبرگشت interop زمان یک‌طرفه یا پایان رندر UI نیست؛ این اندازه‌گیری تأخیر فیزیکی کلید تا سیستم‌عامل یا صدا را نشان نمی‌دهد.",
+        "Interop round trip is not one-way delivery or completed UI rendering. These measurements do not represent physical key-to-OS or audio latency.");
     public static string OptionalMidi => Select("اختیاری — برای پیانوی دیجیتال", "Optional — for digital pianos");
     public static string EnableMidi => Select("فعال‌سازی میدی", "Enable MIDI");
     public static string MidiDevice => Select("دستگاه میدی", "MIDI device");

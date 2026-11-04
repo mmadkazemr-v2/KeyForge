@@ -55,6 +55,27 @@
         </dl>
     }
 
+    @if (_enabled)
+    {
+        <section class="midi-input-control__latency" aria-label="@UiText.MidiLatencyDiagnostics">
+            <label><input type="checkbox" checked="@_diagnosticsEnabled" @onchange="ToggleDiagnosticsAsync" /> @UiText.EnableLatencyDiagnostics</label>
+            @if (_diagnosticsEnabled)
+            {
+                <button class="kf-button kf-button--secondary" type="button" @onclick="RefreshDiagnosticsAsync">@UiText.RefreshLatencyDiagnostics</button>
+                @if (_latencyDiagnostics is { } metrics)
+                {
+                    <dl>
+                        <div><dt>@UiText.MidiCallbackDelay</dt><dd>@FormatMetric(metrics.CallbackDelay)</dd></div>
+                        <div><dt>@UiText.MidiCallbackDuration</dt><dd>@FormatMetric(metrics.CallbackDuration)</dd></div>
+                        <div><dt>@UiText.MidiInteropAckRoundTrip</dt><dd>@FormatMetric(metrics.InteropAckRoundTrip)</dd></div>
+                        <div><dt>@UiText.DiagnosticInvalidSamples</dt><dd>@metrics.InvalidSamples</dd></div>
+                    </dl>
+                    <small>@UiText.MidiLatencyLimitations</small>
+                }
+            }
+        </section>
+    }
+
     @if (_status is MidiInputStatus.PermissionDenied or MidiInputStatus.Error or MidiInputStatus.DeviceOpenFailure)
     {
         <p class="midi-input-control__error" role="alert">@StatusLabel @(_errorMessage)</p>
@@ -75,6 +96,8 @@
     private string? _configuredPresetId;
     private MidiInputStatus _status = MidiInputStatus.Disabled;
     private bool _enabled;
+    private bool _diagnosticsEnabled;
+    private MidiLatencyDiagnostics? _latencyDiagnostics;
     private IDisposable? _browserClockRegistration;
 
     [Parameter]
@@ -104,6 +127,25 @@
     private string VelocityLabel => MidiState.LastVelocity is { } velocity
         ? $"{UiText.GetMidiVelocityLevel(MidiPracticeInputState.GetVelocityLevel(velocity))} ({velocity})"
         : UiText.NoMidiActivity;
+
+    private static string FormatMetric(MidiLatencyMetric metric) => metric.SampleCount == 0
+        ? UiText.NoLatencySamples
+        : $"n={metric.SampleCount}, median={metric.Median:F2} ms, P95={metric.P95:F2} ms, max={metric.Maximum:F2} ms, dropped={metric.Dropped}, latest MIDI sequence={metric.LatestSequence}";
+
+    private async Task ToggleDiagnosticsAsync(ChangeEventArgs args)
+    {
+        _diagnosticsEnabled = args.Value is true || string.Equals(args.Value?.ToString(), "true", StringComparison.OrdinalIgnoreCase);
+        _latencyDiagnostics = null;
+        if (_module is not null) await _module.InvokeVoidAsync("setDiagnosticsEnabled", _diagnosticsEnabled);
+    }
+
+    private async Task RefreshDiagnosticsAsync()
+    {
+        if (_module is not null)
+        {
+            _latencyDiagnostics = await _module.InvokeAsync<MidiLatencyDiagnostics>("getDiagnostics");
+        }
+    }
 
     protected override void OnInitialized() => MidiState.Changed += HandleMidiStateChanged;
 

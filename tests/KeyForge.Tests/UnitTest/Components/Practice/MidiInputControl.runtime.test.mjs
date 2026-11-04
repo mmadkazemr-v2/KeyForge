@@ -135,3 +135,75 @@ test('permission denial, no devices, and selected port open failure remain disti
         await midi.dispose();
     });
 });
+
+test('opt-in latency diagnostics summarize bounded samples and rapid MIDI delivery preserves order', async () => {
+    const port = new FakeMidiPort('keyboard', 'V61 MKII');
+    const access = createAccess([port]);
+    const delivered = [];
+    await withNavigator(async () => access, async () => {
+        const midi = await importAdapter();
+        await midi.enable({ invokeMethodAsync: async (method, message) => {
+            if (method === 'HandleMidiMessage') delivered.push(message);
+        } });
+        await midi.selectInput('keyboard');
+        assert.equal(midi.getDiagnostics().callbackDuration.sampleCount, 0);
+        midi.setDiagnosticsEnabled(true);
+
+        const count = 600;
+        for (let i = 0; i < count; i++) {
+            const status = i % 2 === 0 ? 0x90 | (i % 16) : 0x80 | (i % 16);
+            const data = i % 2 === 0 ? [status, 60 + (i % 12), 1 + (i % 127)] : [status, 60 + (i % 12), 0];
+            port.emit(data, performance.now());
+        }
+        await new Promise(resolve => setTimeout(resolve, 20));
+
+        assert.equal(delivered.length, count);
+        assert.deepEqual(delivered.map(message => message.sequence), Array.from({ length: count }, (_, i) => i + 1));
+        const diagnostics = midi.getDiagnostics();
+        if (process.env.KEYFORGE_REPORT_LATENCY === '1') {
+            process.stdout.write(`Synthetic 600-event burst metrics: ${JSON.stringify(diagnostics)}\n`);
+        }
+        assert.equal(diagnostics.enabled, true);
+        assert.equal(diagnostics.capacity, 512);
+        assert.equal(diagnostics.callbackDelay.sampleCount, 512);
+        assert.equal(diagnostics.callbackDuration.sampleCount, 512);
+        assert.equal(diagnostics.interopAckRoundTrip.sampleCount, 512);
+        assert.equal(diagnostics.callbackDelay.dropped, 88);
+        assert.equal(diagnostics.callbackDuration.dropped, 88);
+        assert.equal(diagnostics.interopAckRoundTrip.dropped, 88);
+        assert.equal(Number.isFinite(diagnostics.callbackDuration.median), true);
+        assert.equal(diagnostics.invalidSamples, 0);
+        midi.setDiagnosticsEnabled(false);
+        assert.equal(midi.getDiagnostics().enabled, false);
+        await midi.dispose();
+    });
+});
+
+test('External DAW mode keeps MIDI delivery active without initializing live audio', async () => {
+    const port = new FakeMidiPort('keyboard', 'V61 MKII');
+    const access = createAccess([port]);
+    const delivered = [];
+    const originalTone = Object.getOwnPropertyDescriptor(globalThis, 'Tone');
+    Object.defineProperty(globalThis, 'Tone', {
+        configurable: true,
+        get() { throw new Error('External DAW mode must not initialize Tone.'); }
+    });
+    try {
+        await withNavigator(async () => access, async () => {
+            const midi = await importAdapter();
+            await midi.configureLivePlay(false, null);
+            await midi.enable({ invokeMethodAsync: async (method, message) => {
+                if (method === 'HandleMidiMessage') delivered.push(message);
+            } });
+            await midi.selectInput('keyboard');
+            port.emit([0x90, 60, 96], performance.now());
+            await new Promise(resolve => setTimeout(resolve, 0));
+            assert.equal(delivered.length, 1);
+            assert.equal(delivered[0].data2, 96);
+            await midi.dispose();
+        });
+    } finally {
+        if (originalTone) Object.defineProperty(globalThis, 'Tone', originalTone);
+        else delete globalThis.Tone;
+    }
+});

@@ -57,6 +57,9 @@
     public bool StopAfterCountIn { get; set; }
 
     [Parameter]
+    public bool? AudioEnabled { get; set; }
+
+    [Parameter]
     public EventCallback OnCountInCompleted { get; set; }
 
     [Parameter]
@@ -75,6 +78,7 @@
     private MetronomeConfiguration ActiveConfiguration => Configuration ?? new MetronomeConfiguration
         { Enabled = true, Audio = true, Visual = false };
     private bool IsEnabled => Configuration?.Enabled == true || StandaloneBpm is not null;
+    private bool IsAudioEnabled => AudioEnabled ?? ActiveConfiguration.Audio;
     private int CurrentBpm => StandaloneBpm ?? RuntimeExercise?.SelectedBpm ?? RuntimeExercise?.Definition.Tempo?.DefaultBpm ?? 0;
     private int VisualBeatCount => Math.Max(ActiveConfiguration.CountInBeats, 4);
     private bool IsCountingIn => _isRunning && !_countInCompleted;
@@ -82,7 +86,7 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (IsEnabled && !_isRunning && !_activationPrepared && ActiveConfiguration.Audio)
+        if (IsEnabled && !_isRunning && !_activationPrepared && IsAudioEnabled)
         {
             _activationPrepared = true;
             await Audio.PrepareActivationAsync(_startButton);
@@ -99,7 +103,7 @@
         _isRunning = true;
         _audioFailed = false;
         _countInCompleted = ActiveConfiguration.CountInBeats == 0;
-        if (ActiveConfiguration.Audio && !await Audio.InitializeAsync())
+        if (IsAudioEnabled && !await Audio.InitializeAsync())
         {
             _audioFailed = true;
         }
@@ -149,7 +153,7 @@
         cancellationToken.ThrowIfCancellationRequested();
         _currentBeat = beat;
         await InvokeAsync(StateHasChanged);
-        if (ActiveConfiguration.Audio && !_audioFailed && !await Audio.PlayMetronomeClickAsync())
+        if (IsAudioEnabled && !_audioFailed && !await Audio.PlayMetronomeClickAsync())
         {
             _audioFailed = true;
             await InvokeAsync(StateHasChanged);

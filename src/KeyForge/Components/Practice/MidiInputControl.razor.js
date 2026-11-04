@@ -10,6 +10,49 @@ let messageDispatch = Promise.resolve();
 let disposed = false;
 let livePlayEnabled = false;
 let liveAudioModule;
+let diagnosticsEnabled = false;
+const diagnosticCapacity = 512;
+const diagnosticSamples = { callbackDelay: [], callbackDuration: [], interopAckRoundTrip: [] };
+const diagnosticDropped = { callbackDelay: 0, callbackDuration: 0, interopAckRoundTrip: 0 };
+let diagnosticInvalidSamples = 0;
+
+export function setDiagnosticsEnabled(enabled) {
+    diagnosticsEnabled = Boolean(enabled);
+}
+
+export function getDiagnostics() {
+    const summarize = samples => {
+        if (samples.length === 0) return { sampleCount: 0, median: null, p95: null, maximum: null, latestSequence: null };
+        const values = samples.map(sample => sample.value).sort((a, b) => a - b);
+        const percentile = p => values[Math.max(0, Math.ceil(values.length * p) - 1)];
+        return {
+            sampleCount: values.length, median: percentile(0.5), p95: percentile(0.95), maximum: values.at(-1),
+            latestSequence: samples.at(-1).sequence
+        };
+    };
+    return {
+        enabled: diagnosticsEnabled,
+        capacity: diagnosticCapacity,
+        callbackDelay: { ...summarize(diagnosticSamples.callbackDelay), dropped: diagnosticDropped.callbackDelay },
+        callbackDuration: { ...summarize(diagnosticSamples.callbackDuration), dropped: diagnosticDropped.callbackDuration },
+        interopAckRoundTrip: { ...summarize(diagnosticSamples.interopAckRoundTrip), dropped: diagnosticDropped.interopAckRoundTrip },
+        invalidSamples: diagnosticInvalidSamples
+    };
+}
+
+function recordDiagnostic(name, sequence, value) {
+    if (!diagnosticsEnabled) return;
+    if (!Number.isFinite(value) || value < 0) {
+        diagnosticInvalidSamples++;
+        return;
+    }
+    const samples = diagnosticSamples[name];
+    if (samples.length === diagnosticCapacity) {
+        samples.shift();
+        diagnosticDropped[name]++;
+    }
+    samples.push({ sequence, value });
+}
 
 export async function configureLivePlay(enabled, preset) {
     livePlayEnabled = Boolean(enabled);
@@ -74,6 +117,7 @@ export async function selectInput(deviceId) {
 
 export async function dispose() {
     disposed = true;
+    diagnosticsEnabled = false;
     await detachSelectedInput();
     selectedDeviceId = undefined;
     selectedDeviceName = undefined;
@@ -84,6 +128,9 @@ export async function dispose() {
 
 function handleMidiMessage(event) {
     if (disposed || !dotNetReference || !event?.data || !selectedInput || selectedInput.state !== 'connected') return;
+    const callbackStartedAt = diagnosticsEnabled ? performance.now() : 0;
+    const timestampIsValid = Number.isFinite(event.timeStamp);
+    const eventTimestamp = timestampIsValid ? event.timeStamp : performance.now();
     const [status = 0, data1 = 0, data2 = 0] = event.data;
     const message = {
         deviceId: selectedDeviceId ?? '',
@@ -93,22 +140,32 @@ function handleMidiMessage(event) {
         status,
         data1,
         data2,
-        timestampMilliseconds: Number.isFinite(event.timeStamp) ? event.timeStamp : performance.now(),
+        timestampMilliseconds: eventTimestamp,
         sequence: ++eventSequence
     };
+    if (diagnosticsEnabled) {
+        if (timestampIsValid) recordDiagnostic('callbackDelay', message.sequence, callbackStartedAt - eventTimestamp);
+        else diagnosticInvalidSamples++;
+    }
     // Tone runs directly in this browser callback for playable latency. The
     // same input still reaches Blazor for diagnostics and keyboard display.
     if (livePlayEnabled && liveAudioModule) {
         try { liveAudioModule.handleMidiInput(status, data1, data2); }
         catch { /* Keep MIDI diagnostics flowing if audio is unavailable. */ }
     }
+    if (diagnosticsEnabled) recordDiagnostic('callbackDuration', message.sequence, performance.now() - callbackStartedAt);
     messageDispatch = messageDispatch
         .then(() => {
             if (!disposed && selectedInput?.state === 'connected' && selectedDeviceId === message.deviceId) {
-                return dotNetReference?.invokeMethodAsync('HandleMidiMessage', message);
+                const invokeStartedAt = diagnosticsEnabled ? performance.now() : 0;
+                return dotNetReference?.invokeMethodAsync('HandleMidiMessage', message)?.then(() => {
+                    if (diagnosticsEnabled) recordDiagnostic('interopAckRoundTrip', message.sequence, performance.now() - invokeStartedAt);
+                });
             }
         })
-        .catch(() => undefined);
+        .catch(() => {
+            if (diagnosticsEnabled) diagnosticInvalidSamples++;
+        });
 }
 
 async function notifyDevicesChanged() {
