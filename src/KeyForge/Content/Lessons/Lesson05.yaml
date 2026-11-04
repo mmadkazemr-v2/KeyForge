@@ -1,0 +1,42 @@
+id: lesson-05
+title: "C Major scale practice"
+description: "Learn the notes of C Major by playing the scale in both directions."
+level: beginner
+order: 5
+estimatedMinutes: 10
+
+unlock:
+  mode: immediate
+
+completion:
+  minimumScore: 70
+  requireAllExercises: true
+
+exercises:
+  - type: sequence
+    id: c-major-ascending
+    title: "C Major ascending"
+    description: "Play C4, D4, E4, F4, G4, A4, B4, then C5. Incorrect notes keep the current step active."
+    duration: 5
+    difficulty: easy
+    hand: right
+    fingers: [1, 2, 3, 1, 2, 3, 4, 5]
+    scale:
+      root: C4
+      type: major
+      direction: ascending
+      octaves: 1
+
+  - type: sequence
+    id: c-major-descending
+    title: "C Major descending"
+    description: "Play C5, B4, A4, G4, F4, E4, D4, then C4. Incorrect notes keep the current step active."
+    duration: 5
+    difficulty: easy
+    hand: right
+    fingers: [5, 4, 3, 2, 1, 3, 2, 1]
+    scale:
+      root: C4
+      type: major
+      direction: descending
+      octaves: 1

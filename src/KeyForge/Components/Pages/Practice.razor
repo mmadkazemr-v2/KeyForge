@@ -296,7 +296,7 @@ else if (CurrentExercise is { } exercise)
                         <div><dt>@UiText.IncorrectAnswers</dt><dd>@UiText.FormatNumber(noteTarget.IncorrectAnswerCount)</dd></div>
                     </dl>
                 }
-                @if ((_result.Evaluation.Speed ?? _result.Evaluation.FingerIndependence) is { } sequence)
+                @if ((_result.Evaluation.Speed ?? _result.Evaluation.FingerIndependence ?? _result.Evaluation.Sequence) is { } sequence)
                 {
                     <dl class="practice-result-summary">
                         @if (SequenceExpectedNotes.Count > 0)
@@ -428,14 +428,15 @@ else if (CurrentExercise is { } exercise)
     private bool IsEarTrainingChallenge =>
         _runtimeExercise?.Definition is EarTrainingExerciseDefinition && HasInteractiveChallenge;
     private bool IsSequenceChallenge =>
-        _runtimeExercise?.Definition is SpeedExerciseDefinition or FingerIndependenceExerciseDefinition && HasInteractiveChallenge;
+        _runtimeExercise?.Definition is SpeedExerciseDefinition or FingerIndependenceExerciseDefinition or SequenceExerciseDefinition && HasInteractiveChallenge;
     private bool SupportsMidiInput => _runtimeExercise?.Definition is RhythmExerciseDefinition or NoteReadingExerciseDefinition or
         IntervalExerciseDefinition or OctaveExerciseDefinition or MentalKeyboardExerciseDefinition or EarTrainingExerciseDefinition or
-        SpeedExerciseDefinition or FingerIndependenceExerciseDefinition;
+        SpeedExerciseDefinition or FingerIndependenceExerciseDefinition or SequenceExerciseDefinition;
     private NoteTargetEvaluationDetails? NoteTargetResult => _result?.Evaluation.Interval ??
         _result?.Evaluation.Octave ?? _result?.Evaluation.MentalKeyboard;
     private IReadOnlyList<string> SequenceExpectedNotes => _runtimeExercise?.Challenge.Speed?.ExpectedNotes ??
-        _runtimeExercise?.Challenge.FingerIndependence?.ExpectedNotes ?? [];
+        _runtimeExercise?.Challenge.FingerIndependence?.ExpectedNotes ??
+        _runtimeExercise?.Challenge.Sequence?.ExpectedNotes ?? [];
     private int CurrentExerciseNumber => (_session?.CurrentExerciseIndex ?? 0) + 1;
     private int SessionProgressPercent => _session?.Exercises.Count > 0
         ? (int)Math.Round(CurrentExerciseNumber * 100d / _session.Exercises.Count)

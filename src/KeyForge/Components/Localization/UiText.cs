@@ -239,6 +239,17 @@ public static class UiText
     public static string EarTrainingPractice => Select("تمرین شنیداری", "Ear-training practice");
     public static string SpeedPractice => Select("تمرین سرعت", "Speed practice");
     public static string FingerIndependencePractice => Select("تمرین استقلال انگشتان", "Finger independence practice");
+    public static string Scale => Select("گام", "Scale");
+    public static string ScalePractice => Select("تمرین گام", "Scale practice");
+    public static string SequencePractice => Select("تمرین توالی نت‌ها", "Note sequence practice");
+    public static string ScalePracticeInstructions => Select("نت‌های گام نمایش‌داده‌شده را به‌ترتیب بنوازید.", "Play the displayed scale notes in order.");
+    public static string TryExpectedNoteAgain => Select("نت برجسته‌شده را دوباره امتحان کنید.", "Try the highlighted note again.");
+    public static string OctaveMismatchTryAgain => Select("نام نت درست است، اما اکتاو درست نیست. اکتاو نت نمایش‌داده‌شده را بنوازید.", "That note name is right, but the octave is wrong. Play the displayed octave.");
+    public static string SuggestedFinger => Select("انگشت پیشنهادی", "Suggested finger");
+    public static string FingeringGuidanceOnly => Select("این فقط راهنمای انگشت‌گذاری است؛ ورودی MIDI انگشت استفاده‌شده را مشخص نمی‌کند.", "Guidance only; MIDI input cannot identify which finger you used.");
+    public static string RestartScale => Select("شروع دوباره گام", "Restart scale");
+    public static string RestartSequence => Select("شروع دوباره توالی", "Restart sequence");
+    public static string SelectPracticeHand => Select("دست تمرین", "Practice hand");
     public static string PlayTheSequenceInTime => Select("الگو را با ریتم مشخص اجرا کنید", "Play the sequence in time");
     public static string PlayTheFingerSequence => Select("توالی انگشتان را به ترتیب اجرا کنید", "Play the finger sequence in order");
     public static string SpeedPracticeInstructions => Select("پس از شروع، نت فعال را با ضرب انتخاب کنید.", "After starting, select the active note on each beat.");
@@ -541,6 +552,13 @@ public static class UiText
         SpeedPattern.Arpeggio => Select("آرپژ", "Arpeggio"),
         SpeedPattern.RepeatedNote => Select("نت تکراری", "Repeated note"),
         SpeedPattern.Chromatic => Select("کروماتیک", "Chromatic"),
+        _ => Unknown
+    };
+
+    public static string GetScaleType(ScaleType type) => type switch
+    {
+        ScaleType.Major => Select("ماژور", "Major"),
+        ScaleType.NaturalMinor => Select("مینور طبیعی", "Natural minor"),
         _ => Unknown
     };
 

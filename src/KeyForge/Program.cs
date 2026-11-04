@@ -90,8 +90,8 @@ app.MapRazorComponents<App>()
 app.Run();
 return;
 
-static bool IsLocalReturnUrl(string? returnUrl) =>
-    !string.IsNullOrWhiteSpace(returnUrl) &&
-    returnUrl.StartsWith('/') &&
-    !returnUrl.StartsWith("//", StringComparison.Ordinal) &&
-    !returnUrl.StartsWith("/\\", StringComparison.Ordinal);
+static bool IsLocalReturnUrl(string? returnUrl)
+    => !string.IsNullOrWhiteSpace(returnUrl) &&
+       returnUrl.StartsWith('/') &&
+       !returnUrl.StartsWith("//", StringComparison.Ordinal) &&
+       !returnUrl.StartsWith("/\\", StringComparison.Ordinal);

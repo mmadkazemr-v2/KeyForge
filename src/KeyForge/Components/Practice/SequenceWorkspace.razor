@@ -26,8 +26,27 @@
         }
         else
         {
-            <div><dt>@UiText.Hand</dt><dd>@UiText.GetPracticeHand(FingerDetails.Hand)</dd></div>
-            <div><dt>@UiText.Fingers</dt><dd><bdi>@FingerList</bdi></dd></div>
+            @if (IsFingerIndependence)
+            {
+                <div><dt>@UiText.Hand</dt><dd>@UiText.GetPracticeHand(FingerDetails.Hand)</dd></div>
+                <div><dt>@UiText.Fingers</dt><dd><bdi>@FingerList</bdi></dd></div>
+            }
+            else if (ActiveScale is { } scale)
+            {
+                <div><dt>@UiText.Scale</dt><dd><bdi>@ScaleLabel</bdi></dd></div>
+                @if (HasSelectableScaleHand)
+                {
+                    <div class="sequence-workspace__hand-picker">
+                        <dt><label for="scale-practice-hand">@UiText.SelectPracticeHand</label></dt>
+                        <dd>
+                            <select id="scale-practice-hand" value="@_selectedScaleHand" @onchange="HandleScaleHandChanged">
+                                <option value="@PracticeHand.Right">@UiText.GetPracticeHand(PracticeHand.Right)</option>
+                                <option value="@PracticeHand.Left">@UiText.GetPracticeHand(PracticeHand.Left)</option>
+                            </select>
+                        </dd>
+                    </div>
+                }
+            }
         }
         @if (RuntimeExercise.SelectedBpm is { } bpm)
         {
@@ -38,9 +57,19 @@
     <section class="sequence-workspace__sequence" aria-label="@UiText.ExpectedSequence">
         @for (var index = 0; index < StepCount; index++)
         {
-            <span class="@GetStepClass(index)"><bdi>@ExpectedNotes[index]</bdi></span>
+            <span class="@GetStepClass(index)">
+                <bdi>@ExpectedNotes[index]</bdi>
+                @if (HasSelectableScaleHand)
+                {
+                    <small>@UiText.FormatNumber(GetSuggestedFinger(index))</small>
+                }
+            </span>
         }
     </section>
+    @if (HasSelectableScaleHand)
+    {
+        <p class="kf-text-secondary sequence-workspace__fingering-note">@UiText.FingeringGuidanceOnly</p>
+    }
 
     @if (RuntimeExercise.Definition.Tempo is not null)
     {
@@ -65,12 +94,20 @@
     {
         <section class="kf-practice-input sequence-workspace__input" aria-live="polite">
             <p class="kf-meta">@UiText.CurrentExpectedInput</p>
-            <strong><bdi>@ExpectedNotes[_stepIndex]</bdi></strong>
+            <strong><bdi>@ExpectedNotes[ProgressIndex]</bdi></strong>
+            @if (HasSelectableScaleHand)
+            {
+                <p class="sequence-workspace__suggested-finger">@UiText.SuggestedFinger: <bdi>@UiText.FormatNumber(GetSuggestedFinger(ProgressIndex))</bdi></p>
+            }
             <p class="kf-text-secondary">@UiText.SelectPianoNote</p>
             <PianoKeyboard FirstNote="FirstPianoNote" LastNote="LastPianoNote" SelectedNote="_lastSelectedNote" Disabled="false" OnNoteSelected="HandlePianoNote" />
             @if (_lastInputCorrect is not null)
             {
-                <p class="@(_lastInputCorrect == true ? "sequence-workspace__live-feedback sequence-workspace__live-feedback--correct" : "sequence-workspace__live-feedback sequence-workspace__live-feedback--incorrect")" role="status">@(_lastInputCorrect == true ? UiText.InputAccepted : UiText.InputIncorrect)</p>
+                <p class="@(_lastInputCorrect == true ? "sequence-workspace__live-feedback sequence-workspace__live-feedback--correct" : "sequence-workspace__live-feedback sequence-workspace__live-feedback--incorrect")" role="status">@GetLiveFeedback()</p>
+            }
+            @if (IsAuthoredSequence)
+            {
+                <button class="kf-button kf-button--secondary" type="button" @onclick="RestartScalePractice">@(ActiveScale is null ? UiText.RestartSequence : UiText.RestartScale)</button>
             }
         </section>
     }
@@ -88,24 +125,57 @@
     private bool _pausedForMidi;
     private bool _metronomeRunning;
     private bool? _lastInputCorrect;
+    private bool _lastInputOctaveMismatch;
     private MusicalNote? _lastSelectedNote;
+    private PracticeHand _selectedScaleHand = PracticeHand.Right;
     private IDisposable? _midiRegistration;
     private bool IsSpeed => RuntimeExercise.Definition is SpeedExerciseDefinition;
+    private bool IsFingerIndependence => RuntimeExercise.Definition is FingerIndependenceExerciseDefinition;
+    private bool IsAuthoredSequence => RuntimeExercise.Definition is SequenceExerciseDefinition;
     private SpeedChallengeDetails SpeedDetails => RuntimeExercise.Challenge.Speed!;
     private FingerIndependenceChallengeDetails FingerDetails => RuntimeExercise.Challenge.FingerIndependence!;
-    private IReadOnlyList<string> ExpectedNotes => IsSpeed ? SpeedDetails.ExpectedNotes : FingerDetails.ExpectedNotes;
+    private SequenceExerciseDefinition? SequenceDefinition => RuntimeExercise.Definition as SequenceExerciseDefinition;
+    private ScaleConfiguration? ActiveScale => SequenceDefinition?.Scale;
+    private bool HasSelectableScaleHand => ActiveScale is { Type: ScaleType.Major, Root: "C4", Octaves: 1, Direction: ScaleDirection.Ascending or ScaleDirection.Descending } && StepCount == 8;
+    private string ScaleLabel => ActiveScale is { } scale
+        ? $"{scale.Root} {UiText.GetScaleType(scale.Type)}"
+        : UiText.ScalePractice;
+    private IReadOnlyList<string> ExpectedNotes => IsSpeed ? SpeedDetails.ExpectedNotes :
+        IsFingerIndependence ? FingerDetails.ExpectedNotes : RuntimeExercise.Challenge.Sequence!.ExpectedNotes;
+    private OrderedNoteProgress? _orderedNoteProgress;
+    private int ProgressIndex => IsAuthoredSequence ? _orderedNoteProgress!.CompletedCount : _stepIndex;
     private int StepCount => ExpectedNotes.Count;
-    private int CurrentStep => Math.Min(_stepIndex + 1, StepCount);
-    private int CompletedStepCount => Math.Min(_stepIndex, StepCount);
+    private int CurrentStep => Math.Min(ProgressIndex + 1, StepCount);
+    private int CompletedStepCount => Math.Min(ProgressIndex, StepCount);
     private int ProgressPercent => (int)Math.Round(CompletedStepCount * 100d / StepCount);
-    private string PracticeLabel => IsSpeed ? UiText.SpeedPractice : UiText.FingerIndependencePractice;
-    private string Instruction => IsSpeed ? UiText.PlayTheSequenceInTime : UiText.PlayTheFingerSequence;
-    private string Description => IsSpeed ? UiText.SpeedPracticeInstructions : UiText.FingerIndependenceInstructions;
+    private string PracticeLabel => IsSpeed ? UiText.SpeedPractice : IsFingerIndependence
+        ? UiText.FingerIndependencePractice : ActiveScale is not null ? UiText.ScalePractice : UiText.SequencePractice;
+    private string Instruction => IsSpeed ? UiText.PlayTheSequenceInTime : IsFingerIndependence
+        ? UiText.PlayTheFingerSequence : RuntimeExercise.Definition.Title;
+    private string Description => IsSpeed ? UiText.SpeedPracticeInstructions : IsFingerIndependence
+        ? UiText.FingerIndependenceInstructions : string.IsNullOrWhiteSpace(RuntimeExercise.Definition.Description)
+            ? UiText.ScalePracticeInstructions
+            : RuntimeExercise.Definition.Description;
     private string FingerList => string.Join(UiText.ListSeparator, FingerDetails.Fingers.Select(UiText.FormatNumber));
+    private IReadOnlyList<int> SuggestedFingers
+    {
+        get
+        {
+            if (!HasSelectableScaleHand) return [];
+            var scaleDetails = RuntimeExercise.Challenge.Sequence!;
+            return _selectedScaleHand == scaleDetails.Hand && scaleDetails.Fingers.Count == StepCount
+                ? scaleDetails.Fingers
+                : ScaleFingeringGuide.GetFingers(_selectedScaleHand, ActiveScale!.Direction);
+        }
+    }
     private MusicalNote FirstPianoNote => MusicalNote.Parse("C4");
     private MusicalNote LastPianoNote => MusicalNote.Parse("C5");
     protected override void OnInitialized()
     {
+        if (IsAuthoredSequence) _selectedScaleHand = RuntimeExercise.Challenge.Sequence!.Hand is PracticeHand.Left or PracticeHand.Right
+            ? RuntimeExercise.Challenge.Sequence.Hand
+            : PracticeHand.Right;
+        if (IsAuthoredSequence) _orderedNoteProgress = new OrderedNoteProgress(ExpectedNotes);
         _midiRegistration = MidiInput.Register(HandleMidiMessageAsync);
         MidiInput.SelectedDeviceStateChanged += HandleMidiDeviceStateChanged;
     }
@@ -119,6 +189,20 @@
         MidiInput.SetTimelineOrigin(_browserTimelineOriginMilliseconds);
     }
     private Task HandleTempoChanged(int _) => InvokeAsync(StateHasChanged);
+    private Task HandleScaleHandChanged(ChangeEventArgs args)
+    {
+        if (Enum.TryParse<PracticeHand>(args.Value?.ToString(), out var hand) && hand is PracticeHand.Left or PracticeHand.Right)
+        {
+            _selectedScaleHand = hand;
+        }
+        return InvokeAsync(StateHasChanged);
+    }
+    private int GetSuggestedFinger(int index) => SuggestedFingers[index];
+    private string GetLiveFeedback() => _lastInputCorrect == true
+        ? UiText.InputAccepted
+        : IsAuthoredSequence
+            ? _lastInputOctaveMismatch ? UiText.OctaveMismatchTryAgain : UiText.TryExpectedNoteAgain
+            : UiText.InputIncorrect;
     private Task HandleMetronomeRunningChanged(bool isRunning) { _metronomeRunning = isRunning; return InvokeAsync(StateHasChanged); }
     private async Task StartSequenceAsync()
     {
@@ -126,6 +210,7 @@
         if (_pausedForMidi)
         {
             RuntimeExercise.ResetCapturedInputs();
+            _orderedNoteProgress?.Reset();
             _stepIndex = 0;
             _lastSelectedNote = null;
         }
@@ -161,6 +246,7 @@
         _isActive = false;
         _pausedForMidi = true;
         _stepIndex = 0;
+        _orderedNoteProgress?.Reset();
         _lastSelectedNote = null;
         RuntimeExercise.ResetCapturedInputs();
         MidiInput.SetTimelineOrigin(null);
@@ -169,14 +255,48 @@
     private async Task CaptureInputAsync(ExerciseInputEvent input)
     {
         if (!_isActive || _completed) return;
+        _lastSelectedNote = MusicalNote.Parse(input.Value);
+        if (IsAuthoredSequence)
+        {
+            var expectedNote = _orderedNoteProgress!.CurrentExpectedNote!;
+            _lastInputCorrect = _orderedNoteProgress!.TryAccept(input.Value);
+            _lastInputOctaveMismatch = !_lastInputCorrect.Value && IsOctaveMismatch(input.Value, expectedNote);
+            if (!_lastInputCorrect.Value) return;
+
+            RuntimeExercise.CaptureInput(input);
+            if (_orderedNoteProgress.IsComplete)
+            {
+                _isActive = false;
+                _completed = true;
+                await OnCompleted.InvokeAsync(DateTime.UtcNow);
+            }
+            return;
+        }
+
         var expected = RuntimeExercise.Challenge.ExpectedInputs[_stepIndex];
         _lastInputCorrect = string.Equals(expected.Value, input.Value, StringComparison.OrdinalIgnoreCase);
-        _lastSelectedNote = MusicalNote.Parse(input.Value);
         RuntimeExercise.CaptureInput(input);
         _stepIndex++;
         if (_stepIndex == StepCount) { _isActive = false; _completed = true; await OnCompleted.InvokeAsync(DateTime.UtcNow); }
     }
-    private string GetStepClass(int index) => index < _stepIndex ? "is-complete" : _isActive && index == _stepIndex ? "is-active" : string.Empty;
+    private static bool IsOctaveMismatch(string actual, string expected) =>
+        MusicalNote.TryParse(actual, out var actualNote) && MusicalNote.TryParse(expected, out var expectedNote) &&
+        string.Equals(actualNote.Name, expectedNote.Name, StringComparison.OrdinalIgnoreCase) && actualNote.Octave != expectedNote.Octave;
+    private Task RestartScalePractice()
+    {
+        RuntimeExercise.ResetCapturedInputs();
+        _orderedNoteProgress?.Reset();
+        _stepIndex = 0;
+        _isActive = false;
+        _completed = false;
+        _pausedForMidi = false;
+        _lastInputCorrect = null;
+        _lastInputOctaveMismatch = false;
+        _lastSelectedNote = null;
+        MidiInput.SetTimelineOrigin(null);
+        return InvokeAsync(StateHasChanged);
+    }
+    private string GetStepClass(int index) => index < ProgressIndex ? "is-complete" : _isActive && index == ProgressIndex ? "is-active" : string.Empty;
     public void Dispose()
     {
         MidiInput.SelectedDeviceStateChanged -= HandleMidiDeviceStateChanged;
