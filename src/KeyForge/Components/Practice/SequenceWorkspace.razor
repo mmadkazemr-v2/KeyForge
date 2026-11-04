@@ -49,7 +49,8 @@
 
     @if (!_isActive && !_completed && RuntimeExercise.Definition.Metronome is { Enabled: true } metronome)
     {
-        <MetronomeControl RuntimeExercise="RuntimeExercise" Configuration="metronome" StopAfterCountIn="true" OnCountInCompleted="StartSequenceAsync" OnRunningChanged="HandleMetronomeRunningChanged" />
+        <MetronomeControl RuntimeExercise="RuntimeExercise" Configuration="metronome" AudioEnabled="MetronomeAudioEnabled"
+                          StopAfterCountIn="true" OnCountInCompleted="StartSequenceAsync" OnRunningChanged="HandleMetronomeRunningChanged" />
     }
     else if (!_isActive && !_completed)
     {
@@ -78,6 +79,7 @@
 @code {
     [Parameter, EditorRequired] public RuntimeExercise RuntimeExercise { get; set; } = null!;
     [Parameter] public EventCallback<DateTime> OnCompleted { get; set; }
+    [Parameter] public bool MetronomeAudioEnabled { get; set; } = true;
     private DateTime _timelineStartedAt;
     private double? _browserTimelineOriginMilliseconds;
     private int _stepIndex;

@@ -60,6 +60,15 @@ export async function startRhythm(
         flashTimer: 0
     };
     activeRuns.set(workspaceId, run);
+    let metronomeAudio;
+    if (labels.audio && typeof labels.playClick !== "function") {
+        try {
+            metronomeAudio = await import("../Audio/AudioPlaybackService.js");
+        } catch {
+            // A click failure must not prevent timestamped exercise scoring.
+        }
+    }
+    if (run.cancelled) return;
     root.focus({ preventScroll: true });
     run.timelineStartedAt = performance.now();
     await dotNetReference.invokeMethodAsync("NotifyRhythmStarted", run.timelineStartedAt);
@@ -96,6 +105,11 @@ export async function startRhythm(
     };
     document.addEventListener("keydown", run.keyHandler);
 
+    void runRhythmTimeline(run, root, dotNetReference, timelineEvents, pulseOffsetsMilliseconds, durationMilliseconds, labels, metronomeAudio)
+        .catch(() => stopRhythm(workspaceId));
+}
+
+async function runRhythmTimeline(run, root, dotNetReference, timelineEvents, pulseOffsetsMilliseconds, durationMilliseconds, labels, metronomeAudio) {
     let eventIndex = 0;
     let pulseIndex = 0;
     while (eventIndex < timelineEvents.length || pulseIndex < pulseOffsetsMilliseconds.length) {
@@ -115,8 +129,13 @@ export async function startRhythm(
             eventIndex++;
         }
         if (pulseOffset <= eventOffset) {
-            if (labels.audio) {
-                void dotNetReference.invokeMethodAsync("PlayRhythmMetronomeClick");
+            if (labels.audio && (metronomeAudio || typeof labels.playClick === "function")) {
+                try {
+                    if (typeof labels.playClick === "function") labels.playClick();
+                    else metronomeAudio.playMetronomeClick();
+                } catch {
+                    // Keep the musical timeline active if browser audio is unavailable.
+                }
             }
             pulseIndex++;
         }

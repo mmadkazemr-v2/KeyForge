@@ -29,9 +29,24 @@ public sealed class MetronomeTimingTests
         Assert.Empty(MetronomeTiming.GetCountInBeats(0));
     }
 
+    [Theory]
+    [InlineData(60, 4, 4000)]
+    [InlineData(80, 4, 3000)]
+    [InlineData(80, 8, 6000)]
+    public void GetElapsedAtBeatCount_UsesFixedTempoPhase(int bpm, int beatCount, int expectedMilliseconds)
+    {
+        Assert.Equal(expectedMilliseconds, MetronomeTiming.GetElapsedAtBeatCount(bpm, beatCount).TotalMilliseconds);
+    }
+
     [Fact]
     public void GetCountInBeats_NegativeCount_FailsClearly()
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => MetronomeTiming.GetCountInBeats(-1));
+    }
+
+    [Fact]
+    public void GetElapsedAtBeatCount_NegativeCount_FailsClearly()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => MetronomeTiming.GetElapsedAtBeatCount(60, -1));
     }
 }

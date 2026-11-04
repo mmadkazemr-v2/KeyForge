@@ -54,6 +54,10 @@ async function withRuntime(eventCount, callback) {
         const source = await readFile(modulePath, 'utf8');
         const runtime = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}#${Math.random()}`);
         const dotNet = { async invokeMethodAsync(name, ...args) { calls.push({ name, args, at: now }); } };
+        const labels = {
+            active: 'Active', evaluating: 'Evaluating', digits: '0123456789', audio: true,
+            playClick: () => calls.push({ name: 'AudioClick', args: [], at: now })
+        };
         const advanceTo = async target => {
             await flush();
             while (true) {
@@ -68,7 +72,7 @@ async function withRuntime(eventCount, callback) {
             now = target;
             await flush();
         };
-        await callback({ runtime, dotNet, calls, root, listeners, activeEvents, advanceTo });
+        await callback({ runtime, dotNet, calls, root, listeners, activeEvents, advanceTo, labels });
     } finally {
         for (const [name, descriptor] of saved)
             if (descriptor) Object.defineProperty(globalThis, name, descriptor);
@@ -76,10 +80,8 @@ async function withRuntime(eventCount, callback) {
     }
 }
 
-const labels = { active: 'Active', evaluating: 'Evaluating', digits: '0123456789', audio: true };
-
 test('non-uniform event display follows compiled offsets while metronome keeps its own pulse grid', async () => {
-    await withRuntime(5, async ({ runtime, dotNet, calls, activeEvents, advanceTo, listeners }) => {
+    await withRuntime(5, async ({ runtime, dotNet, calls, activeEvents, advanceTo, listeners, labels }) => {
         const offsets = [0, 1000, 1500, 2000, 3000];
         const running = runtime.startRhythm('rhythm', dotNet,
             offsets.map(offsetMilliseconds => ({ offsetMilliseconds, isRest: false })),
@@ -88,7 +90,7 @@ test('non-uniform event display follows compiled offsets while metronome keeps i
         await running;
 
         assert.deepEqual(activeEvents, offsets.map((offset, index) => [index, 12_000 + offset]));
-        assert.deepEqual(calls.filter(call => call.name === 'PlayRhythmMetronomeClick').map(call => call.at),
+        assert.deepEqual(calls.filter(call => call.name === 'AudioClick').map(call => call.at),
             [12_000, 13_000, 14_000, 15_000]);
         assert.equal(calls.find(call => call.name === 'CompleteRhythm').at, 16_000);
         assert.equal(listeners.has('keydown'), false);
@@ -96,7 +98,7 @@ test('non-uniform event display follows compiled offsets while metronome keeps i
 });
 
 test('post-count-in browser origin is used for keyboard offsets and rest-window hits are forwarded for scoring', async () => {
-    await withRuntime(4, async ({ runtime, dotNet, calls, advanceTo, listeners }) => {
+    await withRuntime(4, async ({ runtime, dotNet, calls, advanceTo, listeners, labels }) => {
         const running = runtime.startRhythm('rhythm', dotNet,
             [0, 1000, 2000, 3000].map((offsetMilliseconds, index) => ({ offsetMilliseconds, isRest: index === 1 })),
             [0, 1000, 2000, 3000], 4000, labels);
@@ -112,7 +114,7 @@ test('post-count-in browser origin is used for keyboard offsets and rest-window 
 });
 
 test('disconnect pause cancels pending timeline work and does not complete an interrupted attempt', async () => {
-    await withRuntime(2, async ({ runtime, dotNet, calls, advanceTo, listeners, root }) => {
+    await withRuntime(2, async ({ runtime, dotNet, calls, advanceTo, listeners, root, labels }) => {
         const running = runtime.startRhythm('rhythm', dotNet,
             [{ offsetMilliseconds: 0 }, { offsetMilliseconds: 1000 }], [0, 1000], 2000, labels);
         await advanceTo(12_500);
@@ -123,6 +125,20 @@ test('disconnect pause cancels pending timeline work and does not complete an in
         assert.equal(root.dataset.state, 'ready');
         assert.equal(listeners.has('keydown'), false);
         assert.equal(calls.some(call => call.name === 'CompleteRhythm'), false);
-        assert.equal(calls.filter(call => call.name === 'PlayRhythmMetronomeClick').length, 1);
+        assert.equal(calls.filter(call => call.name === 'AudioClick').length, 1);
+    });
+});
+
+test('External metronome mode keeps visual rhythm timing but suppresses KeyForge click audio', async () => {
+    await withRuntime(2, async ({ runtime, dotNet, calls, advanceTo, activeEvents, labels }) => {
+        labels.audio = false;
+        const running = runtime.startRhythm('rhythm', dotNet,
+            [{ offsetMilliseconds: 0 }, { offsetMilliseconds: 1000 }], [0, 1000], 2000, labels);
+        await advanceTo(14_000);
+        await running;
+
+        assert.equal(activeEvents.length, 2);
+        assert.equal(calls.filter(call => call.name === 'AudioClick').length, 0);
+        assert.equal(calls.some(call => call.name === 'CompleteRhythm'), true);
     });
 });

@@ -121,10 +121,13 @@
         try
         {
             var interval = MetronomeTiming.GetBeatInterval(CurrentBpm);
+            var scheduleStartedAt = System.Diagnostics.Stopwatch.GetTimestamp();
+            var scheduledBeat = 0;
             foreach (var beat in MetronomeTiming.GetCountInBeats(ActiveConfiguration.CountInBeats))
             {
                 await TickAsync(beat, cancellationToken);
-                await Task.Delay(interval, cancellationToken);
+                scheduledBeat++;
+                await WaitUntilBeatAsync(scheduleStartedAt, CurrentBpm, scheduledBeat, cancellationToken);
             }
 
             cancellationToken.ThrowIfCancellationRequested();
@@ -139,7 +142,8 @@
             for (var beat = 1; ; beat = beat == VisualBeatCount ? 1 : beat + 1)
             {
                 await TickAsync(beat, cancellationToken);
-                await Task.Delay(interval, cancellationToken);
+                scheduledBeat++;
+                await WaitUntilBeatAsync(scheduleStartedAt, CurrentBpm, scheduledBeat, cancellationToken);
             }
         }
         catch (OperationCanceledException)
@@ -148,16 +152,29 @@
         }
     }
 
+    private static async Task WaitUntilBeatAsync(
+        long scheduleStartedAt,
+        int bpm,
+        int beatNumber,
+        CancellationToken cancellationToken)
+    {
+        var targetElapsed = MetronomeTiming.GetElapsedAtBeatCount(bpm, beatNumber);
+        var remaining = targetElapsed - System.Diagnostics.Stopwatch.GetElapsedTime(scheduleStartedAt);
+        if (remaining > TimeSpan.Zero)
+        {
+            await Task.Delay(remaining, cancellationToken);
+        }
+    }
+
     private async Task TickAsync(int beat, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         _currentBeat = beat;
-        await InvokeAsync(StateHasChanged);
         if (IsAudioEnabled && !_audioFailed && !await Audio.PlayMetronomeClickAsync())
         {
             _audioFailed = true;
-            await InvokeAsync(StateHasChanged);
         }
+        await InvokeAsync(StateHasChanged);
     }
 
     private async Task StopAsync()

@@ -106,6 +106,21 @@ else if (CurrentExercise is { } exercise)
             </div>
         </section>
 
+        <section class="practice-audio-preferences" aria-label="@UiText.MetronomeSource">
+            <label>
+                <span class="kf-meta">@UiText.MetronomeSource</span>
+                <select value="@_metronomeAudioMode" @onchange="HandleMetronomeAudioModeChanged">
+                    <option value="KeyForge">@UiText.KeyForgeMetronome</option>
+                    <option value="External">@UiText.ExternalMetronome</option>
+                    <option value="Off">@UiText.MetronomeOff</option>
+                </select>
+            </label>
+            @if (_metronomeAudioMode is PracticeMetronomeMode.External)
+            {
+                <p class="kf-text-muted" role="note">@UiText.ExternalMetronomePhaseWarning</p>
+            }
+        </section>
+
         <ExercisePresentation Exercise="exercise" />
 
         @if (_result is null && _runtimeExercise?.Definition is not RhythmExerciseDefinition and not SpeedExerciseDefinition and not FingerIndependenceExerciseDefinition &&
@@ -117,7 +132,7 @@ else if (CurrentExercise is { } exercise)
                 @if (_runtimeExercise.Definition.Metronome is { Enabled: true } metronome)
                 {
                     <MetronomeControl RuntimeExercise="_runtimeExercise" Configuration="metronome"
-                                      AudioEnabled="_internalMidiAudioEnabled" />
+                                      AudioEnabled="IsKeyForgeMetronomeEnabled" />
                 }
             </section>
         }
@@ -130,6 +145,7 @@ else if (CurrentExercise is { } exercise)
                     {
                         <RhythmWorkspace @key="_runtimeExercise"
                                          RuntimeExercise="_runtimeExercise!"
+                                         MetronomeAudioEnabled="IsKeyForgeMetronomeEnabled"
                                          OnCompleted="CompleteInteractiveAttempt" />
                     }
                     else if (IsNoteReadingChallenge)
@@ -160,6 +176,7 @@ else if (CurrentExercise is { } exercise)
                     {
                         <SequenceWorkspace @key="_runtimeExercise"
                                            RuntimeExercise="_runtimeExercise!"
+                                           MetronomeAudioEnabled="IsKeyForgeMetronomeEnabled"
                                            OnCompleted="CompleteInteractiveAttempt" />
                     }
                     else
@@ -385,8 +402,18 @@ else if (CurrentExercise is { } exercise)
     private bool _isSubmitting;
     private bool _submissionError;
     private bool _internalMidiAudioEnabled;
+    private PracticeMetronomeMode _metronomeAudioMode = PracticeMetronomeMode.KeyForge;
+    private bool IsKeyForgeMetronomeEnabled => _metronomeAudioMode is PracticeMetronomeMode.KeyForge;
 
     private void SetMidiAudioMode(bool enabled) => _internalMidiAudioEnabled = enabled;
+
+    private void HandleMetronomeAudioModeChanged(ChangeEventArgs args)
+    {
+        if (Enum.TryParse<PracticeMetronomeMode>(args.Value?.ToString(), out var mode))
+        {
+            _metronomeAudioMode = mode;
+        }
+    }
 
     private ExerciseDefinition? CurrentExercise => _session?.GetCurrentExercise();
     private bool HasInteractiveChallenge => _runtimeExercise?.Challenge.ExpectedInputs.Count > 0;

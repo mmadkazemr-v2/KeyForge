@@ -1,11 +1,9 @@
 @using KeyForge.Features.Exercises.Models
 @using KeyForge.Features.Practice.Models
 @using KeyForge.Features.Practice.Services
-@using KeyForge.Components.Audio
 @using Microsoft.JSInterop
 @implements IAsyncDisposable
 @inject IJSRuntime JS
-@inject IAudioPlaybackService Audio
 @inject MidiInputRouter MidiInput
 
 <div id="@_workspaceId"
@@ -77,6 +75,7 @@
     {
         <MetronomeControl RuntimeExercise="RuntimeExercise"
                           Configuration="metronome"
+                          AudioEnabled="MetronomeAudioEnabled"
                           StopAfterCountIn="true"
                           OnCountInCompleted="StartTimelineAsync"
                           OnRunningChanged="HandleMetronomeRunningChanged" />
@@ -104,6 +103,9 @@
 
     [Parameter, EditorRequired]
     public required EventCallback<DateTime> OnCompleted { get; set; }
+
+    [Parameter]
+    public bool MetronomeAudioEnabled { get; set; } = true;
 
     private readonly string _workspaceId = $"rhythm-{Guid.NewGuid():N}";
     private IJSObjectReference? _module;
@@ -150,9 +152,13 @@
             MidiInput.SetTimelineOrigin(null);
         }
         _pausedForMidi = false;
+        var startedFromCountIn = _metronomeRunning;
         _started = true;
         _startFailed = false;
-        await InvokeAsync(StateHasChanged);
+        if (!startedFromCountIn)
+        {
+            await InvokeAsync(StateHasChanged);
+        }
 
         try
         {
@@ -177,7 +183,7 @@
                     active = UiText.RhythmActive,
                     evaluating = UiText.EvaluatingRhythm,
                     digits = UiText.NumeralDigits,
-                    audio = RuntimeExercise.Definition.Metronome?.Audio == true
+                    audio = MetronomeAudioEnabled
                 });
         }
         catch (JSException)
@@ -272,17 +278,6 @@
 
         _isActive = false;
         await OnCompleted.InvokeAsync(DateTime.UtcNow);
-    }
-
-    [JSInvokable]
-    public async Task PlayRhythmMetronomeClick()
-    {
-        if (RuntimeExercise.Definition.Metronome?.Audio != true)
-        {
-            return;
-        }
-
-        await Audio.PlayMetronomeClickAsync();
     }
 
     public async ValueTask DisposeAsync()

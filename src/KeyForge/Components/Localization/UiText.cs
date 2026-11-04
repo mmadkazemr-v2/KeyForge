@@ -93,6 +93,13 @@ public static class UiText
     public static string MidiLatencyLimitations => Select(
         "رفت‌وبرگشت interop زمان یک‌طرفه یا پایان رندر UI نیست؛ این اندازه‌گیری تأخیر فیزیکی کلید تا سیستم‌عامل یا صدا را نشان نمی‌دهد.",
         "Interop round trip is not one-way delivery or completed UI rendering. These measurements do not represent physical key-to-OS or audio latency.");
+    public static string MetronomeSource => Select("صدای مترونوم تمرین", "Practice metronome sound");
+    public static string KeyForgeMetronome => Select("مترونوم KeyForge", "KeyForge metronome");
+    public static string ExternalMetronome => Select("مترونوم خارجی", "External metronome");
+    public static string MetronomeOff => Select("خاموش", "Off");
+    public static string ExternalMetronomePhaseWarning => Select(
+        "فاز مترونوم خارجی با خط زمانی تمرین KeyForge همگام نیست؛ امتیاز ریتم فقط نسبت به شروع داخلی KeyForge سنجیده می‌شود.",
+        "The external metronome phase is not synchronized with KeyForge. Rhythm timing is measured from KeyForge's own exercise start, not the external downbeat.");
     public static string OptionalMidi => Select("اختیاری — برای پیانوی دیجیتال", "Optional — for digital pianos");
     public static string EnableMidi => Select("فعال‌سازی میدی", "Enable MIDI");
     public static string MidiDevice => Select("دستگاه میدی", "MIDI device");

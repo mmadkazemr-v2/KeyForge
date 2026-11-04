@@ -22,4 +22,15 @@ public static class MetronomeTiming
 
         return Enumerable.Range(1, countInBeats).ToArray();
     }
+
+    /// <summary>Returns the ideal monotonic timeline offset after the specified number of beats.</summary>
+    public static TimeSpan GetElapsedAtBeatCount(int bpm, int beatCount)
+    {
+        if (beatCount < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(beatCount));
+        }
+
+        return TimeSpan.FromTicks(checked(GetBeatInterval(bpm).Ticks * beatCount));
+    }
 }
