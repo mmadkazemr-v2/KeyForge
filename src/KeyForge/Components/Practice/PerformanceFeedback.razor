@@ -4,7 +4,7 @@
     <p>@ReleaseLabel(PerformanceReleaseAccuracy.Missing): @Details.UnexpectedReleases</p>
     @foreach (var note in Details.Notes)
     {
-        <p><bdi>@note.Pitch</bdi>: @(note.IsCorrect ? UiText.CorrectAnswer : UiText.IncorrectAnswer)
+        <p><bdi>@note.Pitch</bdi> (@note.Voice / @UiText.GetPracticeHand(note.Hand)): @(note.IsCorrect ? UiText.CorrectAnswer : UiText.IncorrectAnswer)
             <bdi>@note.OnsetErrorMilliseconds?.ToString("+0.##;-0.##;0") ms</bdi>
             @if (note.ReleaseAccuracy != PerformanceReleaseAccuracy.NotScored)
             {

@@ -38,14 +38,16 @@ public sealed class PerformanceExerciseEvaluator
             }
             notes.Add(new PerformanceNoteEvaluation(target.Pitch!, target.Onset, matched ? actual[candidate!.Value].Offset - shift : null, error,
                 matched && releaseAccuracy is PerformanceReleaseAccuracy.NotScored or PerformanceReleaseAccuracy.Correct)
-            { DurationErrorMilliseconds = durationError, ReleaseAccuracy = releaseAccuracy });
+            { Voice = target.Voice, Hand = target.Hand, DurationErrorMilliseconds = durationError, ReleaseAccuracy = releaseAccuracy });
         }
         var score = Math.Clamp((int)Math.Round(notes.Count(n => n.IsCorrect) * 100d / expected.Length) - remaining.Count * 5 - (details.ScoringMode == PerformanceScoringMode.KeyHold ? pairing.UnexpectedReleases * 5 : 0), 0, 100);
+        var completeChords = notes.GroupBy(n => n.ExpectedOnset).Where(g => g.Count() > 1).All(g => g.All(n => n.IsCorrect));
+        var successful = score >= 80 && completeChords;
         return new ExerciseEvaluationResult
         {
             Score = score,
-            IsSuccessful = score >= 80,
-            Feedback = actual.Count == 0 ? ExerciseEvaluationFeedback.NoInput : score >= 80 ? ExerciseEvaluationFeedback.Correct : ExerciseEvaluationFeedback.Incorrect,
+            IsSuccessful = successful,
+            Feedback = actual.Count == 0 ? ExerciseEvaluationFeedback.NoInput : successful ? ExerciseEvaluationFeedback.Correct : ExerciseEvaluationFeedback.Incorrect,
             Performance = new PerformanceEvaluationDetails { Notes = notes, UnexpectedReleases = pairing.UnexpectedReleases, ExtraNotes = remaining.Count, TimingReference = details.TimingReference }
         };
     }

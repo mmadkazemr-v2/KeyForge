@@ -13,6 +13,8 @@ public sealed class PerformanceChallengeDetails
 
 public sealed record PerformanceNoteEvaluation(string Pitch, TimeSpan ExpectedOnset, TimeSpan? ActualOnset, double? OnsetErrorMilliseconds, bool IsCorrect)
 {
+    public string? Voice { get; init; }
+    public PracticeHand Hand { get; init; }
     public double? DurationErrorMilliseconds { get; init; }
     public PerformanceReleaseAccuracy ReleaseAccuracy { get; init; }
 }

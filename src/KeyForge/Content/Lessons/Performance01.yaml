@@ -18,3 +18,18 @@ exercises:
         - { pitch: D4, onsetBeats: 1, durationBeats: 2, voice: melody, hand: right }
         - { pitch: E4, onsetBeats: 3, durationBeats: 3, voice: melody, hand: right }
         - { pitch: F4, onsetBeats: 6, durationBeats: 4, voice: melody, hand: right }
+
+  - id: original-two-part-phrase
+    type: sequence
+    title: Original two-part phrase
+    description: Sustain left-hand C3 while the right hand plays. Parts are instructions, not detected hands.
+    tempo: { defaultBpm: 60 }
+    performance:
+      scoringMode: keyHold
+      timingReference: firstAttack
+      events:
+        - { pitch: C3, onsetBeats: 0, durationBeats: 4, voice: bass, hand: left }
+        - { pitch: C4, onsetBeats: 0, durationBeats: 1, voice: melody, hand: right }
+        - { pitch: D4, onsetBeats: 1, durationBeats: 1, voice: melody, hand: right }
+        - { pitch: E4, onsetBeats: 2, durationBeats: 1, voice: melody, hand: right }
+        - { pitch: C4, onsetBeats: 3, durationBeats: 1, voice: melody, hand: right }
