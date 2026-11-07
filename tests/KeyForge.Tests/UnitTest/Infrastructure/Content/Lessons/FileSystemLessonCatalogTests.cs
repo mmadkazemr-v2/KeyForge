@@ -49,6 +49,20 @@ public sealed class FileSystemLessonCatalogTests : IDisposable
     }
 
     [Fact]
+    public void GetAll_DiscoversRootAndNestedYamlInDeterministicOrder()
+    {
+        WriteLessonFile("root.yaml", "root-lesson", order: 2);
+        WriteLessonFile(Path.Combine("LentoVivo", "Session04.yaml"), "lento-session-04", order: 1);
+
+        var catalog = CreateCatalog();
+
+        Assert.Equal(
+            ["lento-session-04", "root-lesson"],
+            catalog.GetAll().Select(lesson => lesson.Id));
+        Assert.NotNull(catalog.GetById("lento-session-04"));
+    }
+
+    [Fact]
     public void GetById_ReturnsCorrectLesson()
     {
         WriteLessonFile("lesson-real.yaml", "lesson-real-id", order: 1);
@@ -143,6 +157,61 @@ public sealed class FileSystemLessonCatalogTests : IDisposable
     }
 
     [Fact]
+    public void Catalog_DetectsDuplicateLessonIdsAcrossRootAndNestedFiles()
+    {
+        WriteLessonFile("same.yaml", "same-lesson", order: 1);
+        WriteLessonFile(Path.Combine("nested", "same.yaml"), "same-lesson", order: 2);
+
+        var exception = Assert.Throws<DuplicateLessonIdException>(CreateCatalog);
+
+        Assert.Contains("same-lesson", exception.Message);
+        Assert.Contains("nested", exception.Message);
+    }
+
+    [Fact]
+    public void Catalog_AllowsRepeatedExerciseIdsInDifferentLessons()
+    {
+        WriteLessonWithExercise("one.yaml", "lesson-one", "ex-01");
+        WriteLessonWithExercise("two.yaml", "lesson-two", "ex-01");
+
+        var catalog = CreateCatalog();
+
+        Assert.Equal(2, catalog.GetAll().Count);
+        Assert.All(catalog.GetAll(), lesson => Assert.Equal("ex-01", Assert.Single(lesson.Exercises).Id));
+    }
+
+    [Fact]
+    public void Catalog_RejectsConflictingMetadataForOneCourseId()
+    {
+        WriteLessonWithCourse("a.yaml", "lesson-a", "lento-vivo", "LentoVivo", 20);
+        WriteLessonWithCourse("b.yaml", "lesson-b", "lento-vivo", "Another title", 20);
+
+        var exception = Assert.Throws<CourseMetadataConflictException>(CreateCatalog);
+
+        Assert.Equal("lento-vivo", exception.CourseId);
+        Assert.Contains("a.yaml", exception.OriginalFilePath);
+        Assert.Contains("b.yaml", exception.ConflictingFilePath);
+    }
+
+    [Fact]
+    public void Catalog_RejectsDuplicateExerciseIdsWithinOneLesson()
+    {
+        File.WriteAllText(
+            Path.Combine(_contentDirectory, "duplicate-exercises.yaml"),
+            """
+            id: lesson-duplicate-exercises
+            order: 1
+            exercises:
+              - { id: repeated, type: rhythm }
+              - { id: REPEATED, type: rhythm }
+            """);
+
+        var exception = Assert.Throws<LessonContentLoadException>(CreateCatalog);
+
+        Assert.Contains("duplicate exercise id", exception.InnerException!.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void Catalog_InvalidYaml_ThrowsMeaningfulException()
     {
         File.WriteAllText(Path.Combine(_contentDirectory, "broken-lesson.yaml"), "id: \"unterminated\n");
@@ -196,7 +265,38 @@ public sealed class FileSystemLessonCatalogTests : IDisposable
         return new FileSystemLessonCatalog(options, new YamlLessonParser());
     }
 
-    private void WriteLessonFile(string fileName, string id, int order) => File.WriteAllText(
-            Path.Combine(_contentDirectory, fileName),
+    private void WriteLessonFile(string fileName, string id, int order)
+    {
+        var filePath = Path.Combine(_contentDirectory, fileName);
+        Directory.CreateDirectory(Path.GetDirectoryName(filePath)!);
+        File.WriteAllText(
+            filePath,
             $"id: {id}\norder: {order}\n");
+    }
+
+    private void WriteLessonWithExercise(string fileName, string lessonId, string exerciseId)
+    {
+        var filePath = Path.Combine(_contentDirectory, fileName);
+        Directory.CreateDirectory(Path.GetDirectoryName(filePath)!);
+        File.WriteAllText(filePath, $"""
+            id: {lessonId}
+            order: 1
+            exercises:
+              - id: {exerciseId}
+                type: rhythm
+            """);
+    }
+
+    private void WriteLessonWithCourse(string fileName, string lessonId, string courseId, string courseName, int courseOrder)
+    {
+        var filePath = Path.Combine(_contentDirectory, fileName);
+        File.WriteAllText(filePath, $"""
+            id: {lessonId}
+            order: 1
+            course:
+              id: {courseId}
+              name: "{courseName}"
+              order: {courseOrder}
+            """);
+    }
 }

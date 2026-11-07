@@ -46,8 +46,29 @@ internal static class YamlLessonValidator
     {
         ArgumentNullException.ThrowIfNull(lesson);
 
+        if (lesson.Course is { } course)
+        {
+            try
+            {
+                course.Validate();
+            }
+            catch (Exception ex) when (ex is InvalidOperationException or ArgumentException)
+            {
+                throw new YamlLessonParseException(
+                    $"Lesson '{lesson.Id}', field 'course': {ex.Message}", ex);
+            }
+        }
+
+        var exerciseIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
         foreach (var exercise in lesson.Exercises)
         {
+            if (!string.IsNullOrWhiteSpace(exercise.Id) && !exerciseIds.Add(exercise.Id))
+            {
+                throw new YamlLessonParseException(
+                    $"Lesson '{lesson.Id}' contains duplicate exercise id '{exercise.Id}'.");
+            }
+
             try
             {
                 exercise.Tempo?.Validate();

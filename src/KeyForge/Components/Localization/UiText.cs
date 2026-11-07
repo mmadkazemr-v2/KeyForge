@@ -153,6 +153,9 @@ public static class UiText
     public static string MetronomeClick => Select("کلیک مترونوم", "Metronome click");
 
     public static string LearningPath => Select("مسیر یادگیری", "Learning path");
+    public static string PracticeLibrary => Select("کتابخانه تمرین", "Practice library");
+    public static string Expand => Select("گسترش", "Expand");
+    public static string Collapse => Select("بستن", "Collapse");
     public static string LessonsDescription => Select(
         "مهارت‌های پیانو را با جلسه‌های کوتاه و هدفمند، قدم‌به‌قدم تقویت کنید.",
         "Develop your piano skills step by step with short, focused sessions.");
@@ -385,6 +388,11 @@ public static class UiText
     public static string LessonCompletionStatus => Select("وضعیت تکمیل درس", "Lesson completion status");
     public static string LessonCompleted => Select("درس تکمیل شد", "Lesson completed");
     public static string LessonIncomplete => Select("درس هنوز تکمیل نشده است", "Lesson not completed yet");
+    public static string ExerciseCompletedStatus => Select("تمرین تکمیل شده", "Exercise completed");
+    public static string ExerciseNotCompletedStatus => Select("تمرین تکمیل نشده", "Exercise not completed");
+    public static string GetCompletedExerciseProgress(int completed, int total) => IsPersian
+        ? $"{completed} از {total} تمرین"
+        : $"{completed} / {total} exercises";
     public static string ReturnToLessons => Select("بازگشت به درس‌ها", "Return to lessons");
     public static string PracticeNotFound => Select("جلسه تمرین پیدا نشد", "Practice session not found");
     public static string PracticeNotFoundDescription => Select(

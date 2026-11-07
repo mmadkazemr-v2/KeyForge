@@ -12,6 +12,9 @@ namespace KeyForge.Features.Lessons.Services;
 /// </summary>
 public interface IExerciseCompletionEvaluator
 {
+    /// <summary>Returns the current lesson exercises with at least one successful recorded attempt.</summary>
+    public IReadOnlySet<string> GetCompletedExerciseIds(string lessonId, IReadOnlyList<ExerciseDefinition> exercises);
+
     /// <summary>Returns whether a completed successful attempt exists, optionally meeting a score threshold.</summary>
     public bool HasSuccessfulAttempt(string lessonId, int? minimumScore = null);
 

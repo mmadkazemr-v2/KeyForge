@@ -23,7 +23,7 @@
             <h1 class="kf-page-title">@UiText.PracticeNotFound</h1>
             <p class="kf-page-header__description">@UiText.PracticeNotFoundDescription</p>
         </div>
-        <a class="kf-button kf-button--secondary" href="/lessons">@UiText.ReturnToLessons</a>
+        <a class="kf-button kf-button--secondary" href="@GetLibraryUrl()">@UiText.ReturnToLessons</a>
     </header>
 }
 else if (_startState is PracticeStartState.Locked)
@@ -34,7 +34,7 @@ else if (_startState is PracticeStartState.Locked)
             <h1 class="kf-page-title">@UiText.PracticeLocked</h1>
             <p class="kf-page-header__description">@UiText.PracticeLockedDescription</p>
         </div>
-        <a class="kf-button kf-button--secondary" href="/lessons">@UiText.ReturnToLessons</a>
+        <a class="kf-button kf-button--secondary" href="@GetLibraryUrl()">@UiText.ReturnToLessons</a>
     </header>
 }
 else if (_startState is PracticeStartState.Error)
@@ -45,7 +45,7 @@ else if (_startState is PracticeStartState.Error)
             <h1 class="kf-page-title">@UiText.PracticeStartError</h1>
             <p class="kf-page-header__description">@UiText.PracticeStartErrorDescription</p>
         </div>
-        <a class="kf-button kf-button--secondary" href="/lessons">@UiText.ReturnToLessons</a>
+        <a class="kf-button kf-button--secondary" href="@GetLibraryUrl()">@UiText.ReturnToLessons</a>
     </header>
 }
 else if (_session?.IsFinished == true)
@@ -56,7 +56,7 @@ else if (_session?.IsFinished == true)
             <h1 class="kf-page-title">@UiText.SessionComplete</h1>
             <p class="kf-page-header__description">@UiText.SessionCompleteDescription</p>
         </div>
-        <a class="kf-button kf-button--primary" href="/lessons">@UiText.ReturnToLessons</a>
+        <a class="kf-button kf-button--primary" href="@GetLibraryUrl()">@UiText.ReturnToLessons</a>
     </header>
 
     <section class="kf-card practice-completion" role="status" aria-labelledby="session-summary-title">
@@ -87,7 +87,7 @@ else if (CurrentExercise is { } exercise)
             <h1 class="kf-page-title">@_lesson?.Title</h1>
             <p class="kf-page-header__description">@UiText.PracticeSessionDescription</p>
         </div>
-        <a class="kf-button kf-button--secondary" href="/lessons">@UiText.ReturnToLessons</a>
+        <a class="kf-button kf-button--secondary" href="@GetLibraryUrl()">@UiText.ReturnToLessons</a>
     </header>
 
     <div class="kf-content-stack practice-session">
@@ -400,6 +400,9 @@ else if (CurrentExercise is { } exercise)
     [Parameter]
     public string LessonId { get; set; } = string.Empty;
 
+    [SupplyParameterFromQuery(Name = "exercise")]
+    public string? ExerciseId { get; set; }
+
     private PracticeStartState _startState;
     private LessonDefinition? _lesson;
     private LessonListItem? _lessonState;
@@ -487,6 +490,31 @@ else if (CurrentExercise is { } exercise)
         {
             _startState = PracticeStartState.NotFound;
             return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(ExerciseId))
+        {
+            var selectedIndex = -1;
+            for (var index = 0; index < _session.Exercises.Count; index++)
+            {
+                if (string.Equals(_session.Exercises[index].Id, ExerciseId, StringComparison.OrdinalIgnoreCase))
+                {
+                    selectedIndex = index;
+                    break;
+                }
+            }
+
+            if (selectedIndex < 0)
+            {
+                _startState = PracticeStartState.NotFound;
+                _session = null;
+                return;
+            }
+
+            while (_session.CurrentExerciseIndex < selectedIndex)
+            {
+                _session.Next();
+            }
         }
 
         _startState = PracticeStartState.Ready;
@@ -577,6 +605,19 @@ else if (CurrentExercise is { } exercise)
     {
         _lessonState = LessonQuery.GetLessons().FirstOrDefault(lesson =>
             string.Equals(lesson.Id, LessonId, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private string GetLibraryUrl()
+    {
+        if (_lesson is null)
+        {
+            return "/lessons";
+        }
+
+        var exerciseId = CurrentExercise?.Id ?? ExerciseId;
+        return string.IsNullOrWhiteSpace(exerciseId)
+            ? $"/lessons?lesson={Uri.EscapeDataString(_lesson.Id)}"
+            : $"/lessons?lesson={Uri.EscapeDataString(_lesson.Id)}&exercise={Uri.EscapeDataString(exerciseId)}";
     }
 
     private void ResetPageState()

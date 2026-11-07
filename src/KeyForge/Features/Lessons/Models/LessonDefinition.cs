@@ -37,6 +37,12 @@ public class LessonDefinition
     public int EstimatedMinutes { get; set; }
 
     /// <summary>
+    /// Optional explicit practice-library course identity. Legacy lessons
+    /// without this metadata are grouped under KeyForge Fundamentals.
+    /// </summary>
+    public CourseMetadata? Course { get; set; }
+
+    /// <summary>
     /// Describes when this lesson becomes available to the learner.
     /// Expressed in content and evaluated by the progression engine.
     /// </summary>

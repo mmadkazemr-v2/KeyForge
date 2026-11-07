@@ -40,18 +40,31 @@ public sealed class FileSystemLessonCatalog : ILessonCatalog
     private static IReadOnlyList<LessonDefinition> LoadLessons(string contentDirectory, IYamlLessonParser parser)
     {
         var lessonFiles = Directory
-            .EnumerateFiles(contentDirectory)
+            .EnumerateFiles(contentDirectory, "*", SearchOption.AllDirectories)
             .Where(LessonContentValidator.IsLessonFile)
-            .OrderBy(file => file, StringComparer.Ordinal)
+            .OrderBy(file => Path.GetRelativePath(contentDirectory, file), StringComparer.OrdinalIgnoreCase)
+            .ThenBy(file => Path.GetRelativePath(contentDirectory, file), StringComparer.Ordinal)
             .ToArray();
 
         var lessons = new List<LessonDefinition>(lessonFiles.Length);
         var entries = new List<(string LessonId, string FilePath)>(lessonFiles.Length);
+        var courseEntries = new Dictionary<string, (CourseMetadata Metadata, string FilePath)>(
+            StringComparer.OrdinalIgnoreCase);
 
         foreach (var file in lessonFiles)
         {
             var lesson = LoadLesson(file, parser);
             entries.Add((lesson.Id, file));
+            if (lesson.Course is { } course)
+            {
+                if (courseEntries.TryGetValue(course.Id, out var original) &&
+                    !HaveSameCourseMetadata(original.Metadata, course))
+                {
+                    throw new CourseMetadataConflictException(course.Id, original.FilePath, file);
+                }
+
+                courseEntries.TryAdd(course.Id, (course, file));
+            }
             lessons.Add(lesson);
         }
 
@@ -62,6 +75,12 @@ public sealed class FileSystemLessonCatalog : ILessonCatalog
             .ToList()
             .AsReadOnly();
     }
+
+    private static bool HaveSameCourseMetadata(CourseMetadata left, CourseMetadata right) =>
+        string.Equals(left.Id, right.Id, StringComparison.OrdinalIgnoreCase) &&
+        string.Equals(left.Name, right.Name, StringComparison.Ordinal) &&
+        string.Equals(left.Description, right.Description, StringComparison.Ordinal) &&
+        left.Order == right.Order;
 
     private static LessonDefinition LoadLesson(string file, IYamlLessonParser parser)
     {

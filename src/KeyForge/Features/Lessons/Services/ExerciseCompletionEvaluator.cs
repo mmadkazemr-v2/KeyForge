@@ -29,20 +29,24 @@ public sealed class ExerciseCompletionEvaluator : IExerciseCompletionEvaluator
         ArgumentNullException.ThrowIfNull(lessonId);
         ArgumentNullException.ThrowIfNull(exercises);
 
-        if (exercises.Count == 0)
-        {
-            return true;
-        }
-
-        var attempts = _recorder.GetAttemptsByLesson(lessonId);
-
-        var successfulIds = new HashSet<string>(
-            attempts
-                .Where(IsCompletedSuccess)
-                .Select(a => a.ExerciseId),
-            StringComparer.Ordinal);
-
+        var successfulIds = GetCompletedExerciseIds(lessonId, exercises);
         return exercises.All(e => successfulIds.Contains(e.Id));
+    }
+
+    /// <inheritdoc />
+    public IReadOnlySet<string> GetCompletedExerciseIds(string lessonId, IReadOnlyList<ExerciseDefinition> exercises)
+    {
+        ArgumentNullException.ThrowIfNull(lessonId);
+        ArgumentNullException.ThrowIfNull(exercises);
+
+        var registeredIds = exercises
+            .Select(exercise => exercise.Id)
+            .ToHashSet(StringComparer.Ordinal);
+
+        return _recorder.GetAttemptsByLesson(lessonId)
+            .Where(attempt => IsCompletedSuccess(attempt) && registeredIds.Contains(attempt.ExerciseId))
+            .Select(attempt => attempt.ExerciseId)
+            .ToHashSet(StringComparer.Ordinal);
     }
 
     /// <inheritdoc />
@@ -55,5 +59,5 @@ public sealed class ExerciseCompletionEvaluator : IExerciseCompletionEvaluator
     }
 
     private static bool IsCompletedSuccess(ExerciseAttempt attempt) =>
-        attempt.IsSuccessful && attempt.CompletedAt is not null && attempt.Score is not null;
+        attempt is { IsSuccessful: true, CompletedAt: not null, Score: not null };
 }

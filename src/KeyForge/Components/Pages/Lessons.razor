@@ -1,19 +1,19 @@
 @page "/lessons"
 @using KeyForge.Features.Lessons.Models
 @using KeyForge.Features.Lessons.Services
-@inject ILessonProgressQueryService LessonQuery
+@inject IPracticeLibraryQueryService LibraryQuery
 
-<PageTitle>@UiText.Lessons - @UiText.ProductName</PageTitle>
+<PageTitle>@UiText.PracticeLibrary - @UiText.ProductName</PageTitle>
 
 <header class="kf-page-header">
     <div>
         <p class="kf-meta">@UiText.LearningPath</p>
-        <h1 id="lesson-catalog-title" class="kf-page-title">@UiText.Lessons</h1>
+        <h1 id="practice-library-title" class="kf-page-title">@UiText.PracticeLibrary</h1>
         <p class="kf-page-header__description">@UiText.LessonsDescription</p>
     </div>
 </header>
 
-@if (_lessons.Count == 0)
+@if (_courses.Count == 0)
 {
     <section class="kf-card" role="status" aria-labelledby="empty-lessons-title">
         <div class="kf-card__body">
@@ -24,73 +24,143 @@
 }
 else
 {
-    <section class="kf-card-grid" aria-labelledby="lesson-catalog-title">
-        @foreach (var lesson in _lessons)
-        {
-            <article class="kf-card @GetCardStatusCssClass(lesson)"
-                     aria-disabled="@GetAriaDisabled(lesson)">
-                <div class="kf-card__body">
-                    <div class="kf-card__header">
-                        <h2 class="kf-card__title">@lesson.Title</h2>
-                        <span class="kf-status-badge @GetStatusBadgeCssClass(lesson)">@GetStatusLabel(lesson)</span>
+    <nav class="practice-library" aria-labelledby="practice-library-title">
+        <ul class="practice-library__tree">
+            @foreach (var course in _courses)
+            {
+                var courseExpanded = _expandedCourses.Contains(course.Metadata.Id);
+                var coursePanelId = GetCoursePanelId(course.Metadata.Id);
+                <li class="practice-library__course">
+                    <div class="practice-library__row practice-library__course-row">
+                        <button class="practice-library__toggle" type="button"
+                                aria-expanded="@courseExpanded" aria-controls="@coursePanelId"
+                                aria-label="@GetToggleLabel(course.Metadata.Name, courseExpanded)"
+                                @onclick="() => ToggleCourse(course.Metadata.Id)">
+                            <span aria-hidden="true">@(courseExpanded ? "▼" : "▶")</span>
+                        </button>
+                        <div class="practice-library__title-block">
+                            <span class="practice-library__title">@course.Metadata.Name</span>
+                            @if (!string.IsNullOrWhiteSpace(course.Metadata.Description))
+                            {
+                                <span class="practice-library__description">@course.Metadata.Description</span>
+                            }
+                        </div>
+                        <span class="practice-library__progress">@UiText.GetCompletedExerciseProgress(course.CompletedExerciseCount, course.ExerciseCount)</span>
                     </div>
-
-                    <p class="kf-card__description">@lesson.Description</p>
-                </div>
-                <ul class="kf-card__meta">
-                    <li>@UiText.Level: @UiText.GetLessonLevel(lesson.Level)</li>
-                    <li>@UiText.EstimatedTime: @lesson.EstimatedMinutes @UiText.Minute</li>
-                    @if (lesson.BestScore is { } bestScore)
-                    {
-                        <li>@UiText.BestScore: <bdi>@bestScore%</bdi></li>
-                    }
-                    @if (CanOpenLesson(lesson))
-                    {
-                        <li>
-                            <a class="kf-button kf-button--secondary"
-                               href="@GetLessonUrl(lesson.Id)"
-                               aria-label="@($"{UiText.ViewLesson}: {lesson.Title}")">
-                                @UiText.ViewLesson
-                            </a>
-                        </li>
-                    }
-                </ul>
-            </article>
-        }
-    </section>
+                    <ul id="@coursePanelId" class="practice-library__tree practice-library__tree--sessions" hidden="@(!courseExpanded)">
+                        @foreach (var session in course.Sessions)
+                        {
+                            var lesson = session.Lesson;
+                            var sessionExpanded = _expandedSessions.Contains(lesson.Id);
+                            var sessionPanelId = GetSessionPanelId(lesson.Id);
+                            <li class="practice-library__session">
+                                <div class="practice-library__row">
+                                    <button class="practice-library__toggle" type="button"
+                                            aria-expanded="@sessionExpanded" aria-controls="@sessionPanelId"
+                                            aria-label="@GetToggleLabel(lesson.Title, sessionExpanded)"
+                                            @onclick="() => ToggleSession(lesson.Id)">
+                                        <span aria-hidden="true">@(sessionExpanded ? "▼" : "▶")</span>
+                                    </button>
+                                    <a class="practice-library__session-link" href="@GetLessonUrl(lesson.Id)">
+                                        <span class="practice-library__title">@lesson.Title</span>
+                                        <span class="kf-status-badge @GetStatusCssClass(lesson)">@UiText.GetLessonStatus(lesson.IsUnlocked, lesson.IsCompleted)</span>
+                                    </a>
+                                    <span class="practice-library__progress">@UiText.GetCompletedExerciseProgress(session.CompletedExerciseCount, session.ExerciseCount)</span>
+                                </div>
+                                <ul id="@sessionPanelId" class="practice-library__tree practice-library__tree--exercises" hidden="@(!sessionExpanded)">
+                                    @foreach (var exercise in session.Exercises)
+                                    {
+                                        var selected = IsSelected(lesson.Id, exercise.Id);
+                                        <li class="practice-library__exercise">
+                                            <a class="practice-library__exercise-link @(selected ? "is-selected" : null)"
+                                               href="@GetExerciseUrl(lesson.Id, exercise.Id)"
+                                               aria-current="@(selected ? "page" : null)"
+                                               aria-label="@($"{exercise.Title}. {GetExerciseStatus(exercise)}")">
+                                                <span class="practice-library__exercise-title">@exercise.Title</span>
+                                                <span class="practice-library__exercise-status">@GetExerciseStatus(exercise)</span>
+                                            </a>
+                                        </li>
+                                    }
+                                </ul>
+                            </li>
+                        }
+                    </ul>
+                </li>
+            }
+        </ul>
+    </nav>
 }
 
 @code {
-    private IReadOnlyList<LessonListItem> _lessons = [];
+    [SupplyParameterFromQuery(Name = "lesson")]
+    public string? SelectedLessonId { get; set; }
 
-    protected override void OnInitialized()
+    [SupplyParameterFromQuery(Name = "exercise")]
+    public string? SelectedExerciseId { get; set; }
+
+    private IReadOnlyList<PracticeLibraryCourse> _courses = [];
+    private readonly HashSet<string> _expandedCourses = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _expandedSessions = new(StringComparer.OrdinalIgnoreCase);
+
+    protected override void OnParametersSet()
     {
-        _lessons = LessonQuery.GetLessons();
+        _courses = LibraryQuery.GetCourses();
+        if (string.IsNullOrWhiteSpace(SelectedLessonId))
+        {
+            return;
+        }
+
+        var selected = _courses.SelectMany(course => course.Sessions.Select(session => (course, session)))
+            .FirstOrDefault(item => string.Equals(item.session.Lesson.Id, SelectedLessonId, StringComparison.OrdinalIgnoreCase));
+        if (selected.session is not null)
+        {
+            _expandedCourses.Add(selected.course.Metadata.Id);
+            _expandedSessions.Add(selected.session.Lesson.Id);
+        }
     }
 
-    private static string GetStatusLabel(LessonListItem lesson) =>
-        UiText.GetLessonStatus(lesson.IsUnlocked, lesson.IsCompleted);
+    private void ToggleCourse(string courseId)
+    {
+        if (!_expandedCourses.Add(courseId))
+        {
+            _expandedCourses.Remove(courseId);
+        }
+    }
 
-    private static string GetStatusBadgeCssClass(LessonListItem lesson) => lesson switch
+    private void ToggleSession(string lessonId)
+    {
+        if (!_expandedSessions.Add(lessonId))
+        {
+            _expandedSessions.Remove(lessonId);
+        }
+    }
+
+    private bool IsSelected(string lessonId, string exerciseId) =>
+        string.Equals(SelectedLessonId, lessonId, StringComparison.OrdinalIgnoreCase) &&
+        string.Equals(SelectedExerciseId, exerciseId, StringComparison.OrdinalIgnoreCase);
+
+    private string GetExerciseUrl(string lessonId, string exerciseId) =>
+        $"/practice/{Uri.EscapeDataString(lessonId)}?exercise={Uri.EscapeDataString(exerciseId)}";
+
+    private static string GetLessonUrl(string lessonId) => $"/lessons/{Uri.EscapeDataString(lessonId)}";
+
+    private string GetExerciseStatus(PracticeLibraryExercise exercise) => exercise.IsCompleted
+        ? UiText.ExerciseCompletedStatus
+        : UiText.ExerciseNotCompletedStatus;
+
+    private static string GetToggleLabel(string title, bool expanded) =>
+        $"{(expanded ? UiText.Collapse : UiText.Expand)} {title}";
+
+    private static string GetStatusCssClass(LessonListItem lesson) => lesson switch
     {
         { IsCompleted: true } => "kf-status-badge--completed",
         { IsUnlocked: true } => "kf-status-badge--available",
         _ => "kf-status-badge--locked"
     };
 
-    private static string GetCardStatusCssClass(LessonListItem lesson) => lesson switch
-    {
-        { IsCompleted: true } => "kf-card--completed",
-        { IsUnlocked: true } => "kf-card--available",
-        _ => "kf-card--locked"
-    };
+    private static string GetCoursePanelId(string id) => $"course-{MakeDomId(id)}";
+    private static string GetSessionPanelId(string id) => $"session-{MakeDomId(id)}";
 
-    private static string? GetAriaDisabled(LessonListItem lesson) =>
-        CanOpenLesson(lesson) ? null : "true";
-
-    private static bool CanOpenLesson(LessonListItem lesson) =>
-        lesson.IsUnlocked || lesson.IsCompleted;
-
-    private static string GetLessonUrl(string lessonId) =>
-        $"/lessons/{Uri.EscapeDataString(lessonId)}";
+    private static string MakeDomId(string id) => string.Concat(id.Select(character =>
+        char.IsLetterOrDigit(character) ? character : '-'));
 }

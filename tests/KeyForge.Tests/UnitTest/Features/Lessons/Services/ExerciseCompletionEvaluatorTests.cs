@@ -168,6 +168,23 @@ public sealed class ExerciseCompletionEvaluatorTests
         Assert.False(evaluator.AreAllExercisesCompleted("lesson-01", exercises));
     }
 
+    [Fact]
+    public void GetCompletedExerciseIds_UsesSuccessfulAttemptsAndCurrentLessonDefinitions()
+    {
+        var recorder = new InMemoryExerciseAttemptRecorder();
+        recorder.Record(SuccessfulAttempt("lesson-01", "ex-02"));
+        recorder.Record(FailedAttempt("lesson-01", "ex-01"));
+        recorder.Record(SuccessfulAttempt("lesson-01", "removed-exercise"));
+        recorder.Record(SuccessfulAttempt("another-lesson", "ex-01"));
+        var evaluator = CreateEvaluator(recorder);
+        var exercises = new List<ExerciseDefinition> { Exercise("ex-01"), Exercise("ex-02") };
+
+        var completed = evaluator.GetCompletedExerciseIds("lesson-01", exercises);
+
+        Assert.Equal(new HashSet<string>(["ex-02"], StringComparer.Ordinal), completed);
+        Assert.False(evaluator.AreAllExercisesCompleted("lesson-01", exercises));
+    }
+
     #endregion
 
     #region Lesson isolation
