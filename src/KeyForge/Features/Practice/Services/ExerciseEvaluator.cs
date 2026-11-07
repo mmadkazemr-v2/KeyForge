@@ -15,6 +15,8 @@ public sealed class ExerciseEvaluator : IExerciseEvaluator
         ArgumentNullException.ThrowIfNull(challenge);
         ArgumentNullException.ThrowIfNull(inputEvents);
 
+        if (challenge.Performance is not null) return new PerformanceExerciseEvaluator().Evaluate(challenge, inputEvents);
+
         if (challenge.ExerciseType == ExerciseType.Rhythm)
         {
             return new RhythmExerciseEvaluator().Evaluate(challenge, inputEvents);

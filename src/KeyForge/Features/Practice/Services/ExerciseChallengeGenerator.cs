@@ -51,7 +51,7 @@ public sealed class ExerciseChallengeGenerator : IExerciseChallengeGenerator
 
         if (exercise is SequenceExerciseDefinition sequence)
         {
-            return new SequenceChallengeGenerator().Create(sequence);
+            return new SequenceChallengeGenerator().Create(sequence, selectedBpm);
         }
 
         return new ExerciseChallenge

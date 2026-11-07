@@ -1,0 +1,37 @@
+namespace KeyForge.Features.Practice.Services;
+
+/// <summary>Matches combined pitched attacks; voice/hand metadata never filters physical MIDI input.</summary>
+public sealed class PerformanceExerciseEvaluator
+{
+    public ExerciseEvaluationResult Evaluate(ExerciseChallenge challenge, IReadOnlyList<ExerciseInputEvent> inputs)
+    {
+        ArgumentNullException.ThrowIfNull(challenge);
+        ArgumentNullException.ThrowIfNull(inputs);
+        var details = challenge.Performance ?? throw new InvalidOperationException("Missing performance timeline.");
+        var expected = details.Events.Where(e => e.Pitch is not null).OrderBy(e => e.Onset).ThenBy(e => MusicalNote.Parse(e.Pitch!).MidiNumber).ToArray();
+        var actual = inputs.Where(e => e.Type == InputEventType.Note).OrderBy(e => e.Offset).ThenBy(e => e.Sequence).ToList();
+        var shift = details.TimingReference == PerformanceTimingReference.FirstAttack && actual.Count > 0
+            ? actual[0].Offset - expected[0].Onset : TimeSpan.Zero;
+        var remaining = new HashSet<int>(Enumerable.Range(0, actual.Count));
+        var notes = new List<PerformanceNoteEvaluation>();
+        foreach (var target in expected)
+        {
+            var candidate = remaining.Where(i => MusicalNote.TryParse(actual[i].Value, out var note) &&
+                    note.MidiNumber == MusicalNote.Parse(target.Pitch!).MidiNumber)
+                .OrderBy(i => Math.Abs((actual[i].Offset - shift - target.Onset).TotalMilliseconds)).ThenBy(i => i)
+                .Select(i => (int?)i).FirstOrDefault();
+            var error = candidate is { } index ? (actual[index].Offset - shift - target.Onset).TotalMilliseconds : (double?)null;
+            var matched = error is not null && Math.Abs(error.Value) <= details.OnsetToleranceMilliseconds;
+            if (matched) remaining.Remove(candidate!.Value);
+            notes.Add(new PerformanceNoteEvaluation(target.Pitch!, target.Onset, matched ? actual[candidate!.Value].Offset - shift : null, error, matched));
+        }
+        var score = Math.Clamp((int)Math.Round(notes.Count(n => n.IsCorrect) * 100d / expected.Length) - remaining.Count * 5, 0, 100);
+        return new ExerciseEvaluationResult
+        {
+            Score = score,
+            IsSuccessful = score >= 80,
+            Feedback = actual.Count == 0 ? ExerciseEvaluationFeedback.NoInput : score >= 80 ? ExerciseEvaluationFeedback.Correct : ExerciseEvaluationFeedback.Incorrect,
+            Performance = new PerformanceEvaluationDetails { Notes = notes, ExtraNotes = remaining.Count, TimingReference = details.TimingReference }
+        };
+    }
+}

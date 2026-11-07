@@ -172,6 +172,10 @@ else if (CurrentExercise is { } exercise)
                                               RuntimeExercise="_runtimeExercise!"
                                               OnCompleted="CompleteInteractiveAttempt" />
                     }
+                    else if (_runtimeExercise?.Challenge.Performance is not null)
+                    {
+                        <PerformanceWorkspace @key="_runtimeExercise" RuntimeExercise="_runtimeExercise" OnCompleted="CompleteInteractiveAttempt" />
+                    }
                     else if (IsSequenceChallenge)
                     {
                         <SequenceWorkspace @key="_runtimeExercise"
@@ -217,6 +221,10 @@ else if (CurrentExercise is { } exercise)
                         <li>@UiText.ExerciseCompleted</li>
                     }
                 </ul>
+                @if (_result.Evaluation.Performance is { } performance)
+                {
+                    <PerformanceFeedback Details="performance" />
+                }
                 @if (_result.Evaluation.Rhythm is { } rhythm)
                 {
                     <dl class="practice-result-summary">

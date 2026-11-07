@@ -1,0 +1,89 @@
+@namespace KeyForge.Components.Practice
+@implements IDisposable
+@inject MidiInputRouter MidiInput
+
+<div class="kf-practice-workspace">
+    <h2>@RuntimeExercise.Definition.Title</h2>
+    <p>@(Relative ? T("????????? ???? ?? ????? ?? ??? ?????? ??????? ??????? ???? ????? ????.", "Timing is relative to your first attack; REAPER beat alignment is not measured.") : T("????????? ?? ???? ???? ?????? ??????? ???? ????? ????.", "Timing starts at the Start button; REAPER is not synchronized."))</p>
+    <p>@T("??? ? ???? ??????? ???? ?????? ???? ??? ?? ????? ???????.", "Hand and part labels are instructions; MIDI does not identify a physical hand.")</p>
+    <table class="table">
+        <thead><tr><th>@UiText.ExpectedNote</th><th>@UiText.Hand</th><th>@T("???", "Part")</th><th>@T("???? (?????)", "Onset (seconds)")</th><th>@T("??? (?????)", "Duration (seconds)")</th></tr></thead>
+        <tbody>
+            @foreach (var item in RuntimeExercise.Challenge.Performance!.Events.OrderBy(e => e.Onset))
+            {
+                <tr><td><bdi>@(item.Pitch ?? T("????", "Rest"))</bdi></td><td>@UiText.GetPracticeHand(item.Hand)</td><td>@item.Voice</td><td>@item.Onset.TotalSeconds.ToString("0.###")</td><td>@item.Duration.TotalSeconds.ToString("0.###")</td></tr>
+            }
+        </tbody>
+    </table>
+    <p role="status">@T("????????? ???????", "Captured events"): @RuntimeExercise.InputEvents.Count</p>
+    @if (!_active)
+    {
+        <button type="button" class="kf-button kf-button--primary" @onclick="StartAsync">@UiText.StartPractice</button>
+    }
+    else
+    {
+        <button type="button" class="kf-button kf-button--primary" @onclick="FinishAsync">@T("????? ? ???????", "Finish and evaluate")</button>
+        <button type="button" class="kf-button kf-button--secondary" @onclick="Restart">@UiText.RestartSequence</button>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public RuntimeExercise RuntimeExercise { get; set; } = null!;
+    [Parameter] public EventCallback<DateTime> OnCompleted { get; set; }
+    private bool _active;
+    private int _generation;
+    private double? _origin;
+    private IDisposable? _registration;
+    private bool Relative => RuntimeExercise.Challenge.Performance!.TimingReference == PerformanceTimingReference.FirstAttack;
+    private static string T(string fa, string en) => CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "fa" ? fa : en;
+    protected override void OnInitialized()
+    {
+        _registration = MidiInput.Register(CaptureAsync);
+        MidiInput.SelectedDeviceStateChanged += DeviceChanged;
+    }
+    private async Task StartAsync()
+    {
+        var generation = ++_generation;
+        RuntimeExercise.ResetCapturedInputs();
+        var origin = await MidiInput.CaptureBrowserTimestampAsync();
+        if (generation != _generation) return;
+        _origin = origin;
+        MidiInput.SetTimelineOrigin(origin);
+        _active = origin is not null;
+    }
+    private Task CaptureAsync(MidiInputMessage message)
+    {
+        if (_active && _origin is { } origin && MidiInputAdapter.TryCreate(message, DateTime.UtcNow, origin) is { } input)
+        {
+            RuntimeExercise.CaptureMidiEvent(input);
+            RuntimeExercise.CaptureInput(input);
+            return InvokeAsync(StateHasChanged);
+        }
+        return Task.CompletedTask;
+    }
+    private void Restart()
+    {
+        _generation++;
+        _active = false;
+        _origin = null;
+        RuntimeExercise.ResetCapturedInputs();
+        MidiInput.SetTimelineOrigin(null);
+    }
+    private void DeviceChanged(string? device, bool connected)
+    {
+        if (!connected) { Restart(); _ = InvokeAsync(StateHasChanged); }
+    }
+    private async Task FinishAsync()
+    {
+        if (!_active) return;
+        _active = false;
+        await OnCompleted.InvokeAsync(DateTime.UtcNow);
+    }
+    public void Dispose()
+    {
+        _generation++;
+        _active = false;
+        _registration?.Dispose();
+        MidiInput.SelectedDeviceStateChanged -= DeviceChanged;
+    }
+}

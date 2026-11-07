@@ -15,5 +15,6 @@ public sealed class ExerciseChallenge
     public SpeedChallengeDetails? Speed { get; init; }
     public FingerIndependenceChallengeDetails? FingerIndependence { get; init; }
     public SequenceChallengeDetails? Sequence { get; init; }
+    public PerformanceChallengeDetails? Performance { get; init; }
     public RhythmChallengeDetails? Rhythm { get; init; }
 }

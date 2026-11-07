@@ -1,0 +1,19 @@
+id: performance-foundations
+title: Original performance foundations
+description: Original quarter-pulse MIDI practice. REAPER alignment is not assessed.
+order: 1000
+unlock: { mode: immediate }
+completion: { requireAllExercises: true }
+exercises:
+  - id: original-duration-phrase
+    type: sequence
+    title: Four note values
+    description: Play C4, D4, E4 and F4. This original phrase is not course source material.
+    tempo: { defaultBpm: 60 }
+    performance:
+      timingReference: firstAttack
+      events:
+        - { pitch: C4, onsetBeats: 0, durationBeats: 1, voice: melody, hand: right }
+        - { pitch: D4, onsetBeats: 1, durationBeats: 2, voice: melody, hand: right }
+        - { pitch: E4, onsetBeats: 3, durationBeats: 3, voice: melody, hand: right }
+        - { pitch: F4, onsetBeats: 6, durationBeats: 4, voice: melody, hand: right }

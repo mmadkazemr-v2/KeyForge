@@ -240,6 +240,12 @@ internal static class YamlLessonValidator
             case RhythmExerciseDefinition rhythm:
                 rhythm.Validate();
                 break;
+            case SequenceExerciseDefinition { Performance: not null } sequence:
+                if (sequence.Sequence is not null || sequence.Scale is not null || sequence.Fingers.Count > 0)
+                    throw new InvalidOperationException("Performance cannot be combined with sequence, scale or sequence fingering.");
+                if (sequence.Tempo is null) throw new InvalidOperationException("Performance requires tempo.");
+                sequence.Performance.Validate();
+                break;
             case SequenceExerciseDefinition sequence:
                 if ((sequence.Sequence is null) == (sequence.Scale is null))
                 {
