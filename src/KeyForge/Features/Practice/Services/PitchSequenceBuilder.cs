@@ -18,6 +18,27 @@ public static class PitchSequenceBuilder
         return notes;
     }
 
+    public static IReadOnlyList<string> BuildArpeggio(ArpeggioConfiguration arpeggio, string exerciseId)
+    {
+        ArgumentNullException.ThrowIfNull(arpeggio);
+        if (!MusicalNote.TryParse(arpeggio.Root, out var root) || !Enum.IsDefined(arpeggio.Quality) ||
+            !Enum.IsDefined(arpeggio.Direction) || arpeggio.Octaves is < 1 or > 4 || arpeggio.Inversion is < 0 or > 2)
+            throw new InvalidOperationException($"Exercise '{exerciseId}' has invalid arpeggio root, quality, direction, octaves or inversion.");
+        var triad = new[] { 0, arpeggio.Quality == TriadQuality.Major ? 4 : 3, 7 };
+        var inverted = triad.Skip(arpeggio.Inversion).Concat(triad.Take(arpeggio.Inversion).Select(x => x + 12)).ToArray();
+        var ascending = Enumerable.Range(0, arpeggio.Octaves)
+            .SelectMany(o => inverted.Select(x => root.MidiNumber + 12 * o + x))
+            .Append(root.MidiNumber + inverted[0] + arpeggio.Octaves * 12).ToArray();
+        if (ascending.Any(x => x > 127)) throw new InvalidOperationException("Arpeggio exceeds MIDI pitch range.");
+        var directed = arpeggio.Direction switch
+        {
+            ScaleDirection.Descending => ascending.Reverse(),
+            ScaleDirection.AscendingDescending => ascending.Concat(ascending.Take(ascending.Length - 1).Reverse()),
+            _ => ascending.AsEnumerable()
+        };
+        return directed.Select(MusicalNote.FromMidiNumber).Select(n => n.Value).ToArray();
+    }
+
     public static IReadOnlyList<string> BuildScale(ScaleConfiguration scale, string exerciseId)
     {
         ArgumentNullException.ThrowIfNull(scale);

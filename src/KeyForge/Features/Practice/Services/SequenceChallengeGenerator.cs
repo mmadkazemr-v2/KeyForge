@@ -29,7 +29,7 @@ public sealed class SequenceChallengeGenerator
                 }
             };
         }
-        var notes = exercise.Scale is not null
+        var notes = exercise.Arpeggio is not null ? PitchSequenceBuilder.BuildArpeggio(exercise.Arpeggio, exercise.Id) : exercise.Scale is not null
             ? PitchSequenceBuilder.BuildScale(exercise.Scale, exercise.Id)
             : exercise.Sequence is not null
                 ? PitchSequenceBuilder.ParsePitches(exercise.Sequence, exercise.Id, "sequence")

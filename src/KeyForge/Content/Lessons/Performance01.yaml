@@ -42,3 +42,10 @@ exercises:
     notes: [C#4, F#4, G#4]
     count: 3
     randomized: false
+
+  - id: original-c-major-arpeggio
+    type: sequence
+    title: Original C major arpeggio
+    description: Play an ascending and descending C major arpeggio. Fingering is instructional only.
+    arpeggio: { root: C4, quality: major, inversion: 0, octaves: 1, direction: ascendingDescending }
+    hand: right

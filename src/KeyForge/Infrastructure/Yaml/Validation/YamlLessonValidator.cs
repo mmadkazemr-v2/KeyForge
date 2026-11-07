@@ -241,10 +241,17 @@ internal static class YamlLessonValidator
                 rhythm.Validate();
                 break;
             case SequenceExerciseDefinition { Performance: not null } sequence:
-                if (sequence.Sequence is not null || sequence.Scale is not null || sequence.Fingers.Count > 0)
+                if (sequence.Sequence is not null || sequence.Scale is not null || sequence.Arpeggio is not null || sequence.Fingers.Count > 0)
                     throw new InvalidOperationException("Performance cannot be combined with sequence, scale or sequence fingering.");
                 if (sequence.Tempo is null) throw new InvalidOperationException("Performance requires tempo.");
                 sequence.Performance.Validate();
+                break;
+            case SequenceExerciseDefinition { Arpeggio: not null } sequence:
+                if (sequence.Sequence is not null || sequence.Scale is not null)
+                    throw new InvalidOperationException("Arpeggio cannot be combined with sequence or scale.");
+                var pitches = PitchSequenceBuilder.BuildArpeggio(sequence.Arpeggio, sequence.Id);
+                ValidateHand(sequence.Hand);
+                ValidateFingers(sequence.Fingers, pitches.Count, "fingers");
                 break;
             case SequenceExerciseDefinition sequence:
                 if ((sequence.Sequence is null) == (sequence.Scale is null))
