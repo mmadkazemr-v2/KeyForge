@@ -1,5 +1,6 @@
 @page "/practice/{LessonId}"
 @rendermode InteractiveServer
+@using KeyForge.Components.Audio
 @using KeyForge.Components.Exercises
 @using KeyForge.Components.Practice
 @using KeyForge.Features.Exercises.Models
@@ -106,7 +107,7 @@ else if (CurrentExercise is { } exercise)
             </div>
         </section>
 
-        <section class="practice-audio-preferences" aria-label="@UiText.MetronomeSource">
+        <section class="practice-audio-preferences" aria-label="@UiText.PracticeAudioSettings">
             <label>
                 <span class="kf-meta">@UiText.MetronomeSource</span>
                 <select value="@_metronomeAudioMode" @onchange="HandleMetronomeAudioModeChanged">
@@ -119,6 +120,10 @@ else if (CurrentExercise is { } exercise)
             {
                 <p class="kf-text-muted" role="note">@UiText.ExternalMetronomePhaseWarning</p>
             }
+            <div class="practice-audio-preferences__activation">
+                <p class="kf-text-muted">@UiText.PracticeAudioActivationDescription</p>
+                <AudioActivationControl />
+            </div>
         </section>
 
         <ExercisePresentation Exercise="exercise" />

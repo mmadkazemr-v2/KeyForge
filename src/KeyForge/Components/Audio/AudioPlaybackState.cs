@@ -6,5 +6,6 @@ public enum AudioPlaybackState
     Uninitialized,
     Initializing,
     Ready,
+    Suspended,
     Failed
 }

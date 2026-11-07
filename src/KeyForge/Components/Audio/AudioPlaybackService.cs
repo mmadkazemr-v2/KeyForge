@@ -6,6 +6,7 @@ public sealed class AudioPlaybackService(IJSRuntime javascript) : IAudioPlayback
     private const string RunningContextState = "running";
 
     private IJSObjectReference? _module;
+    private DotNetObjectReference<AudioPlaybackService>? _stateCallback;
     private Task<bool>? _initialization;
     private bool _disposed;
 
@@ -17,7 +18,11 @@ public sealed class AudioPlaybackService(IJSRuntime javascript) : IAudioPlayback
 
     public async Task PrepareActivationAsync(Microsoft.AspNetCore.Components.ElementReference button)
     {
-        if (_disposed) return;
+        if (_disposed)
+        {
+            return;
+        }
+
         try
         {
             _module ??= await javascript.InvokeAsync<IJSObjectReference>(
@@ -28,12 +33,54 @@ public sealed class AudioPlaybackService(IJSRuntime javascript) : IAudioPlayback
                 _module = null;
                 return;
             }
-            await _module.InvokeVoidAsync("prepareActivation", button);
+
+            _stateCallback ??= DotNetObjectReference.Create(this);
+            await _module.InvokeVoidAsync("prepareActivation", button, _stateCallback);
         }
         catch (Exception ex) when (ex is JSException or JSDisconnectedException)
         {
             Fail(AudioFailureReason.Unavailable, $"Browser audio preparation failed: {ex.Message}");
         }
+    }
+
+    [JSInvokable]
+    public Task OnBrowserAudioStateChanged(string contextState)
+    {
+        if (_disposed)
+        {
+            return Task.CompletedTask;
+        }
+
+        switch (contextState.ToLowerInvariant())
+        {
+            case RunningContextState:
+                // A running context alone is not enough during first initialization:
+                // the synth must also be created before the service reports Ready.
+                if (State is not (AudioPlaybackState.Ready or AudioPlaybackState.Suspended))
+                {
+                    break;
+                }
+
+                FailureReason = AudioFailureReason.None;
+                LastError = null;
+                SetState(AudioPlaybackState.Ready);
+                break;
+            case "suspended":
+            case "interrupted":
+                if (State == AudioPlaybackState.Ready)
+                {
+                    FailureReason = AudioFailureReason.BrowserBlocked;
+                    LastError = "Browser audio was suspended. Activate audio again to resume it.";
+                    SetState(AudioPlaybackState.Suspended);
+                }
+
+                break;
+            case "closed":
+                Fail(AudioFailureReason.ContextClosed);
+                break;
+        }
+
+        return Task.CompletedTask;
     }
 
     /// <summary>
@@ -68,8 +115,7 @@ public sealed class AudioPlaybackService(IJSRuntime javascript) : IAudioPlayback
         FailureReason = AudioFailureReason.None;
         if (!wasReady)
         {
-            State = AudioPlaybackState.Initializing;
-            StateChanged?.Invoke();
+            SetState(AudioPlaybackState.Initializing);
         }
 
         try
@@ -92,27 +138,25 @@ public sealed class AudioPlaybackService(IJSRuntime javascript) : IAudioPlayback
 
             if (wasReady)
             {
-                State = AudioPlaybackState.Initializing;
-                StateChanged?.Invoke();
+                SetState(AudioPlaybackState.Initializing);
             }
 
             // The module reports the resulting AudioContext state so that autoplay
             // blocking is detected instead of being silently reported as success.
             var contextState = await _module.InvokeAsync<string>("initialize");
             if (_disposed) return Fail(AudioFailureReason.Unavailable);
-            if (string.Equals(contextState, RunningContextState, StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(contextState, RunningContextState, StringComparison.OrdinalIgnoreCase))
             {
-                State = AudioPlaybackState.Ready;
-                StateChanged?.Invoke();
-                return true;
+                return Fail(contextState switch
+                {
+                    "suspended" or "interrupted" or "blocked" => AudioFailureReason.BrowserBlocked,
+                    "closed" => AudioFailureReason.ContextClosed,
+                    _ => AudioFailureReason.Unavailable
+                }, $"Audio initialization returned context state '{contextState}'.");
             }
 
-            return Fail(contextState switch
-            {
-                "suspended" or "blocked" => AudioFailureReason.BrowserBlocked,
-                "closed" => AudioFailureReason.ContextClosed,
-                _ => AudioFailureReason.Unavailable
-            }, $"Audio initialization returned context state '{contextState}'.");
+            SetState(AudioPlaybackState.Ready);
+            return true;
         }
         catch (JSException ex)
         {
@@ -150,15 +194,16 @@ public sealed class AudioPlaybackService(IJSRuntime javascript) : IAudioPlayback
     public async Task<bool> PlayChordAsync(IReadOnlyList<MusicalNote> notes)
     {
         ArgumentNullException.ThrowIfNull(notes);
-        if (notes.Count is < 2 or > 8 || notes.Any(note => note is null))
+        if (notes.Count is < 2 or > 8)
         {
             throw new ArgumentException("A chord stimulus must contain between two and eight notes.", nameof(notes));
         }
+
         if (!IsReady()) return false;
 
         try
         {
-            await _module!.InvokeVoidAsync("playChord", new object?[] { notes.Select(note => note.Value).ToArray() });
+            await _module!.InvokeVoidAsync("playChord", [notes.Select(note => note.Value).ToArray()]);
             return true;
         }
         catch (JSException ex)
@@ -206,7 +251,7 @@ public sealed class AudioPlaybackService(IJSRuntime javascript) : IAudioPlayback
         {
             // Wrap explicitly: a bare typed array would be unwrapped by the
             // params binder and reach JavaScript as multiple arguments.
-            await _module!.InvokeVoidAsync("playSequence", new object?[] { sequence.ToArray() });
+            await _module!.InvokeVoidAsync("playSequence", [sequence.ToArray()]);
             return true;
         }
         catch (JSException ex)
@@ -279,6 +324,7 @@ public sealed class AudioPlaybackService(IJSRuntime javascript) : IAudioPlayback
         {
             // Browser cleanup must not break navigation.
         }
+
         try
         {
             await _module.DisposeAsync();
@@ -287,7 +333,10 @@ public sealed class AudioPlaybackService(IJSRuntime javascript) : IAudioPlayback
         {
             // Release the interop reference even when browser cleanup failed.
         }
+
         _module = null;
+        _stateCallback?.Dispose();
+        _stateCallback = null;
         State = AudioPlaybackState.Failed;
         FailureReason = AudioFailureReason.Unavailable;
     }
@@ -299,17 +348,23 @@ public sealed class AudioPlaybackService(IJSRuntime javascript) : IAudioPlayback
             return true;
         }
 
-        if (State != AudioPlaybackState.Failed)
+        if (State == AudioPlaybackState.Failed)
         {
-            FailureReason = AudioFailureReason.NotInitialized;
-            LastError = "Audio must be enabled before playback.";
+            return false;
         }
+
+        FailureReason = State == AudioPlaybackState.Suspended
+            ? AudioFailureReason.BrowserBlocked
+            : AudioFailureReason.NotInitialized;
+        LastError = State == AudioPlaybackState.Suspended
+            ? "Browser audio is suspended. Activate audio again to resume it."
+            : "Audio must be enabled before playback.";
+
         return false;
     }
 
     private bool Fail(AudioFailureReason reason, string? diagnostic = null)
     {
-        State = AudioPlaybackState.Failed;
         FailureReason = reason;
         LastError = diagnostic ?? (reason switch
         {
@@ -318,7 +373,14 @@ public sealed class AudioPlaybackService(IJSRuntime javascript) : IAudioPlayback
             AudioFailureReason.ContextClosed => "The AudioContext is closed. Reload the page to restore audio.",
             _ => "Browser audio is unavailable."
         });
-        StateChanged?.Invoke();
+        SetState(AudioPlaybackState.Failed);
         return false;
+    }
+
+    private void SetState(AudioPlaybackState state)
+    {
+        if (State == state) return;
+        State = state;
+        StateChanged?.Invoke();
     }
 }

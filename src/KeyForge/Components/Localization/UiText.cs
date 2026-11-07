@@ -55,6 +55,15 @@ public static class UiText
     public static string AudioActivating => Select("در حال فعال‌سازی صدا…", "Activating audio…");
     public static string AudioNotEnabled => Select("صدا هنوز فعال نشده است", "Audio is not enabled yet");
     public static string AudioReady => Select("صدا آماده است", "Audio is ready");
+    public static string AudioSuspended => Select("صدا متوقف شده است", "Audio is suspended");
+    public static string CheckOrResumeAudio => Select("بررسی یا ادامهٔ صدا", "Check or resume audio");
+    public static string PracticeAudioActivationDescription => Select(
+        "این گزینه صدای مرورگر را برای مترونوم و نمونه‌های شنیداری فعال می‌کند؛ صدای زندهٔ کلاویه همچنان از تنظیم حالت صدا پیروی می‌کند.",
+        "Enable browser audio for the metronome and listening prompts. Live keyboard sound still follows the instrument mode.");
+    public static string PracticeAudioSettings => Select("تنظیمات صدای تمرین", "Practice audio settings");
+    public static string AudioNeedsActivation => Select(
+        "برای شنیدن این نمونه، صدای مرورگر را از بخش تنظیمات صدا فعال کنید.",
+        "Enable browser audio in the practice audio settings to hear this prompt.");
     public static string AudioUnavailable => Select("صدا در این مرورگر در دسترس نیست", "Audio is unavailable in this browser");
     public static string AudioBlocked => Select(
         "صدا فعال نشد. تنظیمات صدای این سایت را در مرورگر بررسی کنید.",
@@ -62,6 +71,7 @@ public static class UiText
     public static string GetAudioStatusLabel(AudioPlaybackState state) => state switch
     {
         AudioPlaybackState.Ready => AudioReady,
+        AudioPlaybackState.Suspended => AudioSuspended,
         AudioPlaybackState.Failed => AudioUnavailable,
         AudioPlaybackState.Initializing => AudioActivating,
         _ => AudioNotEnabled

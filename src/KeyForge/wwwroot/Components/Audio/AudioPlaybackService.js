@@ -12,6 +12,9 @@ let sustainDown = false;
 let pendingSequenceTimers = [];
 let generation = 0;
 const activationButtons = new WeakSet();
+let observedAudioContext;
+let observedStateCallback;
+let audioStateHandler;
 
 function cancelPendingSequence() {
     for (const timer of pendingSequenceTimers) {
@@ -92,7 +95,26 @@ function loadTone() {
     return toneLoadPromise;
 }
 
-export async function prepareActivation(button) {
+async function observeAudioState(Tone, callback) {
+    if (!callback) return;
+    const context = Tone.getContext().rawContext;
+    if (!context?.addEventListener) return;
+    if (observedAudioContext === context && observedStateCallback === callback) return;
+    if (observedAudioContext !== context || observedStateCallback !== callback) {
+        if (observedAudioContext && audioStateHandler) {
+            observedAudioContext.removeEventListener('statechange', audioStateHandler);
+        }
+        observedAudioContext = context;
+        observedStateCallback = callback;
+        audioStateHandler = () => {
+            void callback.invokeMethodAsync('OnBrowserAudioStateChanged', context.state).catch(() => {});
+        };
+        context.addEventListener('statechange', audioStateHandler);
+    }
+    await callback.invokeMethodAsync('OnBrowserAudioStateChanged', context.state).catch(() => {});
+}
+
+export async function prepareActivation(button, stateCallback) {
     if (button && !activationButtons.has(button)) {
         activationButtons.add(button);
         // This runs locally before Blazor's delegated click travels to the server.
@@ -101,7 +123,8 @@ export async function prepareActivation(button) {
         }, { capture: true });
     }
     // Preload the library only. Tone.start and synth creation remain gesture driven.
-    await loadTone();
+    const Tone = await loadTone();
+    await observeAudioState(Tone, stateCallback);
 }
 
 export function initialize() {
@@ -276,6 +299,12 @@ export function dispose() {
     releaseMidiNotes();
     synth?.dispose();
     clickSynth?.dispose();
+    if (observedAudioContext && audioStateHandler) {
+        observedAudioContext.removeEventListener('statechange', audioStateHandler);
+    }
+    observedAudioContext = undefined;
+    observedStateCallback = undefined;
+    audioStateHandler = undefined;
     synth = undefined;
     clickSynth = undefined;
 }

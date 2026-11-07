@@ -3,25 +3,22 @@
 @implements IDisposable
 
 <div class="audio-activation">
-    @if (Audio.State == AudioPlaybackState.Ready)
+    <span class="kf-status-badge @(Audio.State == AudioPlaybackState.Ready ? "kf-status-badge--completed" : "kf-status-badge--available")">
+        @UiText.GetAudioStatusLabel(Audio.State)
+    </span>
+    <button class="kf-button @(Audio.State == AudioPlaybackState.Ready ? "kf-button--secondary" : "kf-button--primary")" type="button"
+            @ref="_button"
+            disabled="@(Audio.State == AudioPlaybackState.Initializing)"
+            aria-busy="@(Audio.State == AudioPlaybackState.Initializing)"
+            @onclick="EnableAsync">
+        @(Audio.State == AudioPlaybackState.Initializing ? UiText.AudioActivating :
+            Audio.State == AudioPlaybackState.Ready ? UiText.CheckOrResumeAudio : UiText.EnableAudio)
+    </button>
+    @if (Audio.State is AudioPlaybackState.Failed or AudioPlaybackState.Suspended)
     {
-        <span class="kf-status-badge kf-status-badge--completed">@UiText.GetAudioStatusLabel(Audio.State)</span>
-    }
-    else
-    {
-        <button class="kf-button kf-button--primary" type="button"
-                @ref="_button"
-                disabled="@(Audio.State == AudioPlaybackState.Initializing)"
-                aria-busy="@(Audio.State == AudioPlaybackState.Initializing)"
-                @onclick="EnableAsync">
-            @(Audio.State == AudioPlaybackState.Initializing ? UiText.AudioActivating : UiText.EnableAudio)
-        </button>
-        @if (Audio.State == AudioPlaybackState.Failed)
-        {
-            <p class="audio-activation__error" role="alert">
-                @UiText.GetAudioFailureMessage(Audio.FailureReason)
-            </p>
-        }
+        <p class="audio-activation__error" role="status">
+            @UiText.GetAudioFailureMessage(Audio.FailureReason)
+        </p>
     }
 </div>
 
@@ -33,18 +30,17 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!_prepared && Audio.State != AudioPlaybackState.Ready)
+        if (!_prepared)
         {
             _prepared = true;
             await Audio.PrepareActivationAsync(_button);
         }
-        if (Audio.State == AudioPlaybackState.Ready) _prepared = false;
     }
 
     private void Refresh() => _ = InvokeAsync(StateHasChanged);
     public void Dispose() => Audio.StateChanged -= Refresh;
 
-    /// <summary>Runs the Tone.js activation from this explicit user click and refreshes the state.</summary>
+    /// <summary>Checks or resumes Tone.js from this explicit user click.</summary>
     private async Task EnableAsync()
     {
         await Audio.InitializeAsync();

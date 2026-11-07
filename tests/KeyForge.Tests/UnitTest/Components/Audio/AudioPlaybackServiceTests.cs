@@ -245,7 +245,7 @@ public sealed class AudioPlaybackServiceTests
 
     [Theory]
     [InlineData("closed", AudioFailureReason.ContextClosed)]
-    [InlineData("interrupted", AudioFailureReason.Unavailable)]
+    [InlineData("interrupted", AudioFailureReason.BrowserBlocked)]
     [InlineData("unknown", AudioFailureReason.Unavailable)]
     [InlineData("blocked", AudioFailureReason.BrowserBlocked)]
     public async Task InitializeAsync_ClassifiesContextStateWithoutInventingPermissionDenial(string state, AudioFailureReason reason)
@@ -293,6 +293,66 @@ public sealed class AudioPlaybackServiceTests
         Assert.True(await service.InitializeAsync());
         Assert.Equal(AudioFailureReason.None, service.FailureReason);
         Assert.Null(service.LastError);
+    }
+
+    [Fact]
+    public async Task BrowserContextStateChanges_AreReportedAndCanRecoverAfterSuspension()
+    {
+        var service = new AudioPlaybackService(new FakeJavaScriptRuntime());
+        var changes = new List<AudioPlaybackState>();
+        service.StateChanged += () => changes.Add(service.State);
+        await service.InitializeAsync();
+        await service.OnBrowserAudioStateChanged("suspended");
+
+        Assert.Equal(AudioPlaybackState.Suspended, service.State);
+        Assert.Equal(AudioFailureReason.BrowserBlocked, service.FailureReason);
+        Assert.Contains(AudioPlaybackState.Suspended, changes);
+
+        await service.OnBrowserAudioStateChanged("running");
+
+        Assert.Equal(AudioPlaybackState.Ready, service.State);
+        Assert.Equal(AudioFailureReason.None, service.FailureReason);
+        await service.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task BrowserContextRunningAlone_DoesNotClaimPracticeAudioIsInitialized()
+    {
+        await using var service = new AudioPlaybackService(new FakeJavaScriptRuntime());
+
+        await service.OnBrowserAudioStateChanged("running");
+
+        Assert.Equal(AudioPlaybackState.Uninitialized, service.State);
+    }
+
+    [Fact]
+    public async Task BrowserContextRunningDuringInitialization_DoesNotPrecedeSynthReadiness()
+    {
+        var runtime = new FakeJavaScriptRuntime();
+        runtime.Module.InitializationGate = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        await using var service = new AudioPlaybackService(runtime);
+        var initialization = service.InitializeAsync();
+
+        await service.OnBrowserAudioStateChanged("running");
+
+        Assert.Equal(AudioPlaybackState.Initializing, service.State);
+        runtime.Module.InitializationGate.SetResult("running");
+        Assert.True(await initialization);
+        Assert.Equal(AudioPlaybackState.Ready, service.State);
+    }
+
+    [Fact]
+    public async Task PrepareActivationAsync_AttachesOneSharedBrowserStateCallback()
+    {
+        var runtime = new FakeJavaScriptRuntime();
+        await using var service = new AudioPlaybackService(runtime);
+
+        await service.PrepareActivationAsync(default);
+        await service.PrepareActivationAsync(default);
+
+        var calls = runtime.Module.Calls.Where(call => call.Identifier == "prepareActivation").ToArray();
+        Assert.Equal(2, calls.Length);
+        Assert.All(calls, call => Assert.IsType<DotNetObjectReference<AudioPlaybackService>>(call.Arguments[1]));
     }
 
     [Theory]

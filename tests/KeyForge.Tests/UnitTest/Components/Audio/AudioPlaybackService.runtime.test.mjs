@@ -7,7 +7,9 @@ let moduleId = 0;
 const load = () => import(`data:text/javascript;base64,${Buffer.from(source + `\n// test ${moduleId++}`).toString('base64')}`);
 
 function tone(state = 'suspended') {
-    const context = { state };
+    const rawContext = new EventTarget();
+    rawContext.state = state;
+    const context = { rawContext, get state() { return rawContext.state; }, set state(value) { rawContext.state = value; } };
     const nodes = [];
     let starts = 0;
     class Synth {
@@ -21,7 +23,7 @@ function tone(state = 'suspended') {
     }
     globalThis.Tone = {
         getContext: () => context,
-        start: async () => { starts++; context.state = 'running'; },
+        start: async () => { starts++; context.state = 'running'; rawContext.dispatchEvent(new Event('statechange')); },
         PolySynth: Synth, Synth, FMSynth: Synth, AMSynth: Synth, MembraneSynth: Synth
     };
     return { context, nodes, starts: () => starts };
@@ -75,6 +77,28 @@ test('preparation does not unlock audio; the native click reaches start synchron
     button.dispatchEvent(new Event('click'));
     assert.equal(runtime.starts(), 1);
     assert.equal(await audio.initialize(), 'running');
+});
+
+test('one prepared activation control reports suspension and recovery from the shared Tone context', async () => {
+    const runtime = tone('running');
+    const states = [];
+    const callback = { invokeMethodAsync: async (method, state) => { assert.equal(method, 'OnBrowserAudioStateChanged'); states.push(state); } };
+    const audio = await load();
+    const button = new EventTarget();
+    await audio.prepareActivation(button, callback);
+    await audio.prepareActivation(button, callback);
+    runtime.context.state = 'suspended';
+    runtime.context.rawContext.dispatchEvent(new Event('statechange'));
+    await new Promise(resolve => setImmediate(resolve));
+    button.dispatchEvent(new Event('click'));
+    await new Promise(resolve => setImmediate(resolve));
+    assert.deepEqual(states, ['running', 'suspended', 'running']);
+    assert.equal(runtime.starts(), 1);
+    audio.dispose();
+    runtime.context.state = 'suspended';
+    runtime.context.rawContext.dispatchEvent(new Event('statechange'));
+    await new Promise(resolve => setImmediate(resolve));
+    assert.deepEqual(states, ['running', 'suspended', 'running']);
 });
 
 test('concurrent initialization shares a pending resume and creates one pair of synths', async () => {
