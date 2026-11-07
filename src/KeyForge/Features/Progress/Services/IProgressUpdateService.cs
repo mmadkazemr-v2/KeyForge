@@ -25,5 +25,5 @@ public interface IProgressUpdateService
     /// <exception cref="ArgumentNullException">
     /// Thrown when <paramref name="lessonId"/> or <paramref name="result"/> is <c>null</c>.
     /// </exception>
-    void UpdateProgress(string lessonId, SessionResult result);
+    public void UpdateProgress(string lessonId, SessionResult result);
 }

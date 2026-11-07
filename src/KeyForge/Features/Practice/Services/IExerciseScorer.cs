@@ -21,5 +21,5 @@ public interface IExerciseScorer
     /// <exception cref="ArgumentNullException">
     /// Thrown when <paramref name="evaluationResult"/> is <c>null</c>.
     /// </exception>
-    int Score(ExerciseEvaluationResult evaluationResult);
+    public int Score(ExerciseEvaluationResult evaluationResult);
 }

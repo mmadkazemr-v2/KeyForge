@@ -16,14 +16,14 @@ public interface IExerciseAttemptRecorder
     /// <param name="attempt">
     /// The attempt data to record. Must not be <c>null</c>.
     /// </param>
-    void Record(ExerciseAttempt attempt);
+    public void Record(ExerciseAttempt attempt);
 
     /// <summary>
     /// Records an attempt only if its identity has not already been seen.
     /// Implementations that do not support identity-based deduplication retain the
     /// legacy behavior and report the attempt as newly recorded.
     /// </summary>
-    bool RecordIfNew(ExerciseAttempt attempt)
+    public bool RecordIfNew(ExerciseAttempt attempt)
     {
         Record(attempt);
         return true;
@@ -39,5 +39,5 @@ public interface IExerciseAttemptRecorder
     /// A read-only list of attempts belonging to the lesson,
     /// in insertion order. Never <c>null</c>.
     /// </returns>
-    IReadOnlyList<ExerciseAttempt> GetAttemptsByLesson(string lessonId);
+    public IReadOnlyList<ExerciseAttempt> GetAttemptsByLesson(string lessonId);
 }

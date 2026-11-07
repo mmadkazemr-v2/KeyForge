@@ -17,10 +17,7 @@ public sealed class PracticeSessionServiceTests
     }
 
     [Fact]
-    public void StartSession_UnknownLesson_ReturnsNull()
-    {
-        Assert.Null(CreateService([]).StartSession("missing"));
-    }
+    public void StartSession_UnknownLesson_ReturnsNull() => Assert.Null(CreateService([]).StartSession("missing"));
 
     [Fact]
     public void StartSession_LockedLesson_ThrowsInvalidOperationException()
@@ -35,10 +32,7 @@ public sealed class PracticeSessionServiceTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public void StartSession_InvalidId_ThrowsArgumentException(string? lessonId)
-    {
-        Assert.ThrowsAny<ArgumentException>(() => CreateService([]).StartSession(lessonId!));
-    }
+    public void StartSession_InvalidId_ThrowsArgumentException(string? lessonId) => Assert.ThrowsAny<ArgumentException>(() => CreateService([]).StartSession(lessonId!));
 
     [Fact]
     public void StartSession_DoesNotMutateDefinition()
@@ -106,10 +100,7 @@ public sealed class PracticeSessionServiceTests
     }
 
     [Fact]
-    public void StartExercise_NullSession_ThrowsArgumentNullException()
-    {
-        Assert.Throws<ArgumentNullException>(() => CreateService([]).StartExercise(null!));
-    }
+    public void StartExercise_NullSession_ThrowsArgumentNullException() => Assert.Throws<ArgumentNullException>(() => CreateService([]).StartExercise(null!));
 
     [Fact]
     public void SubmitAttempt_CorrectInput_CreatesSystemGeneratedAttempt()
@@ -354,11 +345,11 @@ public sealed class PracticeSessionServiceTests
     private static NoteReadingExerciseDefinition Note(
         string id = "ex-01",
         string range = "C4-G4") => new()
-    {
-        Id = id,
-        Title = "Read the note",
-        Range = range
-    };
+        {
+            Id = id,
+            Title = "Read the note",
+            Range = range
+        };
 
     private static ExerciseInputEvent Input(RuntimeExercise runtime, string value) => new()
     {
@@ -400,13 +391,13 @@ public sealed class PracticeSessionServiceTests
         public ExerciseEvaluationResult Evaluate(
             ExerciseChallenge challenge,
             IReadOnlyList<ExerciseInputEvent> inputEvents) => new()
-        {
-            IsSuccessful = success,
-            Score = rawScore,
-            Feedback = success
+            {
+                IsSuccessful = success,
+                Score = rawScore,
+                Feedback = success
                 ? ExerciseEvaluationFeedback.Correct
                 : ExerciseEvaluationFeedback.Incorrect
-        };
+            };
     }
 
     private sealed class FakeAttemptRecorder : IExerciseAttemptRecorder

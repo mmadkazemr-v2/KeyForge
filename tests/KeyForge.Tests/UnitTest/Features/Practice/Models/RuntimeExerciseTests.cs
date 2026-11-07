@@ -115,23 +115,23 @@ public sealed class RuntimeExerciseTests
         string exerciseId,
         InputEventType type,
         TimeSpan? expectedOffset) => new()
-    {
-        ExerciseId = exerciseId,
-        ExerciseType = ExerciseType.NoteReading,
-        ExpectedInputs =
+        {
+            ExerciseId = exerciseId,
+            ExerciseType = ExerciseType.NoteReading,
+            ExpectedInputs =
         [
             new ExpectedInput { Type = type, Value = "C4", ExpectedOffset = expectedOffset }
         ]
-    };
+        };
 
     private static ExerciseInputEvent Input(
         string value,
         DateTime timestamp,
         InputEventType type = InputEventType.Note) => new()
-    {
-        Timestamp = timestamp,
-        Source = InputSource.ComputerKeyboard,
-        Type = type,
-        Value = value
-    };
+        {
+            Timestamp = timestamp,
+            Source = InputSource.ComputerKeyboard,
+            Type = type,
+            Value = value
+        };
 }

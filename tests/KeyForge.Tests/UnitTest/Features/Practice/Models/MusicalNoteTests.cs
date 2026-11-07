@@ -34,8 +34,5 @@ public sealed class MusicalNoteTests
     [InlineData("")]
     [InlineData("H4")]
     [InlineData("C#")]
-    public void TryParse_InvalidValue_ReturnsFalse(string value)
-    {
-        Assert.False(MusicalNote.TryParse(value, out _));
-    }
+    public void TryParse_InvalidValue_ReturnsFalse(string value) => Assert.False(MusicalNote.TryParse(value, out _));
 }

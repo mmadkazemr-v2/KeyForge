@@ -98,18 +98,12 @@ public sealed class ExerciseEvaluatorTests
     }
 
     [Fact]
-    public void Evaluate_NullChallenge_ThrowsArgumentNullException()
-    {
-        Assert.Throws<ArgumentNullException>(() =>
-            new ExerciseEvaluator().Evaluate(null!, []));
-    }
+    public void Evaluate_NullChallenge_ThrowsArgumentNullException() => Assert.Throws<ArgumentNullException>(() =>
+                                                                                 new ExerciseEvaluator().Evaluate(null!, []));
 
     [Fact]
-    public void Evaluate_NullInputCollection_ThrowsArgumentNullException()
-    {
-        Assert.Throws<ArgumentNullException>(() =>
-            new ExerciseEvaluator().Evaluate(Challenge("C4"), null!));
-    }
+    public void Evaluate_NullInputCollection_ThrowsArgumentNullException() => Assert.Throws<ArgumentNullException>(() =>
+                                                                                       new ExerciseEvaluator().Evaluate(Challenge("C4"), null!));
 
     [Fact]
     public void ExerciseEvaluator_ImplementsContract()
@@ -137,10 +131,10 @@ public sealed class ExerciseEvaluatorTests
         string value,
         InputSource source = InputSource.ComputerKeyboard,
         InputEventType type = InputEventType.Note) => new()
-    {
-        Timestamp = StartedAt,
-        Source = source,
-        Type = type,
-        Value = value
-    };
+        {
+            Timestamp = StartedAt,
+            Source = source,
+            Type = type,
+            Value = value
+        };
 }

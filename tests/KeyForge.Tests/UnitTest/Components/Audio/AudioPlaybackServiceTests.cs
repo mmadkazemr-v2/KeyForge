@@ -24,10 +24,7 @@ public sealed class AudioPlaybackServiceTests
     }
 
     [Fact]
-    public void InstrumentPresetCatalog_RejectsUnknownPreset()
-    {
-        Assert.Throws<ArgumentException>(() => InstrumentPresetCatalog.Get("unknown"));
-    }
+    public void InstrumentPresetCatalog_RejectsUnknownPreset() => Assert.Throws<ArgumentException>(() => InstrumentPresetCatalog.Get("unknown"));
 
     [Fact]
     public async Task SetInstrumentPresetAsync_ConfiguresExistingAudioModuleWithoutStartingAudio()

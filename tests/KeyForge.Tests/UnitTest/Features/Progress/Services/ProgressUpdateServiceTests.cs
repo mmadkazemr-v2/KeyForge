@@ -17,14 +17,11 @@ public sealed class ProgressUpdateServiceTests
         ILessonCatalog? catalog = null,
         IProgressStore? progressStore = null,
         ILessonProgressionService? progression = null,
-        IExerciseAttemptRecorder? attemptRecorder = null)
-    {
-        return new ProgressUpdateService(
+        IExerciseAttemptRecorder? attemptRecorder = null) => new ProgressUpdateService(
             progressStore ?? new InMemoryProgressStore(),
             catalog ?? new FakeLessonCatalog(),
             progression ?? new FakeProgressionService(),
             attemptRecorder ?? new InMemoryExerciseAttemptRecorder());
-    }
 
     private static SessionResult MakeResult(int score = 80) => new()
     {
@@ -44,11 +41,11 @@ public sealed class ProgressUpdateServiceTests
     private static LessonDefinition MakeLesson(
         string id = "lesson-01",
         CompletionRule? completion = null) => new()
-    {
-        Id = id,
-        Exercises = [Exercise1],
-        Completion = completion ?? new CompletionRule()
-    };
+        {
+            Id = id,
+            Exercises = [Exercise1],
+            Completion = completion ?? new CompletionRule()
+        };
 
     #region Creation tests
 

@@ -26,5 +26,5 @@ public interface ILessonProgressQueryService
     /// A read-only list of <see cref="LessonListItem"/> instances. The list
     /// is ordered by <see cref="LessonListItem.Order"/>.
     /// </returns>
-    IReadOnlyList<LessonListItem> GetLessons();
+    public IReadOnlyList<LessonListItem> GetLessons();
 }

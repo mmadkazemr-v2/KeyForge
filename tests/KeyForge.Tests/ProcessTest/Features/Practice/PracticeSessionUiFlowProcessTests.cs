@@ -8,13 +8,19 @@ public sealed class PracticeSessionUiFlowProcessTests
     {
         ExerciseDefinition exercise = new MentalKeyboardExerciseDefinition
         {
-            Id = "mental-exercise", StartingNote = "C4", Steps = 4, Direction = ExerciseDirection.Ascending
+            Id = "mental-exercise",
+            StartingNote = "C4",
+            Steps = 4,
+            Direction = ExerciseDirection.Ascending
         };
         var lesson = new LessonDefinition
         {
-            Id = "mental-lesson", Title = "Mental lesson", Order = 1,
+            Id = "mental-lesson",
+            Title = "Mental lesson",
+            Order = 1,
             Unlock = new UnlockRule { Mode = UnlockMode.Immediate },
-            Completion = new CompletionRule { RequireAllExercises = true }, Exercises = [exercise]
+            Completion = new CompletionRule { RequireAllExercises = true },
+            Exercises = [exercise]
         };
         var catalog = new FakeLessonCatalog(lesson);
         var progressStore = new InMemoryProgressStore();
@@ -32,7 +38,9 @@ public sealed class PracticeSessionUiFlowProcessTests
             runtime.CaptureInput(new ExerciseInputEvent
             {
                 Timestamp = runtime.StartedAt.AddMilliseconds(200),
-                Source = InputSource.VirtualPiano, Type = InputEventType.Note, Value = expected.Value
+                Source = InputSource.VirtualPiano,
+                Type = InputEventType.Note,
+                Value = expected.Value
             });
         }
 
@@ -54,19 +62,26 @@ public sealed class PracticeSessionUiFlowProcessTests
         ExerciseDefinition exercise = exerciseType == ExerciseType.Interval
             ? new IntervalExerciseDefinition
             {
-                Id = "target-exercise", StartingNote = "C4", Intervals = ["M3"],
+                Id = "target-exercise",
+                StartingNote = "C4",
+                Intervals = ["M3"],
                 Direction = ExerciseDirection.Ascending
             }
             : new OctaveExerciseDefinition
             {
-                Id = "target-exercise", StartingNote = "C3", Octaves = 2,
+                Id = "target-exercise",
+                StartingNote = "C3",
+                Octaves = 2,
                 Direction = ExerciseDirection.Ascending
             };
         var lesson = new LessonDefinition
         {
-            Id = "target-lesson", Title = "Target lesson", Order = 1,
+            Id = "target-lesson",
+            Title = "Target lesson",
+            Order = 1,
             Unlock = new UnlockRule { Mode = UnlockMode.Immediate },
-            Completion = new CompletionRule { RequireAllExercises = true }, Exercises = [exercise]
+            Completion = new CompletionRule { RequireAllExercises = true },
+            Exercises = [exercise]
         };
         var catalog = new FakeLessonCatalog(lesson);
         var progressStore = new InMemoryProgressStore();
@@ -83,8 +98,10 @@ public sealed class PracticeSessionUiFlowProcessTests
         {
             runtime.CaptureInput(new ExerciseInputEvent
             {
-                Timestamp = runtime.StartedAt.AddMilliseconds(200), Source = InputSource.VirtualPiano,
-                Type = InputEventType.Note, Value = expected.Value
+                Timestamp = runtime.StartedAt.AddMilliseconds(200),
+                Source = InputSource.VirtualPiano,
+                Type = InputEventType.Note,
+                Value = expected.Value
             });
         }
 

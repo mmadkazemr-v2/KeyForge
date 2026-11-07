@@ -21,7 +21,7 @@ public interface IExerciseEvaluator
     /// <exception cref="ArgumentNullException">
     /// Thrown when <paramref name="challenge"/> or <paramref name="inputEvents"/> is <c>null</c>.
     /// </exception>
-    ExerciseEvaluationResult Evaluate(
+    public ExerciseEvaluationResult Evaluate(
         ExerciseChallenge challenge,
         IReadOnlyList<ExerciseInputEvent> inputEvents);
 }

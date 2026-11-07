@@ -92,13 +92,7 @@ public sealed class LessonProgressionService(
         return previous is null || IsPrerequisiteMet(previous.Id);
     }
 
-    private bool ArePrerequisitesCompleted(UnlockRule unlock)
-    {
-        return unlock.RequiredLessonIds.All(IsPrerequisiteMet);
-    }
+    private bool ArePrerequisitesCompleted(UnlockRule unlock) => unlock.RequiredLessonIds.All(IsPrerequisiteMet);
 
-    private bool IsPrerequisiteMet(string lessonId)
-    {
-        return IsCompleted(lessonId);
-    }
+    private bool IsPrerequisiteMet(string lessonId) => IsCompleted(lessonId);
 }

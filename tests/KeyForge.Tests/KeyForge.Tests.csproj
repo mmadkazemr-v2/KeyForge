@@ -1,38 +1,32 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
-  <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <IsPackable>false</IsPackable>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="coverlet.collector" Version="6.0.4" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
-    <PackageReference Include="xunit" Version="2.9.3" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\src\KeyForge\KeyForge.csproj" />
-    <None Update="Fixtures\Rhythm\*.yaml" CopyToOutputDirectory="PreserveNewest" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Using Include="Xunit" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="UnitTest\Features\Lessons\" />
-    <Folder Include="UnitTest\Features\Practice\" />
-    <Folder Include="UnitTest\Features\Progress\" />
-    <Folder Include="UnitTest\Infrastructure\Content\" />
-    <Folder Include="UnitTest\Infrastructure\Persistence\" />
-    <Folder Include="UnitTest\Infrastructure\Practice\" />
-    <Folder Include="UnitTest\Infrastructure\Progress\" />
-    <Folder Include="UnitTest\Infrastructure\Yaml\" />
-    <Folder Include="ProcessTest\Features\Practice\" />
-  </ItemGroup>
-
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
+    <ItemGroup>
+        <PackageReference Include="coverlet.collector" Version="6.0.4" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+        <PackageReference Include="xunit" Version="2.9.3" />
+        <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+    </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\KeyForge\KeyForge.csproj" />
+        <None Update="Fixtures\Rhythm\*.yaml" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+    <ItemGroup>
+        <Using Include="Xunit" />
+    </ItemGroup>
+    <ItemGroup>
+        <Folder Include="UnitTest\Features\Lessons\" />
+        <Folder Include="UnitTest\Features\Practice\" />
+        <Folder Include="UnitTest\Features\Progress\" />
+        <Folder Include="UnitTest\Infrastructure\Content\" />
+        <Folder Include="UnitTest\Infrastructure\Persistence\" />
+        <Folder Include="UnitTest\Infrastructure\Practice\" />
+        <Folder Include="UnitTest\Infrastructure\Progress\" />
+        <Folder Include="UnitTest\Infrastructure\Yaml\" />
+        <Folder Include="ProcessTest\Features\Practice\" />
+    </ItemGroup>
 </Project>

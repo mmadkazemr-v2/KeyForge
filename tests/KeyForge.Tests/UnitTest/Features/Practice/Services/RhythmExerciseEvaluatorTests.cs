@@ -195,11 +195,11 @@ public sealed class RhythmExerciseEvaluatorTests
         ExerciseId = "rhythm-01",
         ExerciseType = ExerciseType.Rhythm,
         ExpectedInputs = expectedMilliseconds.Select(milliseconds => new ExpectedInput
-            {
-                Type = InputEventType.Beat,
-                Value = "beat",
-                ExpectedOffset = TimeSpan.FromMilliseconds(milliseconds)
-            }).ToList()
+        {
+            Type = InputEventType.Beat,
+            Value = "beat",
+            ExpectedOffset = TimeSpan.FromMilliseconds(milliseconds)
+        }).ToList()
             .AsReadOnly()
     };
 
@@ -207,11 +207,11 @@ public sealed class RhythmExerciseEvaluatorTests
         double milliseconds,
         InputSource source = InputSource.ComputerKeyboard,
         InputEventType type = InputEventType.Beat) => new()
-    {
-        Timestamp = Timestamp.AddMilliseconds(milliseconds),
-        Offset = TimeSpan.FromMilliseconds(milliseconds),
-        Source = source,
-        Type = type,
-        Value = "beat"
-    };
+        {
+            Timestamp = Timestamp.AddMilliseconds(milliseconds),
+            Offset = TimeSpan.FromMilliseconds(milliseconds),
+            Source = source,
+            Type = type,
+            Value = "beat"
+        };
 }

@@ -17,10 +17,7 @@ public sealed class MetronomeTimingTests
     }
 
     [Fact]
-    public void GetBeatInterval_InvalidBpm_FailsClearly()
-    {
-        Assert.Throws<ArgumentOutOfRangeException>(() => MetronomeTiming.GetBeatInterval(0));
-    }
+    public void GetBeatInterval_InvalidBpm_FailsClearly() => Assert.Throws<ArgumentOutOfRangeException>(() => MetronomeTiming.GetBeatInterval(0));
 
     [Fact]
     public void GetCountInBeats_ReturnsConfiguredCount()
@@ -33,20 +30,11 @@ public sealed class MetronomeTimingTests
     [InlineData(60, 4, 4000)]
     [InlineData(80, 4, 3000)]
     [InlineData(80, 8, 6000)]
-    public void GetElapsedAtBeatCount_UsesFixedTempoPhase(int bpm, int beatCount, int expectedMilliseconds)
-    {
-        Assert.Equal(expectedMilliseconds, MetronomeTiming.GetElapsedAtBeatCount(bpm, beatCount).TotalMilliseconds);
-    }
+    public void GetElapsedAtBeatCount_UsesFixedTempoPhase(int bpm, int beatCount, int expectedMilliseconds) => Assert.Equal(expectedMilliseconds, MetronomeTiming.GetElapsedAtBeatCount(bpm, beatCount).TotalMilliseconds);
 
     [Fact]
-    public void GetCountInBeats_NegativeCount_FailsClearly()
-    {
-        Assert.Throws<ArgumentOutOfRangeException>(() => MetronomeTiming.GetCountInBeats(-1));
-    }
+    public void GetCountInBeats_NegativeCount_FailsClearly() => Assert.Throws<ArgumentOutOfRangeException>(() => MetronomeTiming.GetCountInBeats(-1));
 
     [Fact]
-    public void GetElapsedAtBeatCount_NegativeCount_FailsClearly()
-    {
-        Assert.Throws<ArgumentOutOfRangeException>(() => MetronomeTiming.GetElapsedAtBeatCount(60, -1));
-    }
+    public void GetElapsedAtBeatCount_NegativeCount_FailsClearly() => Assert.Throws<ArgumentOutOfRangeException>(() => MetronomeTiming.GetElapsedAtBeatCount(60, -1));
 }

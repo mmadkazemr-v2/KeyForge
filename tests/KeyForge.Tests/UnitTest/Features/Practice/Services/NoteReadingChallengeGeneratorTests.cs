@@ -34,11 +34,8 @@ public sealed class NoteReadingChallengeGeneratorTests
     [InlineData("C4")]
     [InlineData("G5-C4")]
     [InlineData("C#4-G5")]
-    public void Create_InvalidOrUnsupportedRange_Throws(string range)
-    {
-        Assert.Throws<InvalidOperationException>(() =>
-            new NoteReadingChallengeGenerator().Create(NoteReading(range)));
-    }
+    public void Create_InvalidOrUnsupportedRange_Throws(string range) => Assert.Throws<InvalidOperationException>(() =>
+                                                                                  new NoteReadingChallengeGenerator().Create(NoteReading(range)));
 
     private static NoteReadingExerciseDefinition NoteReading(string range) => new()
     {

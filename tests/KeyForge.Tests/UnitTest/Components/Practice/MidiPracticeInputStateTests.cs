@@ -41,10 +41,7 @@ public sealed class MidiPracticeInputStateTests
     [InlineData(43, MidiVelocityLevel.Medium)]
     [InlineData(84, MidiVelocityLevel.Medium)]
     [InlineData(85, MidiVelocityLevel.Strong)]
-    public void VelocityLevel_IsClassifiedForPresentationOnly(int velocity, MidiVelocityLevel level)
-    {
-        Assert.Equal(level, MidiPracticeInputState.GetVelocityLevel(velocity));
-    }
+    public void VelocityLevel_IsClassifiedForPresentationOnly(int velocity, MidiVelocityLevel level) => Assert.Equal(level, MidiPracticeInputState.GetVelocityLevel(velocity));
 
     [Fact]
     public void Reset_ClearsDeviceDisconnectOrNavigationPresentationState()

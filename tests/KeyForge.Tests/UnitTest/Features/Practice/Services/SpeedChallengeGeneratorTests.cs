@@ -26,10 +26,7 @@ public sealed class SpeedChallengeGeneratorTests
     }
 
     [Fact]
-    public void Create_InvalidRepetitions_FailsClearly()
-    {
-        Assert.Throws<InvalidOperationException>(() => new SpeedChallengeGenerator().Create(Speed(SpeedPattern.Scale, 0), 80));
-    }
+    public void Create_InvalidRepetitions_FailsClearly() => Assert.Throws<InvalidOperationException>(() => new SpeedChallengeGenerator().Create(Speed(SpeedPattern.Scale, 0), 80));
 
     private static SpeedExerciseDefinition Speed(SpeedPattern pattern, int repetitions) => new()
     {

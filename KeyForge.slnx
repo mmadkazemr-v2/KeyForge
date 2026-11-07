@@ -1,4 +1,5 @@
 <Solution>
+  <File Path=".editorconfig" />
   <Folder Name="/src/">
     <Project Path="src/KeyForge/KeyForge.csproj" />
   </Folder>

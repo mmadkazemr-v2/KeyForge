@@ -13,7 +13,7 @@ namespace KeyForge.Features.Lessons.Services;
 public interface IExerciseCompletionEvaluator
 {
     /// <summary>Returns whether a completed successful attempt exists, optionally meeting a score threshold.</summary>
-    bool HasSuccessfulAttempt(string lessonId, int? minimumScore = null);
+    public bool HasSuccessfulAttempt(string lessonId, int? minimumScore = null);
 
     /// <summary>
     /// Returns <c>true</c> when every exercise in <paramref name="exercises"/>
@@ -31,5 +31,5 @@ public interface IExerciseCompletionEvaluator
     /// An empty <paramref name="exercises"/> list is considered vacuously
     /// complete (all zero exercises are satisfied).
     /// </returns>
-    bool AreAllExercisesCompleted(string lessonId, IReadOnlyList<ExerciseDefinition> exercises);
+    public bool AreAllExercisesCompleted(string lessonId, IReadOnlyList<ExerciseDefinition> exercises);
 }

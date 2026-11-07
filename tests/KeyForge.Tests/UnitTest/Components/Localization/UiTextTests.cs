@@ -77,10 +77,7 @@ public sealed class UiTextTests
     [InlineData(null, false)]
     public void IsSupportedLanguage_RecognizesOnlyConfiguredLanguages(
         string? language,
-        bool expected)
-    {
-        Assert.Equal(expected, UiText.IsSupportedLanguage(language));
-    }
+        bool expected) => Assert.Equal(expected, UiText.IsSupportedLanguage(language));
 
     [Fact]
     public void AudioStatusLabels_LocalizePerCulture()

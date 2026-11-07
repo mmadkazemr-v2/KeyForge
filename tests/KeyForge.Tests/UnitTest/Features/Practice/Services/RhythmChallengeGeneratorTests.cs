@@ -12,7 +12,7 @@ public sealed class RhythmChallengeGeneratorTests
             Measures = Enumerable.Range(0, 100).Select(_ => new RhythmMeasureDefinition
             {
                 Pattern = Enumerable.Range(0, 16).Select(_ => new RhythmPatternEvent
-                    { Duration = RhythmDuration.Sixteenth }).ToList()
+                { Duration = RhythmDuration.Sixteenth }).ToList()
             }).ToList()
         };
 
@@ -72,45 +72,33 @@ public sealed class RhythmChallengeGeneratorTests
     [Theory]
     [InlineData(0)]
     [InlineData(-1)]
-    public void CalculateBeatInterval_InvalidBpm_ThrowsArgumentOutOfRangeException(int bpm)
-    {
-        Assert.Throws<ArgumentOutOfRangeException>(() =>
-            RhythmChallengeGenerator.CalculateBeatInterval(bpm));
-    }
+    public void CalculateBeatInterval_InvalidBpm_ThrowsArgumentOutOfRangeException(int bpm) => Assert.Throws<ArgumentOutOfRangeException>(() =>
+                                                                                                        RhythmChallengeGenerator.CalculateBeatInterval(bpm));
 
     [Theory]
     [InlineData("four-four")]
     [InlineData("0/4")]
     [InlineData("4/0")]
-    public void GetBeatsPerPattern_InvalidMeter_ThrowsInvalidOperationException(string meter)
-    {
-        Assert.Throws<InvalidOperationException>(() =>
-            RhythmChallengeGenerator.GetBeatsPerPattern(meter));
-    }
+    public void GetBeatsPerPattern_InvalidMeter_ThrowsInvalidOperationException(string meter) => Assert.Throws<InvalidOperationException>(() =>
+                                                                                                          RhythmChallengeGenerator.GetBeatsPerPattern(meter));
 
     [Fact]
-    public void GetBeatsPerPattern_EmptyMeter_ThrowsArgumentException()
-    {
-        Assert.Throws<ArgumentException>(() =>
-            RhythmChallengeGenerator.GetBeatsPerPattern(string.Empty));
-    }
+    public void GetBeatsPerPattern_EmptyMeter_ThrowsArgumentException() => Assert.Throws<ArgumentException>(() =>
+                                                                                    RhythmChallengeGenerator.GetBeatsPerPattern(string.Empty));
 
     [Fact]
-    public void Create_InvalidPatternCount_ThrowsInvalidOperationException()
-    {
-        Assert.Throws<InvalidOperationException>(() =>
-            new RhythmChallengeGenerator().Create(
-                Rhythm(tempo: 120, timeSignature: "4/4", patternCount: 0)));
-    }
+    public void Create_InvalidPatternCount_ThrowsInvalidOperationException() => Assert.Throws<InvalidOperationException>(() =>
+                                                                                         new RhythmChallengeGenerator().Create(
+                                                                                             Rhythm(tempo: 120, timeSignature: "4/4", patternCount: 0)));
 
     private static RhythmExerciseDefinition Rhythm(
         int tempo,
         string timeSignature,
         int patternCount) => new()
-    {
-        Id = "rhythm-01",
-        Tempo = new TempoConfiguration { DefaultBpm = tempo },
-        TimeSignature = timeSignature,
-        PatternCount = patternCount
-    };
+        {
+            Id = "rhythm-01",
+            Tempo = new TempoConfiguration { DefaultBpm = tempo },
+            TimeSignature = timeSignature,
+            PatternCount = patternCount
+        };
 }

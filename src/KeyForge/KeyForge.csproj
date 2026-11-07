@@ -1,44 +1,39 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
-
-  <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="YamlDotNet" Version="18.1.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="Content\Lessons\**\*.yaml" CopyToOutputDirectory="PreserveNewest" />
-    <Content Include="Content\Lessons\**\*.yml" CopyToOutputDirectory="PreserveNewest" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Content\Exercises\" />
-    <Folder Include="Content\Lessons\" />
-    <Folder Include="Features\Exercises\Components\" />
-    <Folder Include="Features\Exercises\Models\" />
-    <Folder Include="Features\Exercises\Services\" />
-    <Folder Include="Features\Lessons\Components\" />
-    <Folder Include="Features\Lessons\Models\" />
-    <Folder Include="Features\Lessons\Services\" />
-    <Folder Include="Features\Midi\Models\" />
-    <Folder Include="Features\Midi\Services\" />
-    <Folder Include="Features\Practice\Components\" />
-    <Folder Include="Features\Practice\Models\" />
-    <Folder Include="Features\Practice\Services\" />
-    <Folder Include="Features\Progress\Models\" />
-    <Folder Include="Features\Progress\Services\" />
-    <Folder Include="Infrastructure\Midi\" />
-    <Folder Include="Infrastructure\Content\Lessons\" />
-    <Folder Include="Infrastructure\Persistence\" />
-    <Folder Include="Infrastructure\Persistence\Progress\" />
-    <Folder Include="Infrastructure\Progress\" />
-    <Folder Include="Infrastructure\Progress\InMemory\" />
-    <Folder Include="Infrastructure\Yaml\Parsing\" />
-  </ItemGroup>
-
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+    </PropertyGroup>
+    <ItemGroup>
+        <PackageReference Include="YamlDotNet" Version="18.1.0" />
+    </ItemGroup>
+    <ItemGroup>
+        <Content Include="Content\Lessons\**\*.yaml" CopyToOutputDirectory="PreserveNewest" />
+        <Content Include="Content\Lessons\**\*.yml" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+    <ItemGroup>
+        <Folder Include="Content\Exercises\" />
+        <Folder Include="Content\Lessons\" />
+        <Folder Include="Features\Exercises\Components\" />
+        <Folder Include="Features\Exercises\Models\" />
+        <Folder Include="Features\Exercises\Services\" />
+        <Folder Include="Features\Lessons\Components\" />
+        <Folder Include="Features\Lessons\Models\" />
+        <Folder Include="Features\Lessons\Services\" />
+        <Folder Include="Features\Midi\Models\" />
+        <Folder Include="Features\Midi\Services\" />
+        <Folder Include="Features\Practice\Components\" />
+        <Folder Include="Features\Practice\Models\" />
+        <Folder Include="Features\Practice\Services\" />
+        <Folder Include="Features\Progress\Models\" />
+        <Folder Include="Features\Progress\Services\" />
+        <Folder Include="Infrastructure\Midi\" />
+        <Folder Include="Infrastructure\Content\Lessons\" />
+        <Folder Include="Infrastructure\Persistence\" />
+        <Folder Include="Infrastructure\Persistence\Progress\" />
+        <Folder Include="Infrastructure\Progress\" />
+        <Folder Include="Infrastructure\Progress\InMemory\" />
+        <Folder Include="Infrastructure\Yaml\Parsing\" />
+    </ItemGroup>
 </Project>

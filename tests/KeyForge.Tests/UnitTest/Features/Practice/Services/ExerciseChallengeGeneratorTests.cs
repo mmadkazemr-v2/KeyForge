@@ -39,18 +39,12 @@ public sealed class ExerciseChallengeGeneratorTests
     }
 
     [Fact]
-    public void Create_InvalidNoteRange_ThrowsInvalidOperationException()
-    {
-        Assert.Throws<InvalidOperationException>(() =>
-            new ExerciseChallengeGenerator().Create(NoteReading(string.Empty)));
-    }
+    public void Create_InvalidNoteRange_ThrowsInvalidOperationException() => Assert.Throws<InvalidOperationException>(() =>
+                                                                                      new ExerciseChallengeGenerator().Create(NoteReading(string.Empty)));
 
     [Fact]
-    public void Create_NullExercise_ThrowsArgumentNullException()
-    {
-        Assert.Throws<ArgumentNullException>(() =>
-            new ExerciseChallengeGenerator().Create(null!));
-    }
+    public void Create_NullExercise_ThrowsArgumentNullException() => Assert.Throws<ArgumentNullException>(() =>
+                                                                              new ExerciseChallengeGenerator().Create(null!));
 
     private static NoteReadingExerciseDefinition NoteReading(string range) => new()
     {

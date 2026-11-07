@@ -73,21 +73,22 @@ public sealed class EarTrainingChallengeGeneratorTests
     [InlineData("")]
     [InlineData("C minor")]
     [InlineData("H major")]
-    public void Create_ChordRecognition_RejectsUnsupportedChordKeys(string key)
+    public void Create_ChordRecognition_RejectsUnsupportedChordKeys(string key) => Assert.Throws<InvalidOperationException>(() => new EarTrainingChallengeGenerator().Create(new EarTrainingExerciseDefinition
     {
-        Assert.Throws<InvalidOperationException>(() => new EarTrainingChallengeGenerator().Create(new EarTrainingExerciseDefinition
-        {
-            Id = "ear-01", TaskType = EarTrainingTask.ChordRecognition, Rounds = 2,
-            Keys = string.IsNullOrEmpty(key) ? [] : [key]
-        }));
-    }
+        Id = "ear-01",
+        TaskType = EarTrainingTask.ChordRecognition,
+        Rounds = 2,
+        Keys = string.IsNullOrEmpty(key) ? [] : [key]
+    }));
 
     [Fact]
     public void Create_UnsupportedTask_ReturnsSafeUnsupportedChallenge()
     {
         var challenge = new EarTrainingChallengeGenerator().Create(new EarTrainingExerciseDefinition
         {
-            Id = "ear-01", TaskType = EarTrainingTask.ScaleRecognition, Rounds = 4
+            Id = "ear-01",
+            TaskType = EarTrainingTask.ScaleRecognition,
+            Rounds = 4
         });
 
         Assert.Empty(challenge.ExpectedInputs);
@@ -232,11 +233,11 @@ public sealed class EarTrainingChallengeGeneratorTests
         int rounds,
         List<string> intervals,
         ExerciseDirection direction = ExerciseDirection.Ascending) => new()
-    {
-        Id = "ear-interval-01",
-        TaskType = EarTrainingTask.IntervalRecognition,
-        Rounds = rounds,
-        Intervals = intervals,
-        Direction = direction
-    };
+        {
+            Id = "ear-interval-01",
+            TaskType = EarTrainingTask.IntervalRecognition,
+            Rounds = rounds,
+            Intervals = intervals,
+            Direction = direction
+        };
 }

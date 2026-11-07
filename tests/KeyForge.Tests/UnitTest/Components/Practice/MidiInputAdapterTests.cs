@@ -163,8 +163,12 @@ public sealed class MidiInputAdapterTests
         Assert.True(router.Accepts(Message(0x90, 60, 80, 1_250, 1)));
         Assert.False(router.Accepts(new MidiInputMessage
         {
-            DeviceId = "unrelated", Status = 0x90, Data1 = 60, Data2 = 80,
-            TimestampMilliseconds = 1_250, Sequence = 2
+            DeviceId = "unrelated",
+            Status = 0x90,
+            Data1 = 60,
+            Data2 = 80,
+            TimestampMilliseconds = 1_250,
+            Sequence = 2
         }));
         router.SetSelectedDevice("controller-1", false);
         Assert.False(router.Accepts(Message(0x90, 60, 80, 1_250, 3)));

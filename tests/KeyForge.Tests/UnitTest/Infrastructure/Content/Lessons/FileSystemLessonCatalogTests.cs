@@ -196,10 +196,7 @@ public sealed class FileSystemLessonCatalogTests : IDisposable
         return new FileSystemLessonCatalog(options, new YamlLessonParser());
     }
 
-    private void WriteLessonFile(string fileName, string id, int order)
-    {
-        File.WriteAllText(
+    private void WriteLessonFile(string fileName, string id, int order) => File.WriteAllText(
             Path.Combine(_contentDirectory, fileName),
             $"id: {id}\norder: {order}\n");
-    }
 }

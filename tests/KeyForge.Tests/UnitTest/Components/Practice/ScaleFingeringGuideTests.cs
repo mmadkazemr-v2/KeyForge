@@ -12,16 +12,10 @@ public sealed class ScaleFingeringGuideTests
     public void GetFingers_ReturnsConventionalCmajorOneOctaveFingering(
         PracticeHand hand,
         ScaleDirection direction,
-        int[] expected)
-    {
-        Assert.Equal(expected, ScaleFingeringGuide.GetFingers(hand, direction));
-    }
+        int[] expected) => Assert.Equal(expected, ScaleFingeringGuide.GetFingers(hand, direction));
 
     [Theory]
     [InlineData(PracticeHand.Both)]
     [InlineData(PracticeHand.Either)]
-    public void GetFingers_RejectsNonSingleHandSelection(PracticeHand hand)
-    {
-        Assert.Throws<ArgumentOutOfRangeException>(() => ScaleFingeringGuide.GetFingers(hand, ScaleDirection.Ascending));
-    }
+    public void GetFingers_RejectsNonSingleHandSelection(PracticeHand hand) => Assert.Throws<ArgumentOutOfRangeException>(() => ScaleFingeringGuide.GetFingers(hand, ScaleDirection.Ascending));
 }

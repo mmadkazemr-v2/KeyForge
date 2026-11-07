@@ -119,11 +119,11 @@ public sealed class SequenceExerciseEvaluatorTests
         ExerciseId = "sequence-01",
         ExerciseType = type,
         ExpectedInputs = notes.Select((note, index) => new ExpectedInput
-            {
-                Type = InputEventType.Note,
-                Value = note,
-                ExpectedOffset = timing ? TimeSpan.FromMilliseconds(index * 500) : null
-            }).ToList()
+        {
+            Type = InputEventType.Note,
+            Value = note,
+            ExpectedOffset = timing ? TimeSpan.FromMilliseconds(index * 500) : null
+        }).ToList()
             .AsReadOnly(),
         Speed = type == ExerciseType.Speed ? new SpeedChallengeDetails { Pattern = SpeedPattern.Scale, ExpectedNotes = notes } : null,
         FingerIndependence = type == ExerciseType.FingerIndependence ? new FingerIndependenceChallengeDetails { Hand = PracticeHand.Right, Fingers = [1, 2], ExpectedNotes = notes } : null

@@ -81,11 +81,9 @@ public sealed class IntervalChallengeGeneratorTests
     }
 
     [Fact]
-    public void Create_MissingIntervals_Throws()
+    public void Create_MissingIntervals_Throws() => Assert.Throws<InvalidOperationException>(() => new IntervalChallengeGenerator().Create(new()
     {
-        Assert.Throws<InvalidOperationException>(() => new IntervalChallengeGenerator().Create(new()
-        {
-            Id = "interval-invalid", StartingNote = "C4"
-        }));
-    }
+        Id = "interval-invalid",
+        StartingNote = "C4"
+    }));
 }

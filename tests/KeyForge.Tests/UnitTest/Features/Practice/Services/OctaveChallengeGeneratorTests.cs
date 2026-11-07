@@ -31,11 +31,10 @@ public sealed class OctaveChallengeGeneratorTests
     }
 
     [Fact]
-    public void Create_NonPositiveOctaves_Throws()
+    public void Create_NonPositiveOctaves_Throws() => Assert.Throws<InvalidOperationException>(() => new OctaveChallengeGenerator().Create(new()
     {
-        Assert.Throws<InvalidOperationException>(() => new OctaveChallengeGenerator().Create(new()
-        {
-            Id = "octave-invalid", StartingNote = "C3", Octaves = 0
-        }));
-    }
+        Id = "octave-invalid",
+        StartingNote = "C3",
+        Octaves = 0
+    }));
 }

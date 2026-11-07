@@ -15,9 +15,12 @@ public sealed class MidiPracticeProcessTests
         };
         var lesson = new LessonDefinition
         {
-            Id = "lesson-midi", Title = "MIDI", Order = 1,
+            Id = "lesson-midi",
+            Title = "MIDI",
+            Order = 1,
             Unlock = new UnlockRule { Mode = UnlockMode.Immediate },
-            Completion = new CompletionRule { RequireAllExercises = true }, Exercises = [exercise]
+            Completion = new CompletionRule { RequireAllExercises = true },
+            Exercises = [exercise]
         };
         var catalog = new Catalog(lesson);
         var store = new InMemoryProgressStore();
@@ -31,9 +34,13 @@ public sealed class MidiPracticeProcessTests
         {
             var input = MidiInputAdapter.TryCreate(new MidiInputMessage
             {
-                DeviceId = "controller", DeviceName = "V61 MKII", Status = 0x90,
+                DeviceId = "controller",
+                DeviceName = "V61 MKII",
+                Status = 0x90,
                 Data1 = MusicalNote.Parse(expected.Value).MidiNumber,
-                Data2 = 110, TimestampMilliseconds = 12_500 + sequence, Sequence = ++sequence
+                Data2 = 110,
+                TimestampMilliseconds = 12_500 + sequence,
+                Sequence = ++sequence
             }, runtime.StartedAt.AddMilliseconds(500), 12_000);
 
             runtime.CaptureMidiEvent(input!);

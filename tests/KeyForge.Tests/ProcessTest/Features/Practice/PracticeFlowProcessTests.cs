@@ -266,12 +266,12 @@ public sealed class PracticeFlowProcessTests
         RuntimeExercise runtime,
         string answer,
         InputSource source) => new()
-    {
-        Timestamp = runtime.StartedAt.AddMilliseconds(350),
-        Source = source,
-        Type = InputEventType.Note,
-        Value = answer
-    };
+        {
+            Timestamp = runtime.StartedAt.AddMilliseconds(350),
+            Source = source,
+            Type = InputEventType.Note,
+            Value = answer
+        };
 
     private sealed record Flow(
         PracticeSessionService Session,

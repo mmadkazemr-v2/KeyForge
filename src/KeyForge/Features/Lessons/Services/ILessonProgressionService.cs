@@ -20,7 +20,7 @@ public interface ILessonProgressionService
     /// <c>true</c> when the lesson is unlocked; <c>false</c> when it is
     /// locked or when the lesson does not exist.
     /// </returns>
-    bool IsUnlocked(string lessonId);
+    public bool IsUnlocked(string lessonId);
 
     /// <summary>
     /// Determines whether a lesson is considered completed based on the
@@ -33,5 +33,5 @@ public interface ILessonProgressionService
     /// <c>true</c> when the lesson is completed; <c>false</c> when it is
     /// not completed or when the lesson does not exist.
     /// </returns>
-    bool IsCompleted(string lessonId);
+    public bool IsCompleted(string lessonId);
 }

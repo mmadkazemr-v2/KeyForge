@@ -12,9 +12,12 @@ public sealed class SequencePracticeProcessTests
             : new FingerIndependenceExerciseDefinition { Id = "finger-01", Fingers = [1, 2], Hand = PracticeHand.Right, Tempo = new TempoConfiguration { DefaultBpm = 120 } };
         var lesson = new LessonDefinition
         {
-            Id = "lesson-sequence", Title = "Sequence", Order = 1,
+            Id = "lesson-sequence",
+            Title = "Sequence",
+            Order = 1,
             Unlock = new UnlockRule { Mode = UnlockMode.Immediate },
-            Completion = new CompletionRule { RequireAllExercises = true }, Exercises = [exercise]
+            Completion = new CompletionRule { RequireAllExercises = true },
+            Exercises = [exercise]
         };
         var catalog = new Catalog(lesson);
         var store = new InMemoryProgressStore();

@@ -68,10 +68,10 @@ public sealed class NoteReadingExerciseEvaluatorTests
         ExerciseId = "note-01",
         ExerciseType = ExerciseType.NoteReading,
         ExpectedInputs = notes.Select(note => new ExpectedInput
-            {
-                Type = InputEventType.Note,
-                Value = note
-            }).ToList()
+        {
+            Type = InputEventType.Note,
+            Value = note
+        }).ToList()
             .AsReadOnly()
     };
 
@@ -79,11 +79,11 @@ public sealed class NoteReadingExerciseEvaluatorTests
         string value,
         InputSource source = InputSource.VirtualPiano,
         TimeSpan? offset = null) => new()
-    {
-        Timestamp = StartedAt,
-        Offset = offset ?? TimeSpan.Zero,
-        Source = source,
-        Type = InputEventType.Note,
-        Value = value
-    };
+        {
+            Timestamp = StartedAt,
+            Offset = offset ?? TimeSpan.Zero,
+            Source = source,
+            Type = InputEventType.Note,
+            Value = value
+        };
 }

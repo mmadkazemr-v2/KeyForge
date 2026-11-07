@@ -48,7 +48,7 @@ public static class PitchSequenceBuilder
             .SelectMany(octave => degrees.Take(7).Select(degree => root.MidiNumber + octave * 12 + degree))
             .Append(upperMidi)
             .ToArray();
-        IEnumerable<int> directedMidi = scale.Direction switch
+        var directedMidi = scale.Direction switch
         {
             ScaleDirection.Ascending => ascendingMidi,
             ScaleDirection.Descending => ascendingMidi.Reverse(),

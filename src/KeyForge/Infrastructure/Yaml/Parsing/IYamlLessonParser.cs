@@ -20,5 +20,5 @@ public interface IYamlLessonParser
     /// <exception cref="UnknownExerciseTypeException">
     /// Thrown when an exercise declares an unsupported 'type' discriminator.
     /// </exception>
-    LessonDefinition Parse(string yaml);
+    public LessonDefinition Parse(string yaml);
 }

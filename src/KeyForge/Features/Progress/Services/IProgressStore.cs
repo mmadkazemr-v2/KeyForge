@@ -15,16 +15,16 @@ public interface IProgressStore
     /// Retrieves the stored progress for a single lesson, or <c>null</c> when
     /// no progress has been recorded for the given id.
     /// </summary>
-    LessonProgress? GetProgress(string lessonId);
+    public LessonProgress? GetProgress(string lessonId);
 
     /// <summary>
     /// Returns all progress records currently stored.
     /// </summary>
-    IReadOnlyList<LessonProgress> GetAllProgress();
+    public IReadOnlyList<LessonProgress> GetAllProgress();
 
     /// <summary>
     /// Creates or updates the progress record for the lesson identified by
     /// <see cref="LessonProgress.LessonId"/>.
     /// </summary>
-    void SaveProgress(LessonProgress progress);
+    public void SaveProgress(LessonProgress progress);
 }

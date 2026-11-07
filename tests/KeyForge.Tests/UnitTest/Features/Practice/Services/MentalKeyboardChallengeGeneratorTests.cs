@@ -7,7 +7,10 @@ public sealed class MentalKeyboardChallengeGeneratorTests
     {
         var challenge = new MentalKeyboardChallengeGenerator().Create(new MentalKeyboardExerciseDefinition
         {
-            Id = "mental-01", StartingNote = "C4", Steps = 4, Direction = ExerciseDirection.Ascending
+            Id = "mental-01",
+            StartingNote = "C4",
+            Steps = 4,
+            Direction = ExerciseDirection.Ascending
         });
 
         Assert.Equal(NoteReadingChallengeGenerator.DefaultQuestionCount, challenge.ExpectedInputs.Count);
@@ -31,11 +34,10 @@ public sealed class MentalKeyboardChallengeGeneratorTests
     }
 
     [Fact]
-    public void Create_InvalidConfiguration_Throws()
+    public void Create_InvalidConfiguration_Throws() => Assert.Throws<InvalidOperationException>(() => new MentalKeyboardChallengeGenerator().Create(new()
     {
-        Assert.Throws<InvalidOperationException>(() => new MentalKeyboardChallengeGenerator().Create(new()
-        {
-            Id = "mental-invalid", StartingNote = "", Steps = 0
-        }));
-    }
+        Id = "mental-invalid",
+        StartingNote = "",
+        Steps = 0
+    }));
 }

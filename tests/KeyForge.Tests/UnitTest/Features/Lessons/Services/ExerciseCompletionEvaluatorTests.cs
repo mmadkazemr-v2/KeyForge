@@ -15,31 +15,28 @@ public sealed class ExerciseCompletionEvaluatorTests
 
     private static ExerciseAttempt SuccessfulAttempt(
         string lessonId, string exerciseId) => new()
-    {
-        LessonId = lessonId,
-        ExerciseId = exerciseId,
-        StartedAt = DateTime.UtcNow,
-        CompletedAt = DateTime.UtcNow,
-        Score = 80,
-        IsSuccessful = true
-    };
+        {
+            LessonId = lessonId,
+            ExerciseId = exerciseId,
+            StartedAt = DateTime.UtcNow,
+            CompletedAt = DateTime.UtcNow,
+            Score = 80,
+            IsSuccessful = true
+        };
 
     private static ExerciseAttempt FailedAttempt(
         string lessonId, string exerciseId) => new()
-    {
-        LessonId = lessonId,
-        ExerciseId = exerciseId,
-        StartedAt = DateTime.UtcNow,
-        CompletedAt = DateTime.UtcNow,
-        Score = 30,
-        IsSuccessful = false
-    };
+        {
+            LessonId = lessonId,
+            ExerciseId = exerciseId,
+            StartedAt = DateTime.UtcNow,
+            CompletedAt = DateTime.UtcNow,
+            Score = 30,
+            IsSuccessful = false
+        };
 
     private static ExerciseCompletionEvaluator CreateEvaluator(
-        InMemoryExerciseAttemptRecorder? recorder = null)
-    {
-        return new ExerciseCompletionEvaluator(recorder ?? new InMemoryExerciseAttemptRecorder());
-    }
+        InMemoryExerciseAttemptRecorder? recorder = null) => new ExerciseCompletionEvaluator(recorder ?? new InMemoryExerciseAttemptRecorder());
 
     #region Basic completion tests
 

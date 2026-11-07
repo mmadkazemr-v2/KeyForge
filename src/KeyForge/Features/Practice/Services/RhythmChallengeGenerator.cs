@@ -40,7 +40,8 @@ public sealed class RhythmChallengeGenerator
 
     public static TimeSpan CalculateBeatInterval(int beatsPerMinute)
     {
-        if (beatsPerMinute <= 0) {
+        if (beatsPerMinute <= 0)
+        {
             throw new ArgumentOutOfRangeException(
                 nameof(beatsPerMinute),
                 "Beats per minute must be greater than zero.");

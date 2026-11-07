@@ -26,36 +26,24 @@ public sealed class RhythmKeyboardInputAdapterTests
     }
 
     [Fact]
-    public void Create_KeyRepeat_IsIgnored()
-    {
-        Assert.Null(RhythmKeyboardInputAdapter.Create(
+    public void Create_KeyRepeat_IsIgnored() => Assert.Null(RhythmKeyboardInputAdapter.Create(
             "KeyK", true, true, 100, TimelineStart));
-    }
 
     [Theory]
     [InlineData("KeyJ")]
     [InlineData("Space")]
     [InlineData("k")]
-    public void Create_UnrelatedKey_IsIgnored(string code)
-    {
-        Assert.Null(RhythmKeyboardInputAdapter.Create(
+    public void Create_UnrelatedKey_IsIgnored(string code) => Assert.Null(RhythmKeyboardInputAdapter.Create(
             code, false, true, 100, TimelineStart));
-    }
 
     [Fact]
-    public void Create_DuringCountdown_IsIgnored()
-    {
-        Assert.Null(RhythmKeyboardInputAdapter.Create(
+    public void Create_DuringCountdown_IsIgnored() => Assert.Null(RhythmKeyboardInputAdapter.Create(
             "KeyK", false, false, 100, TimelineStart));
-    }
 
     [Theory]
     [InlineData(-1)]
     [InlineData(double.NaN)]
     [InlineData(double.PositiveInfinity)]
-    public void Create_InvalidElapsedTime_IsIgnored(double elapsedMilliseconds)
-    {
-        Assert.Null(RhythmKeyboardInputAdapter.Create(
+    public void Create_InvalidElapsedTime_IsIgnored(double elapsedMilliseconds) => Assert.Null(RhythmKeyboardInputAdapter.Create(
             "KeyK", false, true, elapsedMilliseconds, TimelineStart));
-    }
 }

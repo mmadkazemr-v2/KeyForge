@@ -27,10 +27,10 @@ public interface IPracticeSessionService
     /// <exception cref="InvalidOperationException">
     /// Thrown when the lesson exists but is locked.
     /// </exception>
-    PracticeSession? StartSession(string lessonId);
+    public PracticeSession? StartSession(string lessonId);
 
     /// <summary>Creates a runtime and challenge for the current exercise.</summary>
-    RuntimeExercise StartExercise(PracticeSession session);
+    public RuntimeExercise StartExercise(PracticeSession session);
 
     /// <summary>Evaluates captured runtime input and records the generated attempt.</summary>
     /// <param name="session">
@@ -50,7 +50,7 @@ public interface IPracticeSessionService
     /// <exception cref="InvalidOperationException">
     /// Thrown when the session has already finished.
     /// </exception>
-    SessionResult SubmitAttempt(
+    public SessionResult SubmitAttempt(
         PracticeSession session,
         RuntimeExercise runtimeExercise,
         DateTime completedAt);
