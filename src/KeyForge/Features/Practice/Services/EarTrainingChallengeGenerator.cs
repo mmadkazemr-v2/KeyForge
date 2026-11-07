@@ -22,6 +22,7 @@ public sealed class EarTrainingChallengeGenerator
         return exercise.TaskType switch
         {
             EarTrainingTask.PitchMatching => CreatePitchMatching(exercise),
+            EarTrainingTask.PitchComparison => CreateIntervalRecognition(exercise),
             EarTrainingTask.IntervalRecognition => CreateIntervalRecognition(exercise),
             EarTrainingTask.ChordRecognition => CreateChordRecognition(exercise),
             _ => CreateUnsupported(exercise)
@@ -80,10 +81,11 @@ public sealed class EarTrainingChallengeGenerator
 
     private ExerciseChallenge CreateIntervalRecognition(EarTrainingExerciseDefinition exercise)
     {
-        var intervals = ResolveIntervals(exercise);
+        var comparison = exercise.TaskType == EarTrainingTask.PitchComparison;
+        var intervals = comparison ? new[] { "M2", "M3" } : ResolveIntervals(exercise);
         var notes = GetAvailableNotes(exercise);
         var questions = Enumerable.Range(0, exercise.Rounds)
-            .Select(index => CreateIntervalQuestion(intervals, notes, exercise.Direction, index))
+            .Select(index => CreateIntervalQuestion(intervals, notes, comparison ? ExerciseDirection.Both : exercise.Direction, index))
             .ToArray();
 
         return new ExerciseChallenge
@@ -93,7 +95,7 @@ public sealed class EarTrainingChallengeGenerator
             ExpectedInputs = questions.Select(question => new ExpectedInput
             {
                 Type = InputEventType.Choice,
-                Value = question.Interval
+                Value = comparison ? (question.Direction == ExerciseDirection.Ascending ? "higher" : "lower") : question.Interval
             }).ToArray(),
             EarTraining = new EarTrainingChallengeDetails
             {
@@ -101,7 +103,7 @@ public sealed class EarTrainingChallengeGenerator
                 AvailableNotes = questions.SelectMany(question => new[] { question.SourceNote, question.TargetNote })
                     .Distinct()
                     .ToArray(),
-                IntervalChoices = intervals,
+                IntervalChoices = comparison ? new[] { "higher", "lower" } : intervals,
                 IntervalQuestions = questions
             }
         };

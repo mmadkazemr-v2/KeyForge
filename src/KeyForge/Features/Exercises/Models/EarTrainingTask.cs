@@ -28,5 +28,7 @@ public enum EarTrainingTask
     /// <summary>
     /// Transcribing a short melody by ear.
     /// </summary>
+    PitchComparison,
+
     MelodyDictation
 }

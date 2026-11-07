@@ -53,7 +53,7 @@ exercises:
     description: "گوش دهید و مشخص کنید نت دوم زیرتر است یا بم‌تر."
     duration: 4
     difficulty: easy
-    taskType: pitchMatching
+    taskType: pitchComparison
     rounds: 10
     keys: [C major]
 

@@ -8,8 +8,8 @@
     <header class="kf-practice-workspace__header">
         <div>
             <p class="kf-meta">@UiText.EarTrainingPractice</p>
-            <h2 id="interval-recognition-title" class="kf-card__title">@UiText.IdentifyTheInterval</h2>
-            <p class="kf-card__description">@UiText.IntervalRecognitionInstructions</p>
+            <h2 id="interval-recognition-title" class="kf-card__title">@(IsComparison ? UiText.PitchComparisonPrompt : UiText.IdentifyTheInterval)</h2>
+            <p class="kf-card__description">@(IsComparison ? UiText.PitchComparisonPrompt : UiText.IntervalRecognitionInstructions)</p>
         </div>
         <span class="kf-status-badge kf-status-badge--available">@UiText.GetQuestionPosition(CurrentQuestionNumber, QuestionCount)</span>
     </header>
@@ -51,7 +51,7 @@
                         disabled="@IsAnswered"
                         aria-pressed="@(IsSelected(choice) ? "true" : "false")"
                         @onclick='() => HandleChoice(choice)'>
-                    @UiText.GetIntervalName(choice)
+                    @ChoiceLabel(choice)
                 </button>
             }
         </div>
@@ -65,8 +65,8 @@
                 <h3 class="kf-section-title">@(IsCurrentAnswerCorrect ? UiText.CorrectAnswer : UiText.IncorrectAnswer)</h3>
             </div>
             <dl class="kf-practice-feedback__values">
-                <div><dt>@UiText.TargetInterval</dt><dd>@UiText.GetIntervalName(CurrentQuestion.Interval)</dd></div>
-                <div><dt>@UiText.YourAnswer</dt><dd>@UiText.GetIntervalName(_selectedChoice ?? string.Empty)</dd></div>
+                <div><dt>@UiText.TargetInterval</dt><dd>@ChoiceLabel(CurrentExpectedInput.Value)</dd></div>
+                <div><dt>@UiText.YourAnswer</dt><dd>@ChoiceLabel(_selectedChoice ?? string.Empty)</dd></div>
                 <div><dt>@UiText.SourceNote</dt><dd><bdi>@CurrentQuestion.SourceNote</bdi></dd></div>
                 <div><dt>@UiText.TargetNote</dt><dd><bdi>@CurrentQuestion.TargetNote</bdi></dd></div>
             </dl>
@@ -90,6 +90,9 @@
     [Parameter, EditorRequired] public RuntimeExercise RuntimeExercise { get; set; } = null!;
     [Parameter] public EventCallback<DateTime> OnCompleted { get; set; }
 
+    private bool IsComparison => Details.TaskType == EarTrainingTask.PitchComparison;
+    private string ChoiceLabel(string choice) => choice == "higher" ? UiText.Higher : choice == "lower" ? UiText.Lower : UiText.GetIntervalName(choice);
+    private ExerciseInputEvent? _firstInput;
     private int _questionIndex;
     private string? _selectedChoice;
     private ExerciseInputEvent? _pendingInput;
@@ -165,6 +168,7 @@
 
     private void RetryQuestion()
     {
+        _firstInput ??= _pendingInput;
         _pendingInput = null;
         _selectedChoice = null;
     }
@@ -172,7 +176,8 @@
     private async Task AcceptAnswer()
     {
         if (_pendingInput is null) return;
-        RuntimeExercise.CaptureInput(_pendingInput);
+        RuntimeExercise.CaptureInput(_firstInput ?? _pendingInput);
+        _firstInput = null;
         if (_questionIndex == QuestionCount - 1)
         {
             await OnCompleted.InvokeAsync(DateTime.UtcNow);

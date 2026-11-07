@@ -421,6 +421,9 @@ public static class UiText
         "This attempt could not be submitted. Please try again.");
     public static string Hand => Select("دست", "Hand");
     public static string ExerciseConfiguration => Select("تنظیمات تمرین", "Exercise configuration");
+    public static string Higher => Select("زیرتر", "Higher");
+    public static string Lower => Select("بم‌تر", "Lower");
+    public static string PitchComparisonPrompt => Select("نت دوم زیرتر است یا بم‌تر؟", "Is the second note higher or lower?");
     public static string TimeSignature => Select("کسر میزان", "Time signature");
     public static string NoteValues => Select("ارزش زمانی نت‌ها", "Note values");
     public static string PatternCount => Select("تعداد الگوها", "Pattern count");

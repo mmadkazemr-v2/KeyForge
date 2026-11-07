@@ -98,7 +98,7 @@ else
     private int QuestionCount => RuntimeExercise.Challenge.ExpectedInputs.Count;
     private int CurrentQuestionNumber => _questionIndex + 1;
     private bool IsIntervalRecognitionMode =>
-        RuntimeExercise.Definition is EarTrainingExerciseDefinition { TaskType: EarTrainingTask.IntervalRecognition };
+        RuntimeExercise.Definition is EarTrainingExerciseDefinition { TaskType: EarTrainingTask.IntervalRecognition or EarTrainingTask.PitchComparison };
     private bool IsChordRecognitionMode =>
         RuntimeExercise.Definition is EarTrainingExerciseDefinition { TaskType: EarTrainingTask.ChordRecognition };
     private ExpectedInput CurrentExpectedInput => RuntimeExercise.Challenge.ExpectedInputs[_questionIndex];

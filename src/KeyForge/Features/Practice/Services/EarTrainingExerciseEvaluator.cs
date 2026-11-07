@@ -13,7 +13,7 @@ public sealed class EarTrainingExerciseEvaluator
         ArgumentNullException.ThrowIfNull(inputEvents);
 
         var taskType = challenge.EarTraining?.TaskType;
-        var isIntervalTask = taskType == EarTrainingTask.IntervalRecognition;
+        var isIntervalTask = taskType is EarTrainingTask.IntervalRecognition or EarTrainingTask.PitchComparison;
         var isChordTask = taskType == EarTrainingTask.ChordRecognition;
         if ((taskType != EarTrainingTask.PitchMatching && !isIntervalTask && !isChordTask) ||
             challenge.ExpectedInputs.Count == 0)
