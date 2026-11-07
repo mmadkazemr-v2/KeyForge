@@ -87,6 +87,36 @@ public sealed class PerformancePracticeProcessTests
     public void InvalidAuthoringIsRejected(string before, string after) =>
         Assert.Throws<YamlLessonParseException>(() => new YamlLessonParser().Parse(Yaml.Replace(before, after)));
 
+    [Fact]
+    public void SharpNoteReadingUsesSameRenderedPitchForMidiEvaluationAndProgress()
+    {
+        var lesson = new YamlLessonParser().Parse("""
+            id: sharp-test
+            title: Sharp test
+            order: 1
+            unlock: { mode: immediate }
+            completion: { requireAllExercises: true }
+            exercises:
+              - { id: sharp, type: noteReading, title: Sharp, notes: [F#4], count: 1, clef: treble }
+            """);
+        var recorder = new InMemoryExerciseAttemptRecorder();
+        var store = new InMemoryProgressStore();
+        var catalog = new Catalog(lesson);
+        var progression = new LessonProgressionService(catalog, store, new ExerciseCompletionEvaluator(recorder));
+        var service = new PracticeSessionService(catalog, progression, new ExerciseChallengeGenerator(), new ExerciseEvaluator(), new ExerciseScorer(), recorder);
+        var session = service.StartSession(lesson.Id)!;
+        var runtime = service.StartExercise(session);
+        var note = MusicalNote.Parse(runtime.Challenge.ExpectedInputs[0].Value);
+        Assert.True(KeyForge.Components.Music.VexFlowNotationMapper.TryMap(ClefType.Treble, note, out var notation));
+        Assert.Equal("#", notation!.Accidental);
+        var input = MidiInputAdapter.TryCreate(new MidiInputMessage { DeviceId = "keys", DeviceName = "test", Status = 0x90, Data1 = note.MidiNumber, Data2 = 90, TimestampMilliseconds = 12000, Sequence = 1 }, runtime.StartedAt, 12000)!;
+        runtime.CaptureInput(input);
+        var result = service.SubmitAttempt(session, runtime, runtime.StartedAt.AddSeconds(1));
+        new ProgressUpdateService(store, catalog, progression, recorder).UpdateProgress(lesson.Id, result);
+        Assert.Equal(100, result.Score);
+        Assert.True(store.GetProgress(lesson.Id)!.IsCompleted);
+    }
+
     private sealed class Catalog(LessonDefinition lesson) : ILessonCatalog
     {
         public IReadOnlyList<LessonDefinition> GetAll() => [lesson];

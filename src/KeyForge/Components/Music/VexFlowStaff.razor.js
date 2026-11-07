@@ -74,6 +74,7 @@ export async function renderStaff(element, request) {
         duration: 'q',
     });
 
+    if (request.accidental) note.addModifier(new VexFlow.Accidental(request.accidental), 0);
     VexFlow.Formatter.FormatAndDraw(context, stave, [note]);
 }
 

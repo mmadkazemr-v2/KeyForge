@@ -93,15 +93,16 @@ public sealed class VexFlowNotationMapperTests
     }
 
     [Fact]
-    public void TryMap_AccidentalOutsideFoundationScope_FailsSafely()
+    public void TryMap_SharpIncludesExplicitAccidental()
     {
         var mapped = VexFlowNotationMapper.TryMap(
             ClefType.Treble,
             MusicalNote.Parse("F#4"),
             out var request);
 
-        Assert.False(mapped);
-        Assert.Null(request);
+        Assert.True(mapped);
+        Assert.Equal("#", request!.Accidental);
+        Assert.Equal("f#/4", request.NoteKey);
     }
 
     [Fact]

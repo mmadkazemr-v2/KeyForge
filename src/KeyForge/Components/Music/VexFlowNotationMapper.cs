@@ -39,7 +39,7 @@ public static class VexFlowNotationMapper
         out VexFlowStaffRenderRequest? request)
     {
         request = null;
-        if (note is null || note.IsBlackKey)
+        if (note is null)
         {
             return false;
         }
@@ -59,6 +59,7 @@ public static class VexFlowNotationMapper
         request = new VexFlowStaffRenderRequest
         {
             Clef = clefName,
+            Accidental = note.IsBlackKey ? "#" : null,
             NoteKey = $"{note.Name.ToLowerInvariant()}/{note.Octave.ToString(CultureInfo.InvariantCulture)}"
         };
         return true;

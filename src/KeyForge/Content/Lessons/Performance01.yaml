@@ -33,3 +33,12 @@ exercises:
         - { pitch: D4, onsetBeats: 1, durationBeats: 1, voice: melody, hand: right }
         - { pitch: E4, onsetBeats: 2, durationBeats: 1, voice: melody, hand: right }
         - { pitch: C4, onsetBeats: 3, durationBeats: 1, voice: melody, hand: right }
+
+  - id: original-sharp-reading
+    type: noteReading
+    title: Original sharp-note reading
+    description: Identify three explicitly sharp notes on the treble staff.
+    clef: treble
+    notes: [C#4, F#4, G#4]
+    count: 3
+    randomized: false
