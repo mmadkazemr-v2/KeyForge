@@ -1,0 +1,73 @@
+id: lento-vivo-session-03-adapted
+title: "LentoVivo Session 3 - Adapted rhythm practice"
+description: "Adapted practice: original beginner rhythm drills based on the session topic. The linked worksheet notation could not be visually verified, so these patterns are not presented as transcriptions."
+course:
+  id: lento-vivo-piano
+  name: "LentoVivo - Piano Course"
+  description: "LentoVivo piano-course exercises with adapted KeyForge practice."
+  order: 20
+level: beginner
+order: 103
+estimatedMinutes: 8
+
+unlock:
+  mode: immediate
+
+completion:
+  minimumScore: 60
+  requireAllExercises: true
+
+exercises:
+  - type: rhythm
+    id: lento-vivo-s03-rh-quarter-pulse
+    title: "Adapted rhythm — Right hand quarter-note pulse"
+    description: "Adapted practice, not an exact worksheet transcription. Practice with your right hand: play one comfortable piano key once on each of the four quarter-note beats in every 4/4 bar. KeyForge evaluates attack timing only; it cannot verify which physical hand played."
+    duration: 3
+    tempo:
+      defaultBpm: 50
+      allowUserChange: true
+      minBpm: 40
+      maxBpm: 70
+      step: 5
+      suggestedBpms: [40, 55, 70]
+    metronome: { enabled: true, visual: true, audio: true, countInBeats: 4 }
+    difficulty: easy
+    timeSignature: "4/4"
+    measures:
+      - pattern:
+          - { duration: quarter }
+          - { duration: quarter }
+          - { duration: quarter }
+          - { duration: quarter }
+      - pattern:
+          - { duration: quarter }
+          - { duration: quarter }
+          - { duration: quarter }
+          - { duration: quarter }
+
+  - type: rhythm
+    id: lento-vivo-s03-lh-quarter-pulse
+    title: "Adapted rhythm — Left hand quarter-note pulse"
+    description: "Adapted practice, not an exact worksheet transcription. Practice with your left hand: play one comfortable piano key once on each of the four quarter-note beats in every 4/4 bar. KeyForge evaluates attack timing only; it cannot verify which physical hand played."
+    duration: 3
+    tempo:
+      defaultBpm: 50
+      allowUserChange: true
+      minBpm: 40
+      maxBpm: 70
+      step: 5
+      suggestedBpms: [40, 55, 70]
+    metronome: { enabled: true, visual: true, audio: true, countInBeats: 4 }
+    difficulty: easy
+    timeSignature: "4/4"
+    measures:
+      - pattern:
+          - { duration: quarter }
+          - { duration: quarter }
+          - { duration: quarter }
+          - { duration: quarter }
+      - pattern:
+          - { duration: quarter }
+          - { duration: quarter }
+          - { duration: quarter }
+          - { duration: quarter }

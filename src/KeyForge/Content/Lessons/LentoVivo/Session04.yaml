@@ -1,0 +1,60 @@
+id: lento-vivo-session-04-adapted
+title: "LentoVivo Session 4 - Adapted practice"
+description: "Adapted practice — not an exact transcription. Original MIDI drills based on the session topics: white-key note names, simple melodic movement, and intervals."
+course:
+  id: lento-vivo-piano
+  name: "LentoVivo - Piano Course"
+  description: "LentoVivo piano-course exercises with adapted KeyForge practice."
+  order: 20
+level: beginner
+order: 104
+estimatedMinutes: 8
+
+unlock:
+  mode: immediate
+
+completion:
+  minimumScore: 60
+  requireAllExercises: true
+
+exercises:
+  - type: rhythm
+    id: lento-vivo-s04-quarter-note-pulse
+    title: "Adapted practice — Four steady quarter notes"
+    description: "Adapted practice — not an exact transcription. Session 4 demonstrates quarter-note playing. Use one comfortable piano key with one hand. This original one-bar 4/4 pulse provides an onset-timing drill; the video chapter does not establish this meter or pattern."
+    duration: 2
+    tempo:
+      defaultBpm: 50
+      allowUserChange: true
+      minBpm: 40
+      maxBpm: 70
+      step: 5
+      suggestedBpms: [40, 50, 60, 70]
+    metronome: { enabled: true, visual: true, audio: true, countInBeats: 4 }
+    difficulty: easy
+    timeSignature: "4/4"
+    pattern:
+      - { duration: quarter }
+      - { duration: quarter }
+      - { duration: quarter }
+      - { duration: quarter }
+
+  - type: sequence
+    id: lento-vivo-s04-white-key-walk
+    title: "Adapted practice — White-key walk"
+    description: "Adapted practice — not an exact transcription. Play this original right-hand pattern on white keys: C4, D4, E4, F4, G4, then return to C4. The video discusses white keys and finding D–Re–Mi; its exact melody is not transcribed here."
+    duration: 3
+    difficulty: easy
+    hand: right
+    sequence: [C4, D4, E4, F4, G4, F4, E4, D4, C4]
+    fingers: [1, 2, 3, 4, 5, 4, 3, 2, 1]
+
+  - type: interval
+    id: lento-vivo-s04-major-second
+    title: "Adapted practice — Play a whole step"
+    description: "Adapted practice — not an exact transcription. Session 4 introduces intervals. With your right hand, listen to the prompt from C4 and play the upper note of a major second (D4)."
+    duration: 3
+    difficulty: easy
+    intervals: [M2]
+    direction: ascending
+    startingNote: "C4"

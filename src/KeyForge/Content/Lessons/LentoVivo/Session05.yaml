@@ -1,0 +1,76 @@
+id: lento-vivo-session-05-adapted
+title: "LentoVivo Session 5 - Adapted practice"
+description: "Adapted practice — not an exact transcription. Original beginner MIDI drills based on the session topics: meter, intervals, transposition, and pentascales."
+course:
+  id: lento-vivo-piano
+  name: "LentoVivo - Piano Course"
+  description: "LentoVivo piano-course exercises with adapted KeyForge practice."
+  order: 20
+level: beginner
+order: 105
+estimatedMinutes: 12
+
+unlock:
+  mode: immediate
+
+completion:
+  minimumScore: 60
+  requireAllExercises: true
+
+exercises:
+  - type: rhythm
+    id: lento-vivo-s05-meter-quarter-half
+    title: "Adapted practice — Count bars with longer notes"
+    description: "Adapted practice — not an exact transcription. This original 4/4 drill makes bar boundaries visible with quarter, half, and whole notes. Use one comfortable piano key with one hand and attack each written note at the metronome position; KeyForge scores attack timing, not key release duration."
+    duration: 3
+    tempo:
+      defaultBpm: 50
+      allowUserChange: true
+      minBpm: 40
+      maxBpm: 70
+      step: 5
+      suggestedBpms: [40, 50, 60, 70]
+    metronome: { enabled: true, visual: true, audio: true, countInBeats: 4 }
+    difficulty: easy
+    timeSignature: "4/4"
+    measures:
+      - pattern:
+          - { duration: quarter }
+          - { duration: half }
+          - { duration: quarter }
+      - pattern:
+          - { duration: whole }
+      - pattern:
+          - { duration: quarter }
+          - { duration: quarter }
+          - { duration: half }
+
+  - type: sequence
+    id: lento-vivo-s05-g-pentascale
+    title: "Adapted practice — G five-note pattern"
+    description: "Adapted practice — not an exact transcription. Session 5 explicitly covers a G pentascale. Play this original right-hand five-note shape and return: G4, A4, B4, C5, D5, C5, B4, A4, G4."
+    duration: 3
+    difficulty: easy
+    hand: right
+    sequence: [G4, A4, B4, C5, D5, C5, B4, A4, G4]
+    fingers: [1, 2, 3, 4, 5, 4, 3, 2, 1]
+
+  - type: interval
+    id: lento-vivo-s05-seconds-and-thirds
+    title: "Adapted practice — Seconds and thirds"
+    description: "Adapted practice — not an exact transcription. Session 5 covers second and third intervals. With your right hand, identify and play the prompted ascending major second (D4) or major third (E4) from C4. The exact interval qualities in the source are not available."
+    duration: 3
+    difficulty: easy
+    intervals: [M2, M3]
+    direction: ascending
+    startingNote: "C4"
+
+  - type: sequence
+    id: lento-vivo-s05-transpose-three-notes
+    title: "Adapted practice — Move a pattern to G"
+    description: "Adapted practice — not an exact transcription. Play the same original three-note ascending shape first from C (C4, D4, E4), then from G (G4, A4, B4). KeyForge checks the six expected pitches in order; it does not separately score the transposition concept."
+    duration: 3
+    difficulty: easy
+    hand: right
+    sequence: [C4, D4, E4, G4, A4, B4]
+    fingers: [1, 2, 3, 1, 2, 3]
