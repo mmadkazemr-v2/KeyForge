@@ -117,6 +117,49 @@ public sealed class PerformancePracticeProcessTests
         Assert.True(store.GetProgress(lesson.Id)!.IsCompleted);
     }
 
+    [Theory]
+    [InlineData("pedalSustain", true)]
+    [InlineData("keyHold", false)]
+    public void MidiPedalReleaseUsesExistingAttemptAndProgressFlow(string mode, bool successful)
+    {
+        var yaml = """
+            id: pedal-process
+            title: Original pedal test
+            order: 1
+            unlock: { mode: immediate }
+            completion: { requireAllExercises: true }
+            exercises:
+              - id: pedal
+                type: sequence
+                title: Pedal
+                tempo: { defaultBpm: 60 }
+                performance:
+                  scoringMode: MODE
+                  events:
+                    - { pitch: C4, onsetBeats: 0, durationBeats: 1 }
+            """;
+        var lesson = new YamlLessonParser().Parse(yaml.Replace("MODE", mode));
+        var recorder = new InMemoryExerciseAttemptRecorder();
+        var store = new InMemoryProgressStore();
+        var catalog = new Catalog(lesson);
+        var progression = new LessonProgressionService(catalog, store, new ExerciseCompletionEvaluator(recorder));
+        var service = new PracticeSessionService(catalog, progression, new ExerciseChallengeGenerator(), new ExerciseEvaluator(), new ExerciseScorer(), recorder);
+        var session = service.StartSession(lesson.Id)!;
+        var runtime = service.StartExercise(session);
+        var events = new[] { (0xB0, 64, 127, 0), (0x90, 60, 90, 0), (0x80, 60, 0, 500), (0xB0, 64, 0, 1000) };
+        var sequence = 0;
+        foreach (var (status, data1, data2, ms) in events)
+        {
+            var input = MidiInputAdapter.TryCreate(new MidiInputMessage { DeviceId = "keys", DeviceName = "test", Status = status, Data1 = data1, Data2 = data2, TimestampMilliseconds = 12000 + ms, Sequence = ++sequence }, runtime.StartedAt.AddSeconds(2), 12000)!;
+            runtime.CaptureMidiEvent(input);
+            runtime.CaptureInput(input);
+        }
+        var result = service.SubmitAttempt(session, runtime, runtime.StartedAt.AddSeconds(2));
+        new ProgressUpdateService(store, catalog, progression, recorder).UpdateProgress(lesson.Id, result);
+        Assert.Equal(successful, result.IsSuccessful);
+        Assert.Equal(successful, store.GetProgress(lesson.Id)!.IsCompleted);
+    }
+
     private sealed class Catalog(LessonDefinition lesson) : ILessonCatalog
     {
         public IReadOnlyList<LessonDefinition> GetAll() => [lesson];

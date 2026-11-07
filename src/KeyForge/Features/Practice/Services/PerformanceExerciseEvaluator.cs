@@ -26,10 +26,11 @@ public sealed class PerformanceExerciseEvaluator
             if (matched) remaining.Remove(candidate!.Value);
             var releaseAccuracy = PerformanceReleaseAccuracy.NotScored;
             double? durationError = null;
-            if (details.ScoringMode == PerformanceScoringMode.KeyHold)
+            if (details.ScoringMode != PerformanceScoringMode.OnsetOnly)
             {
                 releaseAccuracy = PerformanceReleaseAccuracy.Missing;
-                if (matched && pairing.Releases.TryGetValue(actual[candidate!.Value], out var releasedAt))
+                var releases = details.ScoringMode == PerformanceScoringMode.PedalSustain ? pairing.SustainedReleases : pairing.Releases;
+                if (matched && releases.TryGetValue(actual[candidate!.Value], out var releasedAt))
                 {
                     durationError = (releasedAt - actual[candidate.Value].Offset - target.Duration).TotalMilliseconds;
                     releaseAccuracy = Math.Abs(durationError.Value) <= details.ReleaseToleranceMilliseconds

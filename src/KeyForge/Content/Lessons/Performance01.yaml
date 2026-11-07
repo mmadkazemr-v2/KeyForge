@@ -57,3 +57,13 @@ exercises:
     arpeggio: { root: C4, quality: major, inversion: 0, octaves: 1, direction: ascending }
     transposeSemitones: 2
     hand: right
+
+  - id: original-pedal-sustain
+    type: sequence
+    title: Original pedal-aware release
+    description: Hold C4 for one pulse or release it with pedal down and lift the pedal at one pulse. Physical finger duration is not scored here.
+    tempo: { defaultBpm: 60 }
+    performance:
+      scoringMode: pedalSustain
+      events:
+        - { pitch: C4, onsetBeats: 0, durationBeats: 1 }

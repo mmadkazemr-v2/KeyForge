@@ -46,5 +46,6 @@ public enum PerformanceTimingReference
 public enum PerformanceScoringMode
 {
     OnsetOnly,
-    KeyHold
+    KeyHold,
+    PedalSustain
 }
