@@ -6,6 +6,10 @@
     {
         <p><bdi>@note.Pitch</bdi> (@note.Voice / @UiText.GetPracticeHand(note.Hand)): @(note.IsCorrect ? UiText.CorrectAnswer : UiText.IncorrectAnswer)
             <bdi>@note.OnsetErrorMilliseconds?.ToString("+0.##;-0.##;0") ms</bdi>
+            @if (note.IsVelocityCorrect is { } velocityCorrect)
+            {
+                <span>@(velocityCorrect ? "Dynamics ? / ??? ????" : "Dynamics ? / ??? ??????") <bdi>@note.RelativeVelocity?.ToString("0.##")</bdi></span>
+            }
             @if (note.ReleaseAccuracy != PerformanceReleaseAccuracy.NotScored)
             {
                 <span>@ReleaseLabel(note.ReleaseAccuracy) <bdi>@note.DurationErrorMilliseconds?.ToString("+0.##;-0.##;0") ms</bdi></span>

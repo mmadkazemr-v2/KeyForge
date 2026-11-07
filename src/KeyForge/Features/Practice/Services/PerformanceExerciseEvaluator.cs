@@ -37,9 +37,17 @@ public sealed class PerformanceExerciseEvaluator
                         ? PerformanceReleaseAccuracy.Correct : durationError < 0 ? PerformanceReleaseAccuracy.Early : PerformanceReleaseAccuracy.Late;
                 }
             }
+            double? relativeVelocity = null;
+            bool? velocityCorrect = null;
+            if (target.RelativeVelocity is { } requested && details.VelocityCalibration is { } calibration)
+            {
+                if (matched && actual[candidate!.Value].Velocity is { } velocity)
+                    relativeVelocity = (velocity - calibration.Soft) / (double)(calibration.Loud - calibration.Soft);
+                velocityCorrect = relativeVelocity is { } relative && Math.Abs(relative - requested) <= calibration.Tolerance;
+            }
             notes.Add(new PerformanceNoteEvaluation(target.Pitch!, target.Onset, matched ? actual[candidate!.Value].Offset - shift : null, error,
-                matched && releaseAccuracy is PerformanceReleaseAccuracy.NotScored or PerformanceReleaseAccuracy.Correct)
-            { Voice = target.Voice, Hand = target.Hand, DurationErrorMilliseconds = durationError, ReleaseAccuracy = releaseAccuracy });
+                matched && velocityCorrect != false && releaseAccuracy is PerformanceReleaseAccuracy.NotScored or PerformanceReleaseAccuracy.Correct)
+            { IsVelocityCorrect = velocityCorrect, RelativeVelocity = relativeVelocity, Voice = target.Voice, Hand = target.Hand, DurationErrorMilliseconds = durationError, ReleaseAccuracy = releaseAccuracy });
         }
         var score = Math.Clamp((int)Math.Round(notes.Count(n => n.IsCorrect) * 100d / expected.Length) - remaining.Count * 5 - (details.ScoringMode == PerformanceScoringMode.KeyHold ? pairing.UnexpectedReleases * 5 : 0), 0, 100);
         var completeChords = notes.GroupBy(n => n.ExpectedOnset).Where(g => g.Count() > 1).All(g => g.All(n => n.IsCorrect));

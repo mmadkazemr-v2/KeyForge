@@ -3,6 +3,7 @@ namespace KeyForge.Features.Exercises.Models;
 /// <summary>An optional, quarter-note-based performance timeline. Hand and voice are instructions, not sensed identity.</summary>
 public sealed class PerformanceDefinition
 {
+    public VelocityCalibrationDefinition? VelocityCalibration { get; set; }
     public List<MusicalPerformanceEvent> Events { get; set; } = [];
     public PerformanceTimingReference TimingReference { get; set; } = PerformanceTimingReference.FirstAttack;
     public PerformanceScoringMode ScoringMode { get; set; }
@@ -15,9 +16,12 @@ public sealed class PerformanceDefinition
             throw new InvalidOperationException("Invalid performance timing reference or onset tolerance (20�500ms).");
         if (Events is null || Events.Count is < 1 or > 4096 || Events.All(e => e?.Pitch is null))
             throw new InvalidOperationException("Performance requires 1�4096 events including at least one pitched note.");
+        if (VelocityCalibration is { } calibration && (calibration.Soft is < 1 or > 126 || calibration.Loud <= calibration.Soft || calibration.Loud > 127 ||
+            !double.IsFinite(calibration.Tolerance) || calibration.Tolerance is < 0 or > 1))
+            throw new InvalidOperationException("Velocity calibration requires measured soft/loud values in 1?127 and a relative tolerance in 0?1.");
         foreach (var item in Events)
         {
-            if (item is null || !double.IsFinite(item.OnsetBeats) || !double.IsFinite(item.DurationBeats) ||
+            if (item is null || item.RelativeVelocity is { } velocity && (!double.IsFinite(velocity) || velocity is < 0 or > 1 || item.Pitch is null || VelocityCalibration is null) || !double.IsFinite(item.OnsetBeats) || !double.IsFinite(item.DurationBeats) ||
                 item.OnsetBeats < 0 || item.DurationBeats <= 0 || item.OnsetBeats + item.DurationBeats > 10000 ||
                 !Enum.IsDefined(item.Hand) || item.Pitch is not null && !MusicalNote.TryParse(item.Pitch, out _))
                 throw new InvalidOperationException("Invalid performance pitch, onset, duration or hand instruction.");
@@ -31,6 +35,7 @@ public sealed class MusicalPerformanceEvent
 {
     /// <summary>Null represents a rest. Explicit octave required for pitched notes.</summary>
     public string? Pitch { get; set; }
+    public double? RelativeVelocity { get; set; }
     public double OnsetBeats { get; set; }
     public double DurationBeats { get; set; }
     public string? Voice { get; set; }
@@ -48,4 +53,11 @@ public enum PerformanceScoringMode
     OnsetOnly,
     KeyHold,
     PedalSustain
+}
+
+public sealed class VelocityCalibrationDefinition
+{
+    public int Soft { get; set; }
+    public int Loud { get; set; }
+    public double Tolerance { get; set; } = 0.2;
 }
