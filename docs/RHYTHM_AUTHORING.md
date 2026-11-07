@@ -133,3 +133,17 @@ fresh calibration measurement from Task 48. Browser scheduling, server/circuit
 round trips, and audible cue latency remain uncalibrated. They do not replace the
 MIDI event timestamp used for evaluation. Ties, tuplets, swing, tempo/meter maps,
 polyrhythms, and note-release/duration scoring remain outside this foundation.
+
+## Unmetered phrases (Task 55.2)
+
+Set `unmetered: true` and author one nonempty `pattern`. Do not specify `measures` or a legacy `patternCount` other than 1. No meter is inferred; `timeSignature` is ignored in this mode. Notes and rests use their existing durations. Tempo refers to a quarter-note pulse, and offsets accumulate those durations without padding. Configure `metronome.countInBeats` explicitly when a count-in is desired. Metered definitions retain their existing behavior.
+
+```yaml
+unmetered: true
+tempo: { defaultBpm: 55 }
+metronome: { enabled: true, audio: true, visual: true, countInBeats: 4 }
+pattern:
+  - { duration: quarter }
+  - { duration: half }
+  - { duration: dottedHalf }
+```

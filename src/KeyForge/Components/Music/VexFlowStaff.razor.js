@@ -101,7 +101,10 @@ function renderRhythm(VexFlow, element, request) {
         context.setFillStyle(ink);
         context.setStrokeStyle(ink);
         const stave = new VexFlow.Stave(12, 20, width - 24);
-        stave.addClef('percussion').addTimeSignature(request.timeSignature).setContext(context).draw();
+        stave.addClef('percussion');
+        if (request.timeSignature) stave.addTimeSignature(request.timeSignature);
+        else stave.setEndBarType(VexFlow.Barline.type.NONE);
+        stave.setContext(context).draw();
         const notes = measure.map(item => {
             const note = new VexFlow.StaveNote({ keys: ['b/4'], duration: item.duration });
             if (item.dotted) VexFlow.Dot.buildAndAttach([note], { all: true });

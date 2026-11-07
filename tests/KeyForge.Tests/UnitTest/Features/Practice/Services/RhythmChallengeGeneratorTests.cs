@@ -2,6 +2,30 @@ namespace KeyForge.Tests.UnitTest.Features.Practice.Services;
 
 public sealed class RhythmChallengeGeneratorTests
 {
+    [Theory]
+    [InlineData(40)]
+    [InlineData(55)]
+    [InlineData(70)]
+    public void Unmetered_UsesCumulativeQuarterPulseWithoutPadding(int bpm)
+    {
+        var exercise = new RhythmExerciseDefinition
+        {
+            Id = "phrase",
+            Unmetered = true,
+            TimeSignature = "",
+            Pattern = [new() { Duration = RhythmDuration.Quarter }, new() { Duration = RhythmDuration.Half }, new() { Duration = RhythmDuration.Quarter }]
+        };
+        var result = new RhythmChallengeGenerator().Create(exercise, bpm);
+        Assert.Equal(3, result.ExpectedInputs.Count);
+        Assert.Equal(180000d / bpm, result.ExpectedInputs[2].ExpectedOffset!.Value.TotalMilliseconds, 3);
+        Assert.Equal(240000d / bpm, result.Rhythm!.Duration.TotalMilliseconds, 3);
+        Assert.All(result.Rhythm.Events, item => Assert.Equal(0, item.MeasureNumber));
+        exercise.Pattern = [];
+        Assert.Throws<InvalidOperationException>(exercise.Validate);
+        exercise.Pattern = null;
+        Assert.Throws<InvalidOperationException>(exercise.Validate);
+    }
+
     [Fact]
     public void Create_LongSixteenthSequenceAtNonDivisibleBpmDoesNotAccumulateRoundedIntervals()
     {

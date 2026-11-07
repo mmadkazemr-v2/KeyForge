@@ -6,12 +6,12 @@ public static class VexFlowNotationMapper
     public static VexFlowStaffRenderRequest MapRhythm(RhythmChallengeDetails rhythm, string timeSignature)
     {
         ArgumentNullException.ThrowIfNull(rhythm);
-        var meter = RhythmMeter.Parse(timeSignature);
+        RhythmMeter? meter = string.IsNullOrEmpty(timeSignature) ? null : RhythmMeter.Parse(timeSignature);
         return new VexFlowStaffRenderRequest
         {
             Clef = "percussion",
             NoteKey = "b/4",
-            TimeSignature = $"{meter.Numerator}/{meter.Denominator}",
+            TimeSignature = meter is null ? null : $"{meter.Value.Numerator}/{meter.Value.Denominator}",
             RhythmMeasures = rhythm.Events.GroupBy(item => item.MeasureNumber)
                 .Select(measure => (IReadOnlyList<VexFlowRhythmEvent>)measure.Select(MapRhythmEvent).ToArray())
                 .ToArray()

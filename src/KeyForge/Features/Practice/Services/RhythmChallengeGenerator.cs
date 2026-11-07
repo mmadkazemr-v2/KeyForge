@@ -14,10 +14,10 @@ public sealed class RhythmChallengeGenerator
         if (bpm <= 0)
             throw new InvalidOperationException($"Rhythm exercise '{exercise.Id}', field 'tempo.defaultBpm' must be greater than zero.");
 
-        var meter = RhythmMeter.Parse(exercise.TimeSignature);
+        RhythmMeter? meter = exercise.Unmetered ? null : RhythmMeter.Parse(exercise.TimeSignature);
         var timeline = exercise.Pattern is not null || exercise.Measures is not null
             ? CompileAuthoredPattern(exercise, meter, bpm)
-            : CompileLegacyPulsePattern(exercise, meter, bpm);
+            : CompileLegacyPulsePattern(exercise, meter!.Value, bpm);
 
         var expectedInputs = timeline.Events
             .Where(item => !item.IsRest)
@@ -81,7 +81,7 @@ public sealed class RhythmChallengeGenerator
 
     private static RhythmChallengeDetails CompileAuthoredPattern(
         RhythmExerciseDefinition exercise,
-        RhythmMeter meter,
+        RhythmMeter? meter,
         int bpm)
     {
         var measures = exercise.Measures ?? [new RhythmMeasureDefinition { Pattern = exercise.Pattern! }];
@@ -101,15 +101,18 @@ public sealed class RhythmChallengeGenerator
                     IsRest = item.Rest,
                     StartOffset = ToTimeSpan(totalUnits + positionUnits, bpm),
                     Length = ToTimeSpan(durationUnits, bpm),
-                    MeasureNumber = measureIndex + 1,
+                    MeasureNumber = exercise.Unmetered ? 0 : measureIndex + 1,
                     StartSixteenthUnits = totalUnits + positionUnits
                 });
                 positionUnits += durationUnits;
             }
 
-            for (var beatUnits = 0; beatUnits < meter.BarSixteenthUnits; beatUnits += meter.BeatSixteenthUnits)
+            for (var beatUnits = 0; beatUnits < (meter?.BarSixteenthUnits ?? positionUnits); beatUnits += meter?.BeatSixteenthUnits ?? 4)
+            {
                 pulseOffsets.Add(ToTimeSpan(totalUnits + beatUnits, bpm));
-            totalUnits += meter.BarSixteenthUnits;
+            }
+
+            totalUnits += meter?.BarSixteenthUnits ?? positionUnits;
         }
 
         return new RhythmChallengeDetails

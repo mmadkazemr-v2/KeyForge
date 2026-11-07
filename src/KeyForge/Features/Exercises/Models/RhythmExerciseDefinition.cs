@@ -8,6 +8,8 @@ public sealed class RhythmExerciseDefinition : ExerciseDefinition
     /// <summary>
     /// Meter the exercise is performed in, e.g. "4/4" or "6/8".
     /// </summary>
+    public bool Unmetered { get; set; }
+
     public string TimeSignature { get; set; } = "4/4";
 
     /// <summary>
@@ -40,6 +42,13 @@ public sealed class RhythmExerciseDefinition : ExerciseDefinition
     /// </summary>
     public void Validate()
     {
+        if (Unmetered)
+        {
+            if (Pattern is null || Measures is not null || PatternCount != 1)
+                throw new InvalidOperationException("Unmetered rhythm requires a single explicit pattern and no measures or patternCount.");
+            ValidateMeasure(Pattern, null, "pattern");
+            return;
+        }
         RhythmMeter meter;
         try
         {
@@ -75,7 +84,7 @@ public sealed class RhythmExerciseDefinition : ExerciseDefinition
         }
     }
 
-    private static void ValidateMeasure(IReadOnlyCollection<RhythmPatternEvent> pattern, RhythmMeter meter, string field)
+    private static void ValidateMeasure(IReadOnlyCollection<RhythmPatternEvent> pattern, RhythmMeter? meter, string field)
     {
         if (pattern.Count == 0)
             throw new InvalidOperationException($"field '{field}' must not be empty.");
@@ -87,7 +96,7 @@ public sealed class RhythmExerciseDefinition : ExerciseDefinition
             units += RhythmDurationUnits.GetSixteenthUnits(item.Duration);
         }
 
-        if (units != meter.BarSixteenthUnits)
-            throw new InvalidOperationException($"field '{field}' does not fill one {meter.Numerator}/{meter.Denominator} measure.");
+        if (meter is not null && units != meter.Value.BarSixteenthUnits)
+            throw new InvalidOperationException($"field '{field}' does not fill one {meter.Value.Numerator}/{meter.Value.Denominator} measure.");
     }
 }

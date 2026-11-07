@@ -4,8 +4,10 @@ using KeyForge.Components.Practice;
 
 public sealed class RhythmAuthoringProcessTests
 {
-    [Fact]
-    public void AuthoredNonUniformRhythm_BrowserRelativeMidiHits_EvaluateAndRecordAttempt()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AuthoredNonUniformRhythm_BrowserRelativeMidiHits_EvaluateAndRecordAttempt(bool unmetered)
     {
         const string yaml = """
             id: rhythm-process
@@ -26,7 +28,7 @@ public sealed class RhythmAuthoringProcessTests
                   - { duration: quarter }
                   - { duration: quarter }
             """;
-        var lesson = new YamlLessonParser().Parse(yaml);
+        var lesson = new YamlLessonParser().Parse(unmetered ? yaml.Replace("timeSignature: 4/4", "unmetered: true") : yaml);
         var store = new InMemoryProgressStore();
         var recorder = new InMemoryExerciseAttemptRecorder();
         var catalog = new OneLessonCatalog(lesson);

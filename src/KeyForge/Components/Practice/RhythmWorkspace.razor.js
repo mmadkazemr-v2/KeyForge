@@ -84,8 +84,27 @@ export async function startRhythm(
     }
     if (run.cancelled) return;
     root.focus({ preventScroll: true });
-    run.timelineStartedAt = performance.now();
-    await dotNetReference.invokeMethodAsync("NotifyRhythmStarted", run.timelineStartedAt);
+    const countInOrigin = performance.now();
+    const countInBeats = labels.countInBeats || 0;
+    const pulseInterval = labels.beatIntervalMilliseconds || 0;
+    for (let beat = 0; beat < countInBeats; beat++) {
+        await sleep(run, Math.max(0, countInOrigin + beat * pulseInterval - performance.now()));
+        if (run.cancelled) return;
+        setText(root, "[data-rhythm-countdown]", formatNumber(beat + 1, labels.digits));
+        if (labels.audio) {
+            try {
+                if (typeof labels.playClick === "function") labels.playClick();
+                else metronomeAudio?.playMetronomeClick();
+            } catch { /* Scoring remains available without audio. */ }
+        }
+    }
+    await sleep(run, Math.max(0, countInOrigin + countInBeats * pulseInterval - performance.now()));
+    if (run.cancelled) return;
+    run.timelineStartedAt = countInOrigin + countInBeats * pulseInterval;
+    // Start browser scheduling immediately; interop latency must not shift the pulse grid.
+    const notification = dotNetReference.invokeMethodAsync("NotifyRhythmStarted", run.timelineStartedAt, labels.runVersion);
+    run.pendingInputs.push(notification);
+    notification.catch(() => { if (activeRuns.get(workspaceId) === run) stopRhythm(workspaceId); });
     if (run.cancelled) return;
 
     run.active = true;
@@ -102,7 +121,7 @@ export async function startRhythm(
             "CaptureRhythmKeyboardInput",
             event.code,
             event.repeat,
-            elapsedMilliseconds);
+            elapsedMilliseconds, labels.runVersion);
         run.pendingInputs.push(promise);
 
         const hitCount = root.querySelector("[data-rhythm-hit-count]");
@@ -166,7 +185,7 @@ async function runRhythmTimeline(workspaceId, run, root, dotNetReference, timeli
     await Promise.allSettled(run.pendingInputs);
 
     if (!run.cancelled) {
-        await dotNetReference.invokeMethodAsync("CompleteRhythm");
+        await dotNetReference.invokeMethodAsync("CompleteRhythm", labels.runVersion);
     }
     if (activeRuns.get(workspaceId) === run) activeRuns.delete(workspaceId);
 }

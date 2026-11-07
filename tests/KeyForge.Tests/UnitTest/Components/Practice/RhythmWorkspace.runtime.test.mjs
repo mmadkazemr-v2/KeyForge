@@ -195,3 +195,47 @@ test('exercise startup resolves at the browser timeline origin instead of waitin
         assert.equal(pendingTimerCount(), 0);
     });
 });
+
+test('delayed start interop cannot shift clicks and cancellation suppresses completion', async () => {
+    await withRuntime(2, async ({ runtime, dotNet, calls, advanceTo, labels }) => {
+        let release;
+        const invoke = dotNet.invokeMethodAsync.bind(dotNet);
+        dotNet.invokeMethodAsync = (name, ...args) => {
+            if (name === 'NotifyRhythmStarted') {
+                invoke(name, ...args);
+                return new Promise(resolve => { release = resolve; });
+            }
+            return invoke(name, ...args);
+        };
+        await runtime.startRhythm('rhythm', dotNet,
+            [{ offsetMilliseconds: 0 }, { offsetMilliseconds: 1000 }], [0, 1000], 2000, labels);
+        await advanceTo(13500);
+        assert.deepEqual(calls.filter(c => c.name === 'AudioClick').map(c => c.at), [12000, 13000]);
+        runtime.stopRhythm('rhythm');
+        release();
+        await advanceTo(16000);
+        assert.equal(calls.some(c => c.name === 'CompleteRhythm'), false);
+    });
+});
+
+test('count-in and exercise pulses share the same browser grid despite delayed interop', async () => {
+    await withRuntime(2, async ({ runtime, dotNet, calls, advanceTo, labels }) => {
+        labels.countInBeats = 2;
+        labels.beatIntervalMilliseconds = 1000;
+        let release;
+        const invoke = dotNet.invokeMethodAsync.bind(dotNet);
+        dotNet.invokeMethodAsync = (name, ...args) => {
+            invoke(name, ...args);
+            return name === 'NotifyRhythmStarted' ? new Promise(resolve => { release = resolve; }) : Promise.resolve();
+        };
+        const running = runtime.startRhythm('rhythm', dotNet,
+            [{ offsetMilliseconds: 0 }, { offsetMilliseconds: 1000 }], [0, 1000], 2000, labels);
+        await advanceTo(15500);
+        assert.deepEqual(calls.filter(c => c.name === 'AudioClick').map(c => c.at), [12000, 13000, 14000, 15000]);
+        assert.equal(calls.find(c => c.name === 'NotifyRhythmStarted').args[0], 14000);
+        release();
+        await running;
+        await advanceTo(16000);
+        assert.equal(calls.filter(c => c.name === 'CompleteRhythm').length, 1);
+    });
+});

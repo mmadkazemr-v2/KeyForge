@@ -72,7 +72,8 @@ public static class ExercisePresentationMapper
         ICollection<ExercisePresentationItem> items,
         RhythmExerciseDefinition exercise)
     {
-        AddText(items, UiText.TimeSignature, exercise.TimeSignature, isTechnical: true);
+        if (!exercise.Unmetered)
+            AddText(items, UiText.TimeSignature, exercise.TimeSignature, isTechnical: true);
 
         var authoredEvents = exercise.Pattern ?? exercise.Measures?.SelectMany(measure => measure.Pattern).ToList();
         var noteValues = authoredEvents?.Select(item => item.Duration.ToString()).Distinct().ToList() ?? exercise.NoteValues;

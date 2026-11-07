@@ -36,7 +36,7 @@
 
     @if (HasAuthoredPattern)
     {
-        <VexFlowStaff Rhythm="RuntimeExercise.Challenge.Rhythm" TimeSignature="@(((RhythmExerciseDefinition)RuntimeExercise.Definition).TimeSignature)" />
+        <VexFlowStaff Rhythm="RuntimeExercise.Challenge.Rhythm" TimeSignature="@(((RhythmExerciseDefinition)RuntimeExercise.Definition).Unmetered ? string.Empty : ((RhythmExerciseDefinition)RuntimeExercise.Definition).TimeSignature)" />
     }
 
     <ol class="rhythm-beats @(HasAuthoredPattern ? "rhythm-beats--authored" : null)" dir="ltr" aria-label="@UiText.BeatProgression">
@@ -71,16 +71,7 @@
                        OnTempoChanged="HandleTempoChanged" />
     }
 
-    @if (!_started && RuntimeExercise.Definition.Metronome is { Enabled: true } metronome)
-    {
-        <MetronomeControl RuntimeExercise="RuntimeExercise"
-                          Configuration="metronome"
-                          AudioEnabled="MetronomeAudioEnabled"
-                          StopAfterCountIn="true"
-                          OnCountInCompleted="StartTimelineAsync"
-                          OnRunningChanged="HandleMetronomeRunningChanged" />
-    }
-    else if (!_started)
+    @if (!_started)
     {
         <button class="kf-button kf-button--primary" type="button" @onclick="StartTimelineAsync">
             @UiText.StartRhythm
@@ -112,6 +103,7 @@
     private DotNetObjectReference<RhythmWorkspace>? _dotNetReference;
     private DateTime _timelineStartedAt;
     private double? _browserTimelineOriginMilliseconds;
+    private int _runVersion;
     private bool _started;
     private bool _isActive;
     private bool _startFailed;
@@ -153,6 +145,7 @@
         }
         _pausedForMidi = false;
         var startedFromCountIn = _metronomeRunning;
+        _runVersion++;
         _started = true;
         _startFailed = false;
         if (!startedFromCountIn)
@@ -180,10 +173,13 @@
                 TimelineDuration.TotalMilliseconds,
                 new
                 {
+                    runVersion = _runVersion,
                     active = UiText.RhythmActive,
                     evaluating = UiText.EvaluatingRhythm,
                     digits = UiText.NumeralDigits,
-                    audio = MetronomeAudioEnabled
+                    countInBeats = RuntimeExercise.Definition.Metronome is { Enabled: true } config ? config.CountInBeats : 0,
+                    beatIntervalMilliseconds = 60000d / (RuntimeExercise.SelectedBpm ?? RuntimeExercise.Definition.Tempo!.DefaultBpm),
+                    audio = MetronomeAudioEnabled && RuntimeExercise.Definition.Metronome?.Audio != false
                 });
         }
         catch (JSException)
@@ -197,8 +193,9 @@
         UiText.GetRhythmEventLabel(item.Duration, item.IsRest);
 
     [JSInvokable]
-    public Task NotifyRhythmStarted(double browserTimestampMilliseconds)
+    public Task NotifyRhythmStarted(double browserTimestampMilliseconds, int runVersion)
     {
+        if (!_started || runVersion != _runVersion) return Task.CompletedTask;
         _timelineStartedAt = DateTime.UtcNow;
         _browserTimelineOriginMilliseconds = browserTimestampMilliseconds;
         MidiInput.SetTimelineOrigin(browserTimestampMilliseconds);
@@ -208,13 +205,14 @@
 
     private void HandleMidiDeviceStateChanged(string? deviceId, bool connected)
     {
-        if (connected || !_started || !_isActive) return;
+        if (connected || !_started) return;
         _ = InvokeAsync(PauseForMidiDisconnectAsync);
     }
 
     private async Task PauseForMidiDisconnectAsync()
     {
-        if (!_started || !_isActive) return;
+        if (!_started) return;
+        _runVersion++;
         _started = false;
         _isActive = false;
         _pausedForMidi = true;
@@ -236,8 +234,9 @@
     public Task CaptureRhythmKeyboardInput(
         string code,
         bool isRepeat,
-        double elapsedMilliseconds)
+        double elapsedMilliseconds, int runVersion)
     {
+        if (runVersion != _runVersion) return Task.CompletedTask;
         var inputEvent = RhythmKeyboardInputAdapter.Create(
             code,
             isRepeat,
@@ -269,9 +268,9 @@
     }
 
     [JSInvokable]
-    public async Task CompleteRhythm()
+    public async Task CompleteRhythm(int runVersion)
     {
-        if (!_isActive)
+        if (!_isActive || runVersion != _runVersion)
         {
             return;
         }
@@ -282,6 +281,7 @@
 
     public async ValueTask DisposeAsync()
     {
+        _runVersion++;
         _isActive = false;
         MidiInput.SelectedDeviceStateChanged -= HandleMidiDeviceStateChanged;
         _midiRegistration?.Dispose();
