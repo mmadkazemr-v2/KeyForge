@@ -5,11 +5,13 @@ public sealed class PerformanceDefinition
 {
     public List<MusicalPerformanceEvent> Events { get; set; } = [];
     public PerformanceTimingReference TimingReference { get; set; } = PerformanceTimingReference.FirstAttack;
+    public PerformanceScoringMode ScoringMode { get; set; }
+    public int ReleaseToleranceMilliseconds { get; set; } = 150;
     public int OnsetToleranceMilliseconds { get; set; } = 150;
 
     public void Validate()
     {
-        if (!Enum.IsDefined(TimingReference) || OnsetToleranceMilliseconds is < 20 or > 500)
+        if (!Enum.IsDefined(ScoringMode) || ReleaseToleranceMilliseconds is < 20 or > 1000 || !Enum.IsDefined(TimingReference) || OnsetToleranceMilliseconds is < 20 or > 500)
             throw new InvalidOperationException("Invalid performance timing reference or onset tolerance (20�500ms).");
         if (Events is null || Events.Count is < 1 or > 4096 || Events.All(e => e?.Pitch is null))
             throw new InvalidOperationException("Performance requires 1�4096 events including at least one pitched note.");
@@ -39,4 +41,10 @@ public enum PerformanceTimingReference
 {
     FirstAttack,
     WorkspaceStart
+}
+
+public enum PerformanceScoringMode
+{
+    OnsetOnly,
+    KeyHold
 }

@@ -11,6 +11,7 @@ exercises:
     description: Play C4, D4, E4 and F4. This original phrase is not course source material.
     tempo: { defaultBpm: 60 }
     performance:
+      scoringMode: keyHold
       timingReference: firstAttack
       events:
         - { pitch: C4, onsetBeats: 0, durationBeats: 1, voice: melody, hand: right }

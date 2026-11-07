@@ -25,11 +25,13 @@ public sealed class PerformancePracticeProcessTests
         """;
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void YamlToMidiEvaluationAttemptAndProgress(bool incorrect)
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void YamlToMidiEvaluationAttemptAndProgress(bool incorrect, bool scoreHolds)
     {
-        var lesson = new YamlLessonParser().Parse(Yaml);
+        var lesson = new YamlLessonParser().Parse(scoreHolds ? Yaml.Replace("performance:", "performance:\n      scoringMode: keyHold") : Yaml);
         var recorder = new InMemoryExerciseAttemptRecorder();
         var store = new InMemoryProgressStore();
         var catalog = new Catalog(lesson);
@@ -53,6 +55,21 @@ public sealed class PerformancePracticeProcessTests
             }, runtime.StartedAt.AddSeconds(20), 12000)!;
             runtime.CaptureMidiEvent(input);
             runtime.CaptureInput(input);
+            if (scoreHolds)
+            {
+                var release = MidiInputAdapter.TryCreate(new MidiInputMessage
+                {
+                    DeviceId = "test",
+                    DeviceName = "test",
+                    Status = 0x90,
+                    Data1 = input.MidiData1!.Value,
+                    Data2 = 0,
+                    TimestampMilliseconds = input.BrowserTimestampMilliseconds!.Value + item.Duration.TotalMilliseconds,
+                    Sequence = ++sequence
+                }, runtime.StartedAt.AddSeconds(20), 12000)!;
+                runtime.CaptureMidiEvent(release);
+                runtime.CaptureInput(release);
+            }
         }
         var result = service.SubmitAttempt(session, runtime, runtime.StartedAt.AddSeconds(30));
         new ProgressUpdateService(store, catalog, progression, recorder).UpdateProgress(lesson.Id, result);

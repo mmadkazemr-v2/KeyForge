@@ -23,6 +23,8 @@ public sealed class SequenceChallengeGenerator
                 {
                     Events = events,
                     TimingReference = performance.TimingReference,
+                    ScoringMode = performance.ScoringMode,
+                    ReleaseToleranceMilliseconds = performance.ReleaseToleranceMilliseconds,
                     OnsetToleranceMilliseconds = performance.OnsetToleranceMilliseconds
                 }
             };

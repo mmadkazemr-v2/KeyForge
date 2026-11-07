@@ -1,12 +1,25 @@
 @namespace KeyForge.Components.Practice
 <div class="kf-card__body">
     <p>@UiText.ExtraInputs: @Details.ExtraNotes</p>
+    <p>@ReleaseLabel(PerformanceReleaseAccuracy.Missing): @Details.UnexpectedReleases</p>
     @foreach (var note in Details.Notes)
     {
         <p><bdi>@note.Pitch</bdi>: @(note.IsCorrect ? UiText.CorrectAnswer : UiText.IncorrectAnswer)
-            <bdi>@note.OnsetErrorMilliseconds?.ToString("+0.##;-0.##;0") ms</bdi></p>
+            <bdi>@note.OnsetErrorMilliseconds?.ToString("+0.##;-0.##;0") ms</bdi>
+            @if (note.ReleaseAccuracy != PerformanceReleaseAccuracy.NotScored)
+            {
+                <span>@ReleaseLabel(note.ReleaseAccuracy) <bdi>@note.DurationErrorMilliseconds?.ToString("+0.##;-0.##;0") ms</bdi></span>
+            }
+        </p>
     }
 </div>
 @code {
+    private static string ReleaseLabel(PerformanceReleaseAccuracy accuracy) => accuracy switch
+    {
+        PerformanceReleaseAccuracy.Correct => "Release ? / ??????? ????",
+        PerformanceReleaseAccuracy.Early => "Early release / ??????? ???",
+        PerformanceReleaseAccuracy.Late => "Late release / ??????? ???",
+        _ => "Missing or unexpected release / ??????? ????? ?? ?????"
+    };
     [Parameter, EditorRequired] public PerformanceEvaluationDetails Details { get; set; } = null!;
 }
