@@ -1,3 +1,5 @@
+using KeyForge.Infrastructure.Persistence.Progress;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // ── Configuration ──────────────────────────────────────────────────
@@ -9,20 +11,34 @@ builder.Services.Configure<LessonCatalogOptions>(
 
 builder.Services.AddSingleton<IYamlLessonParser, YamlLessonParser>();
 builder.Services.AddSingleton<ILessonCatalog, FileSystemLessonCatalog>();
-builder.Services.AddSingleton<IProgressStore, InMemoryProgressStore>();
-builder.Services.AddSingleton<IExerciseAttemptRecorder, InMemoryExerciseAttemptRecorder>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<JsonPracticeStore>(services =>
+{
+    var context = services.GetRequiredService<IHttpContextAccessor>().HttpContext;
+    if (context?.Items["PracticeProfile"] is not string profile)
+    {
+        throw new InvalidOperationException("Practice profile unavailable. Reload the application.");
+    }
+
+    var root = builder.Configuration["PracticeStorage:Directory"]
+               ?? Path.Combine(builder.Environment.ContentRootPath, "App_Data", "Practice");
+
+    return new JsonPracticeStore(Path.Combine(root, profile + ".json"));
+});
+builder.Services.AddScoped<IProgressStore>(s => s.GetRequiredService<JsonPracticeStore>());
+builder.Services.AddScoped<IExerciseAttemptRecorder>(s => s.GetRequiredService<JsonPracticeStore>());
 
 // ── Application Services ───────────────────────────────────────────
 
-builder.Services.AddSingleton<IExerciseCompletionEvaluator, ExerciseCompletionEvaluator>();
-builder.Services.AddSingleton<ILessonProgressionService, LessonProgressionService>();
-builder.Services.AddSingleton<ILessonProgressQueryService, LessonProgressQueryService>();
+builder.Services.AddScoped<IExerciseCompletionEvaluator, ExerciseCompletionEvaluator>();
+builder.Services.AddScoped<ILessonProgressionService, LessonProgressionService>();
+builder.Services.AddScoped<ILessonProgressQueryService, LessonProgressQueryService>();
 builder.Services.AddScoped<IPracticeLibraryQueryService, PracticeLibraryQueryService>();
 builder.Services.AddSingleton<IExerciseChallengeGenerator, ExerciseChallengeGenerator>();
 builder.Services.AddSingleton<IExerciseEvaluator, ExerciseEvaluator>();
 builder.Services.AddSingleton<IExerciseScorer, ExerciseScorer>();
-builder.Services.AddSingleton<IPracticeSessionService, PracticeSessionService>();
-builder.Services.AddSingleton<IProgressUpdateService, ProgressUpdateService>();
+builder.Services.AddScoped<IPracticeSessionService, PracticeSessionService>();
+builder.Services.AddScoped<IProgressUpdateService, ProgressUpdateService>();
 builder.Services.AddScoped<IAudioPlaybackService, AudioPlaybackService>();
 builder.Services.AddScoped<MidiInputRouter>();
 builder.Services.AddScoped<MidiPracticeInputState>();
@@ -54,6 +70,26 @@ if (!app.Environment.IsDevelopment())
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
 app.UseRequestLocalization();
+app.Use(async (context, next) =>
+{
+    const string cookie = "KeyForge.PracticeProfile";
+    if (!Guid.TryParseExact(context.Request.Cookies[cookie], "N", out var profileId))
+    {
+        profileId = Guid.NewGuid();
+        context.Response.Cookies.Append(cookie, profileId.ToString("N"),
+            new CookieOptions
+            {
+                HttpOnly = true,
+                IsEssential = true,
+                SameSite = SameSiteMode.Lax,
+                Secure = context.Request.IsHttps,
+                MaxAge = TimeSpan.FromDays(3650)
+            });
+    }
+
+    context.Items["PracticeProfile"] = profileId.ToString("N");
+    await next();
+});
 app.UseAntiforgery();
 
 // ── Endpoints ──────────────────────────────────────────────────────
@@ -92,7 +128,7 @@ app.Run();
 return;
 
 static bool IsLocalReturnUrl(string? returnUrl)
-    => !string.IsNullOrWhiteSpace(returnUrl) &&
-       returnUrl.StartsWith('/') &&
-       !returnUrl.StartsWith("//", StringComparison.Ordinal) &&
-       !returnUrl.StartsWith("/\\", StringComparison.Ordinal);
+    => !string.IsNullOrWhiteSpace(returnUrl)
+       && returnUrl.StartsWith('/')
+       && !returnUrl.StartsWith("//", StringComparison.Ordinal)
+       && !returnUrl.StartsWith("/\\", StringComparison.Ordinal);
