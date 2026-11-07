@@ -3,6 +3,15 @@ namespace KeyForge.Features.Practice.Services;
 /// <summary>Builds pitch lists from authored notes or beginner scale formulas.</summary>
 public static class PitchSequenceBuilder
 {
+    public static IReadOnlyList<string> Transpose(IReadOnlyList<string> notes, int semitones)
+    {
+        ArgumentNullException.ThrowIfNull(notes);
+        if (semitones is < -48 or > 48) throw new InvalidOperationException("Transposition must be between -48 and 48 semitones.");
+        var midi = notes.Select(n => MusicalNote.Parse(n).MidiNumber + semitones).ToArray();
+        if (midi.Any(n => n is < 0 or > 127)) throw new InvalidOperationException("Transposition exceeds MIDI pitch range.");
+        return midi.Select(MusicalNote.FromMidiNumber).Select(n => n.Value).ToArray();
+    }
+
     public static IReadOnlyList<string> ParsePitches(IEnumerable<string> pitches, string exerciseId, string field)
     {
         ArgumentNullException.ThrowIfNull(pitches);

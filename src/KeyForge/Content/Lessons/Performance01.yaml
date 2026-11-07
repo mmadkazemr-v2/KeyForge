@@ -49,3 +49,11 @@ exercises:
     description: Play an ascending and descending C major arpeggio. Fingering is instructional only.
     arpeggio: { root: C4, quality: major, inversion: 0, octaves: 1, direction: ascendingDescending }
     hand: right
+
+  - id: original-d-major-arpeggio
+    type: sequence
+    title: Original transposed arpeggio
+    description: The C major arpeggio transposed up two semitones to D major.
+    arpeggio: { root: C4, quality: major, inversion: 0, octaves: 1, direction: ascending }
+    transposeSemitones: 2
+    hand: right

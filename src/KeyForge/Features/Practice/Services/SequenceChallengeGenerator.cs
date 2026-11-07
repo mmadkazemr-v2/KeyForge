@@ -11,7 +11,7 @@ public sealed class SequenceChallengeGenerator
             performance.Validate();
             var bpm = selectedBpm ?? exercise.Tempo?.DefaultBpm ?? 0;
             if (bpm <= 0) throw new InvalidOperationException("Performance requires a positive quarter-note tempo.");
-            var events = performance.Events.Select(e => new PerformanceEvent(e.Pitch is null ? null : MusicalNote.Parse(e.Pitch).Value,
+            var events = performance.Events.Select(e => new PerformanceEvent(e.Pitch is null ? null : PitchSequenceBuilder.Transpose([e.Pitch], exercise.TransposeSemitones)[0],
                 TimeSpan.FromMinutes(e.OnsetBeats / bpm), TimeSpan.FromMinutes(e.DurationBeats / bpm), e.Voice, e.Hand)).ToArray();
             return new ExerciseChallenge
             {
@@ -36,6 +36,7 @@ public sealed class SequenceChallengeGenerator
                 : throw new InvalidOperationException(
                     $"Sequence exercise '{exercise.Id}' must define either 'sequence' or 'scale'.");
 
+        notes = PitchSequenceBuilder.Transpose(notes, exercise.TransposeSemitones);
         return new ExerciseChallenge
         {
             ExerciseId = exercise.Id,

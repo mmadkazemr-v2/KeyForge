@@ -4,10 +4,12 @@ using KeyForge.Components.Practice;
 
 public sealed class ArpeggioPracticeProcessTests
 {
-    [Fact]
-    public void AuthoredInversionReachesEvaluationAndProgress()
+    [Theory]
+    [InlineData(0)]
+    [InlineData(2)]
+    public void AuthoredInversionReachesEvaluationAndProgress(int transpose)
     {
-        var lesson = new YamlLessonParser().Parse("""
+        var yaml = """
             id: arpeggio-test
             title: Original arpeggio
             order: 1
@@ -20,7 +22,8 @@ public sealed class ArpeggioPracticeProcessTests
                 arpeggio: { root: C4, quality: major, inversion: 1, octaves: 1, direction: ascending }
                 hand: right
                 fingers: [1, 2, 4, 5]
-            """);
+            """;
+        var lesson = new YamlLessonParser().Parse(yaml.Replace("type: sequence", $"type: sequence\n    transposeSemitones: {transpose}"));
         var catalog = new Catalog(lesson);
         var recorder = new InMemoryExerciseAttemptRecorder();
         var store = new InMemoryProgressStore();
@@ -28,7 +31,7 @@ public sealed class ArpeggioPracticeProcessTests
         var service = new PracticeSessionService(catalog, progression, new ExerciseChallengeGenerator(), new ExerciseEvaluator(), new ExerciseScorer(), recorder);
         var session = service.StartSession(lesson.Id)!;
         var runtime = service.StartExercise(session);
-        Assert.Equal(new[] { "E4", "G4", "C5", "E5" }, runtime.Challenge.Sequence!.ExpectedNotes);
+        Assert.Equal(PitchSequenceBuilder.Transpose(["E4", "G4", "C5", "E5"], transpose), runtime.Challenge.Sequence!.ExpectedNotes);
         for (var index = 0; index < runtime.Challenge.ExpectedInputs.Count; index++)
         {
             var input = MidiInputAdapter.TryCreate(new MidiInputMessage { DeviceId = "keys", DeviceName = "test", Status = 0x90, Data1 = MusicalNote.Parse(runtime.Challenge.ExpectedInputs[index].Value).MidiNumber, Data2 = 90, TimestampMilliseconds = 12000 + index * 1000, Sequence = index + 1 }, runtime.StartedAt.AddSeconds(10), 12000)!;

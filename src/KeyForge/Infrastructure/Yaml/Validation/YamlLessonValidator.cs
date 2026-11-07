@@ -53,6 +53,8 @@ internal static class YamlLessonValidator
                 exercise.Tempo?.Validate();
                 exercise.Metronome?.Validate();
                 ValidateExerciseConfiguration(exercise);
+                if (exercise is SequenceExerciseDefinition { TransposeSemitones: not 0 } transposed)
+                    _ = new SequenceChallengeGenerator().Create(transposed);
             }
             catch (InvalidOperationException ex)
             {
