@@ -48,6 +48,7 @@ public static class VexFlowNotationMapper
         {
             ClefType.Treble => "treble",
             ClefType.Bass => "bass",
+            ClefType.Grand => note.MidiNumber < 60 ? "bass" : "treble",
             _ => null
         };
 
@@ -58,6 +59,7 @@ public static class VexFlowNotationMapper
 
         request = new VexFlowStaffRenderRequest
         {
+            GrandStaff = clef == ClefType.Grand,
             Clef = clefName,
             Accidental = note.IsBlackKey ? "#" : null,
             NoteKey = $"{note.Name.ToLowerInvariant()}/{note.Octave.ToString(CultureInfo.InvariantCulture)}"

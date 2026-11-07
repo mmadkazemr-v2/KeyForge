@@ -56,7 +56,7 @@ export async function renderStaff(element, request) {
     }
 
     const width = Math.max(320, Math.round(element.getBoundingClientRect().width || 480));
-    const height = 176;
+    const height = request.grandStaff ? 280 : 176;
     const renderer = new VexFlow.Renderer(element, VexFlow.Renderer.Backends.SVG);
     renderer.resize(width, height);
 
@@ -65,8 +65,19 @@ export async function renderStaff(element, request) {
     context.setFillStyle(ink);
     context.setStrokeStyle(ink);
 
-    const stave = new VexFlow.Stave(12, 28, width - 24);
-    stave.addClef(request.clef).setContext(context).draw();
+    let stave;
+    if (request.grandStaff) {
+        const treble = new VexFlow.Stave(24, 28, width - 36);
+        const bass = new VexFlow.Stave(24, 136, width - 36);
+        treble.addClef('treble').setContext(context).draw();
+        bass.addClef('bass').setContext(context).draw();
+        new VexFlow.StaveConnector(treble, bass).setType(VexFlow.StaveConnector.type.BRACE).setContext(context).draw();
+        new VexFlow.StaveConnector(treble, bass).setType(VexFlow.StaveConnector.type.SINGLE_LEFT).setContext(context).draw();
+        stave = request.clef === 'bass' ? bass : treble;
+    } else {
+        stave = new VexFlow.Stave(12, 28, width - 24);
+        stave.addClef(request.clef).setContext(context).draw();
+    }
 
     const note = new VexFlow.StaveNote({
         clef: request.clef,

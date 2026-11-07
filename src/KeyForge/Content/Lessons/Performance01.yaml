@@ -67,3 +67,12 @@ exercises:
       scoringMode: pedalSustain
       events:
         - { pitch: C4, onsetBeats: 0, durationBeats: 1 }
+
+  - id: original-grand-staff-reading
+    type: noteReading
+    title: Original grand-staff reading
+    description: Identify a single note across the paired treble and bass staves. Staff position does not identify the playing hand.
+    clef: grand
+    notes: [C3, E4, C5]
+    count: 3
+    randomized: false

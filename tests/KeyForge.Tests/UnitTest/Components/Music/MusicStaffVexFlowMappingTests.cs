@@ -45,14 +45,14 @@ public sealed class MusicStaffVexFlowMappingTests
     }
 
     [Fact]
-    public void MusicStaffContract_UnsupportedGrandStaffFailsGracefully()
+    public void MusicStaffContract_GrandStaffMapsToTrebleAndBassPresentation()
     {
         var mapped = VexFlowNotationMapper.TryMap(
             ClefType.Grand,
             MusicalNote.Parse("C4"),
             out var request);
 
-        Assert.False(mapped);
-        Assert.Null(request);
+        Assert.True(mapped);
+        Assert.True(request!.GrandStaff);
     }
 }

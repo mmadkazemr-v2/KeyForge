@@ -87,8 +87,11 @@ public sealed class PerformancePracticeProcessTests
     public void InvalidAuthoringIsRejected(string before, string after) =>
         Assert.Throws<YamlLessonParseException>(() => new YamlLessonParser().Parse(Yaml.Replace(before, after)));
 
-    [Fact]
-    public void SharpNoteReadingUsesSameRenderedPitchForMidiEvaluationAndProgress()
+    [Theory]
+    [InlineData(ClefType.Treble)]
+    [InlineData(ClefType.Bass)]
+    [InlineData(ClefType.Grand)]
+    public void SharpNoteReadingUsesSameRenderedPitchForMidiEvaluationAndProgress(ClefType clef)
     {
         var lesson = new YamlLessonParser().Parse("""
             id: sharp-test
@@ -97,8 +100,8 @@ public sealed class PerformancePracticeProcessTests
             unlock: { mode: immediate }
             completion: { requireAllExercises: true }
             exercises:
-              - { id: sharp, type: noteReading, title: Sharp, notes: [F#4], count: 1, clef: treble }
-            """);
+              - { id: sharp, type: noteReading, title: Sharp, notes: [F#4], count: 1, clef: CLEF }
+            """.Replace("CLEF", clef.ToString().ToLowerInvariant()));
         var recorder = new InMemoryExerciseAttemptRecorder();
         var store = new InMemoryProgressStore();
         var catalog = new Catalog(lesson);
@@ -107,7 +110,7 @@ public sealed class PerformancePracticeProcessTests
         var session = service.StartSession(lesson.Id)!;
         var runtime = service.StartExercise(session);
         var note = MusicalNote.Parse(runtime.Challenge.ExpectedInputs[0].Value);
-        Assert.True(KeyForge.Components.Music.VexFlowNotationMapper.TryMap(ClefType.Treble, note, out var notation));
+        Assert.True(KeyForge.Components.Music.VexFlowNotationMapper.TryMap(clef, note, out var notation));
         Assert.Equal("#", notation!.Accidental);
         var input = MidiInputAdapter.TryCreate(new MidiInputMessage { DeviceId = "keys", DeviceName = "test", Status = 0x90, Data1 = note.MidiNumber, Data2 = 90, TimestampMilliseconds = 12000, Sequence = 1 }, runtime.StartedAt, 12000)!;
         runtime.CaptureInput(input);

@@ -6,6 +6,7 @@ test('single-note sharp adds an explicit accidental while natural notes retain t
     const saved = globalThis.VexFlow;
     const savedStyle = globalThis.getComputedStyle;
     const notes = [];
+    const connectors = [];
     try {
         const context = { setFillStyle() {}, setStrokeStyle() {} };
         class Renderer { static Backends = { SVG: 1 }; resize() {} getContext() { return context; } }
@@ -15,7 +16,13 @@ test('single-note sharp adds an explicit accidental while natural notes retain t
             addModifier(modifier, index) { this.modifiers.push([modifier, index]); }
         }
         class Accidental { constructor(value) { this.value = value; } }
-        globalThis.VexFlow = { Renderer, Stave, StaveNote, Accidental, Formatter: { FormatAndDraw() {} } };
+        class StaveConnector {
+            static type = { BRACE: 3, SINGLE_LEFT: 1 };
+            setType(type) { connectors.push(type); return this; }
+            setContext() { return this; }
+            draw() {}
+        }
+        globalThis.VexFlow = { Renderer, Stave, StaveNote, Accidental, StaveConnector, Formatter: { FormatAndDraw() {} } };
         globalThis.getComputedStyle = () => ({ getPropertyValue: () => '#fff' });
         const source = await readFile(new URL('../../../../../src/KeyForge/Components/Music/VexFlowStaff.razor.js', import.meta.url), 'utf8');
         const module = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
@@ -26,6 +33,9 @@ test('single-note sharp adds an explicit accidental while natural notes retain t
         assert.equal(notes[0].modifiers[0][0].value, '#');
         assert.equal(notes[0].modifiers[0][1], 0);
         assert.equal(notes[1].modifiers.length, 0);
+        await module.renderStaff(element, { grandStaff: true, clef: 'bass', noteKey: 'c/3' });
+        assert.deepEqual(connectors, [3, 1]);
+        assert.equal(notes[2].options.clef, 'bass');
     } finally {
         if (saved === undefined) delete globalThis.VexFlow; else globalThis.VexFlow = saved;
         if (savedStyle === undefined) delete globalThis.getComputedStyle; else globalThis.getComputedStyle = savedStyle;

@@ -117,7 +117,7 @@
 
     private string? GetRenderSignature() => _renderRequest is null
         ? null
-        : $"{_renderRequest.Clef}:{_renderRequest.NoteKey}:{_renderRequest.TimeSignature}:" +
+        : $"{_renderRequest.GrandStaff}:{_renderRequest.Clef}:{_renderRequest.NoteKey}:{_renderRequest.TimeSignature}:" +
           string.Join("|", _renderRequest.RhythmMeasures?.Select(measure =>
               string.Join(",", measure.Select(item => item.Duration))) ?? []);
 }

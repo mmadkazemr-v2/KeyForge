@@ -5,6 +5,16 @@ namespace KeyForge.Tests.UnitTest.Components.Music;
 public sealed class VexFlowNotationMapperTests
 {
     [Theory]
+    [InlineData("C3", "bass")]
+    [InlineData("C5", "treble")]
+    public void GrandStaffChoosesTheWrittenStaffWithoutHandInference(string pitch, string expectedClef)
+    {
+        Assert.True(VexFlowNotationMapper.TryMap(ClefType.Grand, MusicalNote.Parse(pitch), out var request));
+        Assert.True(request!.GrandStaff);
+        Assert.Equal(expectedClef, request.Clef);
+    }
+
+    [Theory]
     [InlineData(RhythmDuration.Whole, false, "w", false)]
     [InlineData(RhythmDuration.Half, false, "h", false)]
     [InlineData(RhythmDuration.Quarter, false, "q", false)]
@@ -81,15 +91,15 @@ public sealed class VexFlowNotationMapperTests
     }
 
     [Fact]
-    public void TryMap_GrandStaff_FailsSafely()
+    public void TryMap_GrandStaffShowsBothClefs()
     {
         var mapped = VexFlowNotationMapper.TryMap(
             ClefType.Grand,
             MusicalNote.Parse("C4"),
             out var request);
 
-        Assert.False(mapped);
-        Assert.Null(request);
+        Assert.True(mapped);
+        Assert.True(request!.GrandStaff);
     }
 
     [Fact]
