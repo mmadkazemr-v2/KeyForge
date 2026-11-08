@@ -60,6 +60,12 @@ public static class UiText
     public static string PracticeAudioActivationDescription => Select(
         "این گزینه صدای مرورگر را برای مترونوم و نمونه‌های شنیداری فعال می‌کند؛ صدای زندهٔ کلاویه همچنان از تنظیم حالت صدا پیروی می‌کند.",
         "Enable browser audio for the metronome and listening prompts. Live keyboard sound still follows the instrument mode.");
+    public static string ReaperFirstPracticeDescription => Select(
+        "صدا و مترونوم شنیداری از REAPER؛ KeyForge ورودی MIDI، ارزیابی و پیشرفت را ثبت می‌کند. صدای داخلی غیرفعال است.",
+        "REAPER provides instrument sound and the audible metronome. KeyForge receives MIDI, evaluates practice and tracks progress. Internal audio is inactive.");
+    public static string SilentListeningLimitation => Select(
+        "این تمرین شنیداری به صدای نمونه نیاز دارد و در حالت بی‌صدا قابل انجام نیست. برای شنیدن نمونه، حالت صدای داخلی را آگاهانه انتخاب و فعال کنید.",
+        "This listening challenge requires an audible prompt and cannot be completed silently. Choose internal instrument audio and activate it explicitly to hear the prompt.");
     public static string PracticeAudioSettings => Select("تنظیمات صدای تمرین", "Practice audio settings");
     public static string AudioNeedsActivation => Select(
         "برای شنیدن این نمونه، صدای مرورگر را از بخش تنظیمات صدا فعال کنید.",
@@ -108,8 +114,8 @@ public static class UiText
     public static string ExternalMetronome => Select("مترونوم خارجی", "External metronome");
     public static string MetronomeOff => Select("خاموش", "Off");
     public static string ExternalMetronomePhaseWarning => Select(
-        "فاز مترونوم خارجی با خط زمانی تمرین KeyForge همگام نیست؛ امتیاز ریتم فقط نسبت به شروع داخلی KeyForge سنجیده می‌شود.",
-        "The external metronome phase is not synchronized with KeyForge. Rhythm timing is measured from KeyForge's own exercise start, not the external downbeat.");
+        "فاز مترونوم خارجی با خط زمانی تمرین KeyForge همگام نیست؛ امتیاز ریتم فقط نسبت به شروع داخلی KeyForge سنجیده می‌شود. BPM یکسان فاز ضرب را هماهنگ نمی‌کند. دقت زمان شروع نسبت به مبدأ محلی با یکنواختی نسبی ریتم متفاوت است؛ امتیازها با REAPER همگام نیستند.",
+        "The external metronome phase is not synchronized with KeyForge. Rhythm timing is measured from KeyForge's own exercise start, not the external downbeat. Matching BPM does not align beat phase. Absolute onset accuracy against this local start differs from relative rhythm consistency; scores are not REAPER-synchronized.");
     public static string OptionalMidi => Select("اختیاری — برای پیانوی دیجیتال", "Optional — for digital pianos");
     public static string EnableMidi => Select("فعال‌سازی میدی", "Enable MIDI");
     public static string MidiDevice => Select("دستگاه میدی", "MIDI device");

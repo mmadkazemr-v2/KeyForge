@@ -196,10 +196,17 @@ test('External DAW mode keeps MIDI delivery active without initializing live aud
                 if (method === 'HandleMidiMessage') delivered.push(message);
             } });
             await midi.selectInput('keyboard');
-            port.emit([0x90, 60, 96], performance.now());
+            port.emit([0x90, 60, 96], 12000);
+            port.emit([0xB0, 64, 127], 12100);
+            port.emit([0x80, 60, 32], 12500);
+            port.emit([0xB0, 64, 0], 12600);
             await new Promise(resolve => setTimeout(resolve, 0));
-            assert.equal(delivered.length, 1);
+            assert.equal(delivered.length, 4);
             assert.equal(delivered[0].data2, 96);
+            assert.deepEqual(delivered.map(m => [m.status, m.data1, m.data2, m.timestampMilliseconds, m.sequence]), [
+                [0x90, 60, 96, 12000, 1], [0xB0, 64, 127, 12100, 2],
+                [0x80, 60, 32, 12500, 3], [0xB0, 64, 0, 12600, 4]
+            ]);
             await midi.dispose();
         });
     } finally {

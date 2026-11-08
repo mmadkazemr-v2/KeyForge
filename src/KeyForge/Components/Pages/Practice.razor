@@ -120,10 +120,17 @@ else if (CurrentExercise is { } exercise)
             {
                 <p class="kf-text-muted" role="note">@UiText.ExternalMetronomePhaseWarning</p>
             }
-            <div class="practice-audio-preferences__activation">
-                <p class="kf-text-muted">@UiText.PracticeAudioActivationDescription</p>
-                <AudioActivationControl />
-            </div>
+            @if (!_internalMidiAudioEnabled && !IsKeyForgeMetronomeEnabled)
+            {
+                <p class="kf-text-muted" role="status">@UiText.ReaperFirstPracticeDescription</p>
+            }
+            @if (_internalMidiAudioEnabled || IsKeyForgeMetronomeEnabled)
+            {
+                <div class="practice-audio-preferences__activation">
+                    <p class="kf-text-muted">@UiText.PracticeAudioActivationDescription</p>
+                    <AudioActivationControl />
+                </div>
+            }
         </section>
 
         <ExercisePresentation Exercise="exercise" />
@@ -173,9 +180,16 @@ else if (CurrentExercise is { } exercise)
                     }
                     else if (IsEarTrainingChallenge)
                     {
-                        <EarTrainingWorkspace @key="_runtimeExercise"
+                        @if (!_internalMidiAudioEnabled)
+                        {
+                            <p role="note">@UiText.SilentListeningLimitation</p>
+                        }
+                        else
+                        {
+                            <EarTrainingWorkspace @key="_runtimeExercise"
                                               RuntimeExercise="_runtimeExercise!"
                                               OnCompleted="CompleteInteractiveAttempt" />
+                        }
                     }
                     else if (_runtimeExercise?.Challenge.Performance is not null)
                     {
@@ -418,7 +432,7 @@ else if (CurrentExercise is { } exercise)
     private bool _isSubmitting;
     private bool _submissionError;
     private bool _internalMidiAudioEnabled;
-    private PracticeMetronomeMode _metronomeAudioMode = PracticeMetronomeMode.KeyForge;
+    private PracticeMetronomeMode _metronomeAudioMode = PracticeMetronomeMode.External;
     private bool IsKeyForgeMetronomeEnabled => _metronomeAudioMode is PracticeMetronomeMode.KeyForge;
 
     private void SetMidiAudioMode(bool enabled) => _internalMidiAudioEnabled = enabled;

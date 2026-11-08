@@ -14,7 +14,13 @@
         <h1 class="kf-page-title">@UiText.KeyboardLab</h1>
         <p class="kf-page-header__description">@UiText.KeyboardLabDescription</p>
     </div>
-    <AudioActivationControl />
+    <label>
+        <input type="checkbox" @bind="_internalAudioEnabled" @bind:after="StopAudioAsync" /> @UiText.InternalAudioMode
+    </label>
+    @if (_internalAudioEnabled)
+    {
+        <AudioActivationControl />
+    }
 </header>
 
 <div class="kf-content-stack keyboard-lab">
@@ -24,7 +30,7 @@
                 <h2 id="keyboard-lab-midi-title" class="kf-card__title">@UiText.MidiDevice</h2>
                 <span class="kf-status-badge @MidiStatusClass">@MidiStatusText</span>
             </div>
-            <MidiInputControl LivePlayEnabled="true" LivePracticeSound="_selectedPreset" />
+            <MidiInputControl LivePlayEnabled="_internalAudioEnabled" LivePracticeSound="_selectedPreset" />
         </div>
     </section>
 
@@ -87,12 +93,14 @@
                             disabled="@(_bpm >= 240 || _metronomeRunning)" @onclick="() => ChangeBpm(1)">+</button>
                 </div>
             </div>
-            <MetronomeControl StandaloneBpm="_bpm" Configuration="_metronomeConfiguration" OnRunningChanged="SetMetronomeRunning" />
+            <MetronomeControl StandaloneBpm="_bpm" Configuration="_metronomeConfiguration" AudioEnabled="_internalAudioEnabled" OnRunningChanged="SetMetronomeRunning" />
         </div>
     </section>
 </div>
 
 @code {
+    private bool _internalAudioEnabled;
+    private Task StopAudioAsync() => Audio.StopActiveNotesAsync();
     private readonly MusicalNote _firstNote = MusicalNote.Parse("C2");
     private readonly MusicalNote _lastNote = MusicalNote.Parse("C7");
     private readonly MetronomeConfiguration _metronomeConfiguration = new()
@@ -134,7 +142,7 @@
 
     private async Task PlayVirtualNoteAsync(MusicalNote note)
     {
-        await Audio.PlayNoteAsync(note);
+        if (_internalAudioEnabled) await Audio.PlayNoteAsync(note);
     }
 
     private void ChangeBpm(int direction) => _bpm = Math.Clamp(_bpm + direction * 5, 30, 240);

@@ -239,3 +239,20 @@ test('count-in and exercise pulses share the same browser grid despite delayed i
         assert.equal(calls.filter(c => c.name === 'CompleteRhythm').length, 1);
     });
 });
+
+test('external metronome preserves local timeline and count-in without scheduling audio, including restart', async () => {
+    await withRuntime(2, async ({ runtime, dotNet, calls, advanceTo, labels, pendingTimerCount }) => {
+        const silent = { ...labels, countInBeats: 2, beatIntervalMilliseconds: 1000, audio: false, playClick() { throw new Error('Silent mode scheduled audio'); } };
+        const events = [{ offsetMilliseconds: 0 }, { offsetMilliseconds: 1000 }];
+        const running = runtime.startRhythm('rhythm', dotNet, events, [0, 1000], 2000, silent);
+        await advanceTo(16000);
+        await running;
+        assert.equal(calls.find(c => c.name === 'NotifyRhythmStarted').args[0], 14000);
+        assert.equal(calls.filter(c => c.name === 'CompleteRhythm').length, 1);
+        assert.equal(calls.some(c => c.name === 'AudioClick'), false);
+        const restarted = runtime.startRhythm('rhythm', dotNet, events, [0, 1000], 2000, silent);
+        runtime.stopRhythm('rhythm');
+         await flush();
+        assert.equal(pendingTimerCount(), 0);
+    });
+});
