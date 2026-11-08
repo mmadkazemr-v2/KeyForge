@@ -1,6 +1,6 @@
 id: lento-vivo-session-03-adapted
-title: "LentoVivo Session 3 - Adapted rhythm practice"
-description: "Adapted practice: original beginner rhythm drills based on the session topic. The linked worksheet notation could not be visually verified, so these patterns are not presented as transcriptions."
+title: "LentoVivo Session 3 - Worksheet rhythms and adapted practice"
+description: "Eight independent hand rhythms from the previously reported Session 03 worksheet transcription (fresh visual source verification pending), plus the preserved adapted pulse drills. No worksheet meter or combined-hand synchronization is assumed."
 course:
   id: lento-vivo-piano
   name: "LentoVivo - Piano Course"
@@ -71,3 +71,204 @@ exercises:
           - { duration: quarter }
           - { duration: quarter }
           - { duration: quarter }
+
+  # Previously reported transcription; fresh visual source verification pending.
+  - type: rhythm
+    id: lento-vivo-s03-section-01-rh
+    title: "Section 01 - RH worksheet rhythm"
+    description: "Previously reported worksheet transcription; fresh visual source verification pending. Use your right hand on any comfortable piano key. Hand identity is instructional and is not scored. Unmetered, independent hand sequence; quarter-note pulse defines BPM. Written durations set expected attack intervals, not key-hold scoring. REAPER supplies sound and metronome; timing is scored against KeyForge's local start, not REAPER beat phase."
+    duration: 3
+    tempo:
+      defaultBpm: 55
+      allowUserChange: true
+      minBpm: 40
+      maxBpm: 70
+      step: 5
+      suggestedBpms: [40, 55, 70]
+    metronome: { enabled: true, visual: true, audio: false, countInBeats: 4 }
+    difficulty: easy
+    unmetered: true
+    pattern:
+      - { duration: quarter }
+      - { duration: quarter }
+      - { duration: quarter }
+      - { duration: quarter }
+      - { duration: quarter }
+      - { duration: quarter }
+      - { duration: half }
+      - { duration: half }
+      - { duration: half }
+      - { duration: half }
+
+  # Previously reported transcription; fresh visual source verification pending.
+  - type: rhythm
+    id: lento-vivo-s03-section-01-lh
+    title: "Section 01 - LH worksheet rhythm"
+    description: "Previously reported worksheet transcription; fresh visual source verification pending. Use your left hand on any comfortable piano key. Hand identity is instructional and is not scored. Unmetered, independent hand sequence; quarter-note pulse defines BPM. Written durations set expected attack intervals, not key-hold scoring. REAPER supplies sound and metronome; timing is scored against KeyForge's local start, not REAPER beat phase."
+    duration: 3
+    tempo:
+      defaultBpm: 55
+      allowUserChange: true
+      minBpm: 40
+      maxBpm: 70
+      step: 5
+      suggestedBpms: [40, 55, 70]
+    metronome: { enabled: true, visual: true, audio: false, countInBeats: 4 }
+    difficulty: easy
+    unmetered: true
+    pattern:
+      - { duration: quarter }
+      - { duration: quarter }
+      - { duration: half }
+      - { duration: half }
+      - { duration: half }
+      - { duration: half }
+
+  # Previously reported transcription; fresh visual source verification pending.
+  - type: rhythm
+    id: lento-vivo-s03-section-02-rh
+    title: "Section 02 - RH worksheet rhythm"
+    description: "Previously reported worksheet transcription; fresh visual source verification pending. Use your right hand on any comfortable piano key. Hand identity is instructional and is not scored. Unmetered, independent hand sequence; quarter-note pulse defines BPM. Written durations set expected attack intervals, not key-hold scoring. REAPER supplies sound and metronome; timing is scored against KeyForge's local start, not REAPER beat phase."
+    duration: 3
+    tempo:
+      defaultBpm: 55
+      allowUserChange: true
+      minBpm: 40
+      maxBpm: 70
+      step: 5
+      suggestedBpms: [40, 55, 70]
+    metronome: { enabled: true, visual: true, audio: false, countInBeats: 4 }
+    difficulty: easy
+    unmetered: true
+    pattern:
+      - { duration: half }
+      - { duration: quarter }
+      - { duration: quarter }
+      - { duration: half }
+      - { duration: quarter }
+      - { duration: half }
+      - { duration: quarter }
+      - { duration: quarter }
+      - { duration: quarter }
+
+  # Previously reported transcription; fresh visual source verification pending.
+  - type: rhythm
+    id: lento-vivo-s03-section-02-lh
+    title: "Section 02 - LH worksheet rhythm"
+    description: "Previously reported worksheet transcription; fresh visual source verification pending. Use your left hand on any comfortable piano key. Hand identity is instructional and is not scored. Unmetered, independent hand sequence; quarter-note pulse defines BPM. Written durations set expected attack intervals, not key-hold scoring. REAPER supplies sound and metronome; timing is scored against KeyForge's local start, not REAPER beat phase."
+    duration: 3
+    tempo:
+      defaultBpm: 55
+      allowUserChange: true
+      minBpm: 40
+      maxBpm: 70
+      step: 5
+      suggestedBpms: [40, 55, 70]
+    metronome: { enabled: true, visual: true, audio: false, countInBeats: 4 }
+    difficulty: easy
+    unmetered: true
+    pattern:
+      - { duration: half }
+      - { duration: quarter }
+      - { duration: quarter }
+      - { duration: quarter }
+      - { duration: quarter }
+      - { duration: quarter }
+      - { duration: half }
+      - { duration: quarter }
+      - { duration: half }
+
+  # Previously reported transcription; fresh visual source verification pending.
+  - type: rhythm
+    id: lento-vivo-s03-section-03-rh
+    title: "Section 03 - RH worksheet rhythm"
+    description: "Previously reported worksheet transcription; fresh visual source verification pending. Use your right hand on any comfortable piano key. Hand identity is instructional and is not scored. Unmetered, independent hand sequence; quarter-note pulse defines BPM. Written durations set expected attack intervals, not key-hold scoring. REAPER supplies sound and metronome; timing is scored against KeyForge's local start, not REAPER beat phase."
+    duration: 3
+    tempo:
+      defaultBpm: 55
+      allowUserChange: true
+      minBpm: 40
+      maxBpm: 70
+      step: 5
+      suggestedBpms: [40, 55, 70]
+    metronome: { enabled: true, visual: true, audio: false, countInBeats: 4 }
+    difficulty: easy
+    unmetered: true
+    pattern:
+      - { duration: dottedHalf }
+      - { duration: quarter }
+      - { duration: quarter }
+      - { duration: dottedHalf }
+      - { duration: quarter }
+      - { duration: dottedHalf }
+
+  # Previously reported transcription; fresh visual source verification pending.
+  - type: rhythm
+    id: lento-vivo-s03-section-03-lh
+    title: "Section 03 - LH worksheet rhythm"
+    description: "Previously reported worksheet transcription; fresh visual source verification pending. Use your left hand on any comfortable piano key. Hand identity is instructional and is not scored. Unmetered, independent hand sequence; quarter-note pulse defines BPM. Written durations set expected attack intervals, not key-hold scoring. REAPER supplies sound and metronome; timing is scored against KeyForge's local start, not REAPER beat phase."
+    duration: 3
+    tempo:
+      defaultBpm: 55
+      allowUserChange: true
+      minBpm: 40
+      maxBpm: 70
+      step: 5
+      suggestedBpms: [40, 55, 70]
+    metronome: { enabled: true, visual: true, audio: false, countInBeats: 4 }
+    difficulty: easy
+    unmetered: true
+    pattern:
+      - { duration: dottedHalf }
+      - { duration: quarter }
+      - { duration: quarter }
+      - { duration: dottedHalf }
+      - { duration: dottedHalf }
+      - { duration: quarter }
+
+  # Previously reported transcription; fresh visual source verification pending.
+  - type: rhythm
+    id: lento-vivo-s03-section-04-rh
+    title: "Section 04 - RH worksheet rhythm"
+    description: "Previously reported worksheet transcription; fresh visual source verification pending. Use your right hand on any comfortable piano key. Hand identity is instructional and is not scored. Unmetered, independent hand sequence; quarter-note pulse defines BPM. Written durations set expected attack intervals, not key-hold scoring. REAPER supplies sound and metronome; timing is scored against KeyForge's local start, not REAPER beat phase."
+    duration: 3
+    tempo:
+      defaultBpm: 55
+      allowUserChange: true
+      minBpm: 40
+      maxBpm: 70
+      step: 5
+      suggestedBpms: [40, 55, 70]
+    metronome: { enabled: true, visual: true, audio: false, countInBeats: 4 }
+    difficulty: easy
+    unmetered: true
+    pattern:
+      - { duration: whole }
+      - { duration: quarter }
+      - { duration: quarter }
+      - { duration: half }
+      - { duration: dottedHalf }
+      - { duration: whole }
+
+  # Previously reported transcription; fresh visual source verification pending.
+  - type: rhythm
+    id: lento-vivo-s03-section-04-lh
+    title: "Section 04 - LH worksheet rhythm"
+    description: "Previously reported worksheet transcription; fresh visual source verification pending. Use your left hand on any comfortable piano key. Hand identity is instructional and is not scored. Unmetered, independent hand sequence; quarter-note pulse defines BPM. Written durations set expected attack intervals, not key-hold scoring. REAPER supplies sound and metronome; timing is scored against KeyForge's local start, not REAPER beat phase."
+    duration: 3
+    tempo:
+      defaultBpm: 55
+      allowUserChange: true
+      minBpm: 40
+      maxBpm: 70
+      step: 5
+      suggestedBpms: [40, 55, 70]
+    metronome: { enabled: true, visual: true, audio: false, countInBeats: 4 }
+    difficulty: easy
+    unmetered: true
+    pattern:
+      - { duration: whole }
+      - { duration: quarter }
+      - { duration: quarter }
+      - { duration: half }
+      - { duration: quarter }

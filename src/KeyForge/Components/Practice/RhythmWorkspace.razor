@@ -14,7 +14,7 @@
     <div class="kf-practice-workspace__header rhythm-workspace__header">
         <div>
             <p class="kf-meta">@UiText.RhythmPractice</p>
-            <h2 id="@($"{_workspaceId}-title")" class="kf-card__title">@UiText.KeepTheBeat</h2>
+            <h2 id="@($"{_workspaceId}-title")" class="kf-card__title">@RuntimeExercise.Definition.Title</h2>
         </div>
         <span class="kf-status-badge kf-status-badge--available" data-rhythm-state>
             @UiText.RhythmReady
@@ -24,6 +24,7 @@
     <div class="rhythm-workspace__pulse" aria-live="polite" aria-atomic="true">
         <strong data-rhythm-countdown>@UiText.RhythmReady</strong>
         <span class="kf-text-secondary">@UiText.GetBpmLabel(RuntimeExercise.SelectedBpm ?? 0)</span>
+        <span class="kf-text-secondary">@UiText.GetCountInLabel(RuntimeExercise.Definition.Metronome is { Enabled: true } config ? config.CountInBeats : 0)</span>
     </div>
 
     <div class="rhythm-workspace__instruction">

@@ -2,7 +2,7 @@ using KeyForge.Components.Practice;
 
 namespace KeyForge.Tests.ProcessTest.Features.Practice;
 
-public sealed class LentoVivoAdaptedPracticeProcessTests
+public sealed partial class LentoVivoAdaptedPracticeProcessTests
 {
     [Theory]
     [InlineData("lento-vivo-s03-rh-quarter-pulse")]
