@@ -2,32 +2,41 @@
 @rendermode InteractiveServer
 @using KeyForge.Infrastructure.Content.Import
 
-<PageTitle>@T("???? MusicXML", "Import MusicXML")</PageTitle>
-<h1>@T("???? ??? ????? ?? MusicXML", "Import a MusicXML learner part")</h1>
-<p>@T("???? MusicXML ??? ?? ?????? ????. ??? ????? ???? ?????? ?????? ???.", "Choose your MusicXML file, then explicitly select the learner part.")</p>
-<InputFile OnChange="ReadAsync" accept=".musicxml,.xml" />
+<PageTitle>@T("ورود MusicXML", "Import MusicXML")</PageTitle>
+<h1>@T("وارد کردن بخش هنرجو از MusicXML", "Import a MusicXML learner part")</h1>
+<p>@T("فایل MusicXML را انتخاب کنید، سپس بخش هنرجو را مشخص کنید.", "Choose your MusicXML file, then explicitly select the learner part.")</p>
+<InputFile OnChange="ReadAsync" accept=".musicxml,.xml"/>
 @if (_xml is not null)
 {
-    <label>@T("??? ?????", "Learner part")
+    <label>@T("بخش هنرجو", "Learner part")
         <select @bind="_part">
-            <option value="">@T("?????? ???", "Select a part")</option>
-            @foreach (var part in _parts) { <option value="@part.Id">@part.Name (@part.Id)</option> }
+            <option value="">@T("انتخاب یک بخش", "Select a part")</option>
+            @foreach (var part in _parts)
+            {
+                <option value="@part.Id">@part.Name (@part.Id)</option>
+            }
         </select>
     </label>
-    <label>@T("????? ?????? ???", "Stable lesson ID") <input @bind="_lessonId" /></label>
-    <label>@T("???? ?? ???? ???? ????", "BPM when absent from source") <input type="number" min="10" max="400" @bind="_bpm" /></label>
-    <button class="kf-button kf-button--primary" type="button" @onclick="Preview">@T("?????????? ? ?????????", "Validate and preview")</button>
+    <label>@T("شناسه ثابت درس", "Stable lesson ID") <input @bind="_lessonId"/></label>
+    <label>@T("تمپو (BPM) در صورت نبود در منبع", "BPM when absent from source") <input type="number" min="10" max="400"
+                                                                                       @bind="_bpm"/></label>
+    <button class="kf-button kf-button--primary" type="button"
+            @onclick="Preview">@T("اعتبارسنجی و پیش‌نمایش", "Validate and preview")</button>
 }
 @if (_yaml is not null)
 {
-    <p>@T("????????? ???? ?? ????? ?? ??? ?????? ??????. ???? ????? ? ????? ???? ?? ???? ??????? ???????.", "Timing is relative to your first attack. Hand, fingering and exact notation are not inferred.")</p>
-    <p>@T("?? ?? ?????? YAML ?? ?? ???? ????????? ?????? ????? ? ?????? ?? ?????????? ???? ????? ??? ??? ?? ???????? ????? ???? ???.", "After review, save the YAML in the configured lesson-content directory and restart the app; the lesson will then be available in the library.")</p>
-    <p>@T("???? ???????? ??? ???? ?? ?? ?????? ??????? ?????? ??? ??????? ??? ???? ???? ????????? ???? scoringMode ?? keyHold ????.", "Generated YAML scores onsets only. Durations are preserved; author scoringMode: keyHold to assess key holds.")</p>
-    <a class="kf-button kf-button--secondary" download="@(_previewId + ".yaml")" href="@DownloadUrl">@T("?????? YAML ?????", "Download validated YAML")</a>
+    <p>@T("زمان‌بندی نسبت به اولین ضربه شماست. دست، انگشت‌گذاری و نت‌نویسی دقیق استنباط نمی‌شوند.", "Timing is relative to your first attack. Hand, fingering and exact notation are not inferred.")</p>
+    <p>@T("پس از بررسی، فایل YAML را در پوشه محتوای درس که تنظیم شده ذخیره کنید و برنامه را دوباره اجرا کنید؛ سپس درس در کتابخانه در دسترس خواهد بود.", "After review, save the YAML in the configured lesson-content directory and restart the app; the lesson will then be available in the library.")</p>
+    <p>@T("YAML تولیدشده فقط زمان شروع نت‌ها را امتیازدهی می‌کند. مدت‌ها حفظ می‌شوند؛ برای ارزیابی نگه‌داشتن کلید، scoringMode: keyHold را بنویسید.", "Generated YAML scores onsets only. Durations are preserved; author scoringMode: keyHold to assess key holds.")</p>
+    <a class="kf-button kf-button--secondary" download="@(_previewId + ".yaml")"
+       href="@DownloadUrl">@T("دانلود YAML اعتبارسنجی‌شده", "Download validated YAML")</a>
     <pre dir="ltr">@_yaml</pre>
 }
-@if (_error is not null) { <p role="alert">@_error</p> }
-<p>@T("??? MusicXML ??? ????? ?? ???? ???? ? ?????? ?? ??? ???? ???????? ??????. MIDI ? ???? ????? MXL ???? ???????? ????????.", "Supports uncompressed, fixed-tempo MusicXML with explicit note durations. MIDI and compressed MXL import are not supported yet.")</p>
+@if (_error is not null)
+{
+    <p role="alert">@_error</p>
+}
+<p>@T("از فایل‌های ثابت‌تمپوی MusicXML با مدت‌زمان مشخص نت‌ها پشتیبانی می‌شود. وارد کردن MIDI و فایل فشردهٔ MXL هنوز پشتیبانی نمی‌شود.", "Supports uncompressed, fixed-tempo MusicXML with explicit note durations. MIDI and compressed MXL import are not supported yet.")</p>
 
 @code {
     private readonly MusicXmlPerformanceImporter _importer = new();
@@ -38,6 +47,7 @@
     private IReadOnlyList<(string Id, string Name)> _parts = [];
     private string DownloadUrl => "data:text/yaml;charset=utf-8;base64," + Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(_yaml!));
     private static string T(string fa, string en) => UiText.IsPersian ? fa : en;
+
     private async Task ReadAsync(InputFileChangeEventArgs args)
     {
         _xml = _yaml = _error = null;
@@ -49,8 +59,12 @@
             _parts = _importer.GetParts(xml);
             _xml = xml;
         }
-        catch (Exception ex) when (ex is IOException or InvalidOperationException or ArgumentException) { _error = ex.Message; }
+        catch (Exception ex) when (ex is IOException or InvalidOperationException or ArgumentException)
+        {
+            _error = ex.Message;
+        }
     }
+
     private void Preview()
     {
         _yaml = _error = null;
@@ -59,6 +73,10 @@
             _yaml = _importer.Import(_xml!, _part, _lessonId, "imported-performance", _bpm);
             _previewId = _lessonId;
         }
-        catch (Exception ex) when (ex is IOException or InvalidOperationException or ArgumentException or KeyForge.Infrastructure.Yaml.Exceptions.YamlLessonParseException) { _error = ex.Message; }
+        catch (Exception ex) when (ex is IOException or InvalidOperationException or ArgumentException or YamlLessonParseException)
+        {
+            _error = ex.Message;
+        }
     }
+
 }

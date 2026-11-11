@@ -1,4 +1,5 @@
 @page "/lessons"
+@rendermode InteractiveServer
 @using KeyForge.Features.Lessons.Models
 @using KeyForge.Features.Lessons.Services
 @inject IPracticeLibraryQueryService LibraryQuery
@@ -45,7 +46,8 @@ else
                                 <span class="practice-library__description">@course.Metadata.Description</span>
                             }
                         </div>
-                        <span class="practice-library__progress">@UiText.GetCompletedExerciseProgress(course.CompletedExerciseCount, course.ExerciseCount)</span>
+                        <span
+                            class="practice-library__progress">@UiText.GetCompletedExerciseProgress(course.CompletedExerciseCount, course.ExerciseCount)</span>
                     </div>
                     <ul id="@coursePanelId" class="practice-library__tree practice-library__tree--sessions" hidden="@(!courseExpanded)">
                         @foreach (var session in course.Sessions)
@@ -63,11 +65,14 @@ else
                                     </button>
                                     <a class="practice-library__session-link" href="@GetLessonUrl(lesson.Id)">
                                         <span class="practice-library__title">@lesson.Title</span>
-                                        <span class="kf-status-badge @GetStatusCssClass(lesson)">@UiText.GetLessonStatus(lesson.IsUnlocked, lesson.IsCompleted)</span>
+                                        <span
+                                            class="kf-status-badge @GetStatusCssClass(lesson)">@UiText.GetLessonStatus(lesson.IsUnlocked, lesson.IsCompleted)</span>
                                     </a>
-                                    <span class="practice-library__progress">@UiText.GetCompletedExerciseProgress(session.CompletedExerciseCount, session.ExerciseCount)</span>
+                                    <span
+                                        class="practice-library__progress">@UiText.GetCompletedExerciseProgress(session.CompletedExerciseCount, session.ExerciseCount)</span>
                                 </div>
-                                <ul id="@sessionPanelId" class="practice-library__tree practice-library__tree--exercises" hidden="@(!sessionExpanded)">
+                                <ul id="@sessionPanelId" class="practice-library__tree practice-library__tree--exercises"
+                                    hidden="@(!sessionExpanded)">
                                     @foreach (var exercise in session.Exercises)
                                     {
                                         var selected = IsSelected(lesson.Id, exercise.Id);
@@ -92,6 +97,7 @@ else
 }
 
 @code {
+
     [SupplyParameterFromQuery(Name = "lesson")]
     public string? SelectedLessonId { get; set; }
 
@@ -110,13 +116,14 @@ else
             return;
         }
 
-        var selected = _courses.SelectMany(course => course.Sessions.Select(session => (course, session)))
-            .FirstOrDefault(item => string.Equals(item.session.Lesson.Id, SelectedLessonId, StringComparison.OrdinalIgnoreCase));
-        if (selected.session is not null)
+        var selected = _courses.SelectMany(course => course.Sessions.Select(session => (course, session))).FirstOrDefault(item => string.Equals(item.session.Lesson.Id, SelectedLessonId, StringComparison.OrdinalIgnoreCase));
+        if (selected.session is null)
         {
-            _expandedCourses.Add(selected.course.Metadata.Id);
-            _expandedSessions.Add(selected.session.Lesson.Id);
+            return;
         }
+
+        _expandedCourses.Add(selected.course.Metadata.Id);
+        _expandedSessions.Add(selected.session.Lesson.Id);
     }
 
     private void ToggleCourse(string courseId)
@@ -163,4 +170,5 @@ else
 
     private static string MakeDomId(string id) => string.Concat(id.Select(character =>
         char.IsLetterOrDigit(character) ? character : '-'));
+
 }
