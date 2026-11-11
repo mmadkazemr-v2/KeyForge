@@ -6,5 +6,6 @@ public enum RhythmHitAccuracy
     Excellent,
     Good,
     Acceptable,
-    Miss
+    Miss,
+    Unverified
 }

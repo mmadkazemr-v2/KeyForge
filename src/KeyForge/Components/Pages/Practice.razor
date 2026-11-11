@@ -158,6 +158,7 @@ else if (CurrentExercise is { } exercise)
                         <RhythmWorkspace @key="_runtimeExercise"
                                          RuntimeExercise="_runtimeExercise!"
                                          MetronomeAudioEnabled="IsKeyForgeMetronomeEnabled"
+                                         PreferFirstMidiNote="@(_metronomeAudioMode is PracticeMetronomeMode.External)"
                                          OnCompleted="CompleteInteractiveAttempt" />
                     }
                     else if (IsNoteReadingChallenge)

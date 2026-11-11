@@ -18,7 +18,7 @@ public sealed partial class LentoVivoAdaptedPracticeProcessTests
             ("04-lh", [4, 1, 1, 2, 1], 9)
         ];
         foreach (var pattern in patterns)
-            foreach (var bpm in new[] { 40, 55, 70 })
+            foreach (var bpm in new[] { 40, 55, 60, 70 })
                 yield return [pattern.Suffix, pattern.Beats, pattern.Total, bpm];
     }
 
@@ -59,7 +59,7 @@ public sealed partial class LentoVivoAdaptedPracticeProcessTests
         Assert.Contains(node.Exercises, e => e.Id == "lento-vivo-s03-lh-quarter-pulse");
 
         // Retry each performance against a new runtime, retaining attempts and best score.
-        foreach (var variant in new[] { "correct", "early", "late", "missing", "extra" })
+        foreach (var variant in new[] { "correct", "early", "late", "missing", "extra", "relative", "drift" })
         {
             var session = practice.StartSession(lessonId)!;
             while (session.GetCurrentExercise()!.Id != id) session.Next();
@@ -92,21 +92,34 @@ public sealed partial class LentoVivoAdaptedPracticeProcessTests
                     Sequence = ++sequence
                 };
                 var input = Assert.IsType<ExerciseInputEvent>(MidiInputAdapter.TryCreateBeat(
-                    message, true, runtime.StartedAt.AddMilliseconds(offset), origin));
+                    message, true, runtime.StartedAt.AddMilliseconds(offset), origin,
+                    isTimingReference: (variant is "relative" or "drift") && sequence == 1));
                 runtime.CaptureMidiEvent(input);
                 runtime.CaptureInput(input);
             }
             if (variant != "missing")
+            {
+                var index = 0;
                 foreach (var expected in runtime.Challenge.ExpectedInputs)
-                    Capture(expected.ExpectedOffset!.Value.TotalMilliseconds + (variant == "early" && sequence > 0 ? -100 : variant == "late" ? 100 : 0));
+                {
+                    var drift = variant == "drift" ? 40 * index : 0;
+                    Capture(expected.ExpectedOffset!.Value.TotalMilliseconds + (variant == "early" && sequence > 0 ? -100 : variant == "late" ? 100 : drift));
+                    index++;
+                }
+            }
             if (variant == "extra") Capture(300);
             var result = practice.SubmitAttempt(session, runtime, runtime.StartedAt.Add(timeline.Duration));
             progress.UpdateProgress(lessonId, result);
-            if (variant == "correct")
+            if (variant is "correct" or "relative")
             {
                 Assert.True(result.IsSuccessful);
                 Assert.Equal(100, result.Score);
                 Assert.Equal(beats.Length, result.Evaluation.Rhythm!.SuccessfulHitCount);
+                if (variant == "relative")
+                {
+                    Assert.Equal(RhythmHitAccuracy.Unverified, result.Evaluation.Rhythm.Beats[0].Accuracy);
+                    Assert.Null(result.Evaluation.Rhythm.Beats[0].TimingError);
+                }
             }
             else if (variant == "missing")
             {
@@ -117,15 +130,23 @@ public sealed partial class LentoVivoAdaptedPracticeProcessTests
             else
             {
                 Assert.True(result.Score < 100);
+                if (variant == "drift")
+                {
+                    Assert.False(result.IsSuccessful);
+                    Assert.True(result.Evaluation.Rhythm!.Beats.Skip(1).Where(beat => beat.TimingError.HasValue)
+                        .Select(beat => beat.TimingError!.Value.TotalMilliseconds).Zip(
+                            result.Evaluation.Rhythm.Beats.Skip(2).Where(beat => beat.TimingError.HasValue)
+                                .Select(beat => beat.TimingError!.Value.TotalMilliseconds), (a, b) => b > a).All(value => value));
+                }
                 if (variant == "extra") Assert.Equal(1, result.Evaluation.Rhythm!.ExtraHitCount);
-                else Assert.Equal(variant == "early" ? -100d * (beats.Length - 1) / beats.Length : 100,
+                else if (variant != "drift") Assert.Equal(variant == "early" ? -100d * (beats.Length - 1) / beats.Length : 100,
                     result.Evaluation.Rhythm!.AverageTimingErrorMilliseconds!.Value, 3);
             }
         }
-        Assert.Equal(5, recorder.GetAttemptsByLesson(lessonId).Count);
+        Assert.Equal(7, recorder.GetAttemptsByLesson(lessonId).Count);
         Assert.Contains(recorder.GetAttemptsByLesson(lessonId), attempt => attempt.IsSuccessful && attempt.Score == 100);
         Assert.Contains(recorder.GetAttemptsByLesson(lessonId), attempt => !attempt.IsSuccessful && attempt.Score == 0);
-        Assert.Equal(5, store.GetProgress(lessonId)!.AttemptCount);
+        Assert.Equal(7, store.GetProgress(lessonId)!.AttemptCount);
         Assert.Equal(100, store.GetProgress(lessonId)!.BestScore);
         Assert.Contains(id, completion.GetCompletedExerciseIds(lessonId, lesson.Exercises));
         Assert.False(store.GetProgress(lessonId)!.IsCompleted);

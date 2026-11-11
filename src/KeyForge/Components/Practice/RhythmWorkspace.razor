@@ -35,6 +35,15 @@
         </span>
     </div>
 
+    <label class="kf-meta">@UiText.RhythmTimingReference
+        <select value="@(_firstMidiNoteMode ? "FirstMidiNote" : "LocalStart")" @onchange="HandleTimingModeChanged"
+                disabled="@(!_compatibleWithFirstMidiNote || _started)">
+            <option value="LocalStart">@UiText.LocalStartTiming</option>
+            <option value="FirstMidiNote">@UiText.FirstMidiNoteTiming</option>
+        </select>
+    </label>
+    <p class="kf-text-muted" role="note">@(_firstMidiNoteMode ? UiText.FirstMidiNoteTimingDescription : UiText.LocalStartTimingDescription)</p>
+
     @if (HasAuthoredPattern)
     {
         <VexFlowStaff Rhythm="RuntimeExercise.Challenge.Rhythm" TimeSignature="@(((RhythmExerciseDefinition)RuntimeExercise.Definition).Unmetered ? string.Empty : ((RhythmExerciseDefinition)RuntimeExercise.Definition).TimeSignature)" />
@@ -99,6 +108,9 @@
     [Parameter]
     public bool MetronomeAudioEnabled { get; set; } = true;
 
+    [Parameter]
+    public bool PreferFirstMidiNote { get; set; }
+
     private readonly string _workspaceId = $"rhythm-{Guid.NewGuid():N}";
     private IJSObjectReference? _module;
     private DotNetObjectReference<RhythmWorkspace>? _dotNetReference;
@@ -110,6 +122,9 @@
     private bool _startFailed;
     private bool _metronomeRunning;
     private bool _pausedForMidi;
+    private bool _firstMidiNoteMode;
+    private bool _firstMidiRunArmed;
+    private bool _compatibleWithFirstMidiNote;
     private IDisposable? _midiRegistration;
 
     private IReadOnlyList<RhythmTimelineEvent> TimelineEvents => RuntimeExercise.Challenge.Rhythm?.Events ?? [];
@@ -127,9 +142,16 @@
 
     protected override void OnInitialized()
     {
+        var attacks = RuntimeExercise.Challenge.ExpectedInputs.Where(input => input.Type == InputEventType.Beat && input.ExpectedOffset.HasValue).OrderBy(input => input.ExpectedOffset).ToArray();
+        _compatibleWithFirstMidiNote = attacks.Length >= 2 && attacks[0].ExpectedOffset == TimeSpan.Zero &&
+            RuntimeExercise.Challenge.Rhythm?.Events.FirstOrDefault()?.IsRest != true;
+        _firstMidiNoteMode = PreferFirstMidiNote && _compatibleWithFirstMidiNote;
         _midiRegistration = MidiInput.Register(HandleMidiMessageAsync);
         MidiInput.SelectedDeviceStateChanged += HandleMidiDeviceStateChanged;
     }
+
+    private void HandleTimingModeChanged(ChangeEventArgs args) =>
+        _firstMidiNoteMode = _compatibleWithFirstMidiNote && string.Equals(args.Value?.ToString(), "FirstMidiNote", StringComparison.Ordinal);
 
     private async Task StartTimelineAsync()
     {
@@ -180,8 +202,11 @@
                     digits = UiText.NumeralDigits,
                     countInBeats = RuntimeExercise.Definition.Metronome is { Enabled: true } config ? config.CountInBeats : 0,
                     beatIntervalMilliseconds = 60000d / (RuntimeExercise.SelectedBpm ?? RuntimeExercise.Definition.Tempo!.DefaultBpm),
-                    audio = MetronomeAudioEnabled && RuntimeExercise.Definition.Metronome?.Audio != false
+                    audio = !_firstMidiNoteMode && MetronomeAudioEnabled && RuntimeExercise.Definition.Metronome?.Audio != false,
+                    firstMidiNote = _firstMidiNoteMode,
+                    waiting = UiText.WaitingForFirstMidiNote
                 });
+            _firstMidiRunArmed = _firstMidiNoteMode;
         }
         catch (JSException)
         {
@@ -216,6 +241,7 @@
         _runVersion++;
         _started = false;
         _isActive = false;
+        _firstMidiRunArmed = false;
         _pausedForMidi = true;
         RuntimeExercise.ResetCapturedInputs();
         MidiInput.SetTimelineOrigin(null);
@@ -253,19 +279,37 @@
         return Task.CompletedTask;
     }
 
-    private Task HandleMidiMessageAsync(MidiInputMessage message)
+    private async Task HandleMidiMessageAsync(MidiInputMessage message)
     {
-        if (!_isActive || _browserTimelineOriginMilliseconds is not { } origin) return Task.CompletedTask;
+        if (!_started || !MidiInput.Accepts(message)) return;
+        if (_firstMidiNoteMode && !_isActive)
+        {
+            if (!_firstMidiRunArmed) return;
+            if (!MidiInputAdapter.IsNoteOn(message) || !double.IsFinite(message.TimestampMilliseconds) || message.TimestampMilliseconds < 0) return;
+            _firstMidiRunArmed = false;
+            _browserTimelineOriginMilliseconds = message.TimestampMilliseconds;
+            MidiInput.SetTimelineOrigin(message.TimestampMilliseconds);
+            _timelineStartedAt = DateTime.UtcNow;
+            _isActive = true;
+            CaptureMidi(message, message.TimestampMilliseconds, isTimingReference: true);
+            if (_module is not null) await _module.InvokeVoidAsync("startRhythmAt", _workspaceId, message.TimestampMilliseconds, _runVersion);
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+        if (!_isActive || _browserTimelineOriginMilliseconds is not { } origin) return;
+        CaptureMidi(message, origin);
+    }
+
+    private void CaptureMidi(MidiInputMessage message, double origin, bool isTimingReference = false)
+    {
         var midiEvent = MidiInputAdapter.TryCreate(message, DateTime.UtcNow, origin);
-        if (midiEvent is null) return Task.CompletedTask;
+        if (midiEvent is null) return;
         RuntimeExercise.CaptureMidiEvent(midiEvent);
-        var inputEvent = MidiInputAdapter.TryCreateBeat(message, _isActive, DateTime.UtcNow, origin);
+        var inputEvent = MidiInputAdapter.TryCreateBeat(message, _isActive, DateTime.UtcNow, origin, isTimingReference);
         if (inputEvent is not null)
         {
             RuntimeExercise.CaptureInput(inputEvent);
         }
-
-        return Task.CompletedTask;
     }
 
     [JSInvokable]

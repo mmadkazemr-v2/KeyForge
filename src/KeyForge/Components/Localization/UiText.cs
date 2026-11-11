@@ -240,6 +240,12 @@ public static class UiText
     public static string Countdown => Select("شمارش معکوس", "Countdown");
     public static string RhythmGo => Select("شروع", "Start");
     public static string RhythmActive => Select("در حال اجرا", "Active");
+    public static string RhythmTimingReference => Select("مرجع زمان‌بندی", "Timing reference");
+    public static string LocalStartTiming => Select("شروع محلی", "Local Start");
+    public static string FirstMidiNoteTiming => Select("اولین نت MIDI", "First MIDI Note");
+    public static string WaitingForFirstMidiNote => Select("در انتظار اولین نت MIDI", "Waiting for first MIDI note");
+    public static string LocalStartTimingDescription => Select("زمان‌بندی از شروع تمرین KeyForge سنجیده می‌شود.", "Timing is evaluated relative to KeyForge's exercise start.");
+    public static string FirstMidiNoteTimingDescription => Select("فاصله‌های زمانی از اولین نت شما سنجیده می‌شوند؛ فاز مترونوم REAPER همگام نیست. این حالت فقط ورودی MIDI را می‌سنجد.", "Timing intervals are evaluated from your first played note. REAPER's metronome phase is not synchronized. MIDI input only.");
     public static string EvaluatingRhythm => Select("در حال ارزیابی", "Evaluating");
     public static string PressKOnEachBeat => Select(
         "روی هر ضرب، کلید K را فشار دهید.",

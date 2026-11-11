@@ -71,7 +71,16 @@ export async function startRhythm(
         keyHandler: null,
         flashTimer: 0,
         pendingTimer: undefined,
-        wakeSleep: undefined
+        wakeSleep: undefined,
+        timelineEvents,
+        pulseOffsetsMilliseconds,
+        durationMilliseconds,
+        labels,
+        dotNetReference,
+        root,
+        metronomeAudio: undefined,
+        armed: Boolean(labels.firstMidiNote),
+        started: false
     };
     activeRuns.set(workspaceId, run);
     let metronomeAudio;
@@ -83,7 +92,13 @@ export async function startRhythm(
         }
     }
     if (run.cancelled) return;
+    run.metronomeAudio = metronomeAudio;
     root.focus({ preventScroll: true });
+    if (run.armed) {
+        setState(root, "waiting", labels.waiting);
+        setText(root, "[data-rhythm-countdown]", labels.waiting);
+        return;
+    }
     const countInOrigin = performance.now();
     const countInBeats = labels.countInBeats || 0;
     const pulseInterval = labels.beatIntervalMilliseconds || 0;
@@ -100,7 +115,17 @@ export async function startRhythm(
     }
     await sleep(run, Math.max(0, countInOrigin + countInBeats * pulseInterval - performance.now()));
     if (run.cancelled) return;
-    run.timelineStartedAt = countInOrigin + countInBeats * pulseInterval;
+    startRhythmAt(workspaceId, countInOrigin + countInBeats * pulseInterval, labels.runVersion);
+}
+
+export function startRhythmAt(workspaceId, browserTimestampMilliseconds, runVersion) {
+    const run = activeRuns.get(workspaceId);
+    if (!run || run.cancelled || run.started || run.labels.runVersion !== runVersion ||
+        !Number.isFinite(browserTimestampMilliseconds) || browserTimestampMilliseconds < 0) return;
+    run.started = true;
+    run.armed = false;
+    const { root, dotNetReference, labels, timelineEvents, pulseOffsetsMilliseconds, durationMilliseconds, metronomeAudio } = run;
+    run.timelineStartedAt = browserTimestampMilliseconds;
     // Start browser scheduling immediately; interop latency must not shift the pulse grid.
     const notification = dotNetReference.invokeMethodAsync("NotifyRhythmStarted", run.timelineStartedAt, labels.runVersion);
     run.pendingInputs.push(notification);

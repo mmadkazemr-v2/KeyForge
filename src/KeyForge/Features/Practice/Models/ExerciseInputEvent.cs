@@ -24,6 +24,8 @@ public sealed class ExerciseInputEvent
     public double? BrowserTimestampMilliseconds { get; init; }
     /// <summary>Increasing order assigned in the browser MIDI message handler.</summary>
     public long? Sequence { get; init; }
+    /// <summary>Marks the first MIDI attack used only as a relative timing origin.</summary>
+    public bool IsTimingReference { get; init; }
 }
 
 public enum MidiEventKind

@@ -45,11 +45,18 @@ public sealed class RhythmExerciseEvaluator
             .ToList();
         var matches = new ExerciseInputEvent?[expectedBeats.Count];
         var timingErrors = new TimeSpan?[expectedBeats.Count];
+        var timingReferences = new bool[expectedBeats.Count];
         var extraHits = 0;
         var unexpectedHitOffsets = new List<TimeSpan>();
 
         foreach (var hit in actualHits)
         {
+            if (hit.IsTimingReference && expectedBeats.Count > 0 && matches[0] is null)
+            {
+                matches[0] = hit;
+                timingReferences[0] = true;
+                continue;
+            }
             var nearestIndex = FindNearestUnmatchedBeat(expectedBeats, matches, hit.Offset);
             if (nearestIndex < 0)
             {
@@ -79,15 +86,15 @@ public sealed class RhythmExerciseEvaluator
                 ExpectedOffset = expected.ExpectedOffset!.Value,
                 ActualOffset = matches[index]?.Offset,
                 TimingError = error,
-                Accuracy = GetAccuracy(error)
+                Accuracy = timingReferences[index] ? RhythmHitAccuracy.Unverified : GetAccuracy(error)
             };
         }).ToList();
 
         var matchedErrors = timingErrors
-            .Where(error => error.HasValue)
+            .Where((error, index) => error.HasValue && !timingReferences[index])
             .Select(error => error!.Value.TotalMilliseconds)
             .ToList();
-        var score = CalculateScore(beatResults, extraHits);
+        var score = CalculateScore(beatResults.Where((_, index) => !timingReferences[index]).ToArray(), extraHits);
         double? averageError = matchedErrors.Count == 0 ? null : matchedErrors.Average();
 
         return new ExerciseEvaluationResult
@@ -101,7 +108,7 @@ public sealed class RhythmExerciseEvaluator
             {
                 Beats = beatResults,
                 ExpectedBeatCount = expectedBeats.Count,
-                SuccessfulHitCount = matchedErrors.Count,
+                SuccessfulHitCount = matchedErrors.Count + timingReferences.Count(reference => reference),
                 MissedBeatCount = beatResults.Count(beat => beat.Accuracy == RhythmHitAccuracy.Miss),
                 ExtraHitCount = extraHits,
                 UnexpectedHitOffsets = unexpectedHitOffsets,

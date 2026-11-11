@@ -256,3 +256,26 @@ test('external metronome preserves local timeline and count-in without schedulin
         assert.equal(pendingTimerCount(), 0);
     });
 });
+
+test('armed first-note run waits without audio or completion and starts on the supplied original timestamp once', async () => {
+    await withRuntime(3, async ({ runtime, dotNet, calls, advanceTo, activeEvents, labels, root }) => {
+        labels.firstMidiNote = true;
+        labels.waiting = 'Waiting for first MIDI note';
+        labels.audio = false;
+        await runtime.startRhythm('armed', dotNet,
+            [0, 1000, 2000].map(offsetMilliseconds => ({ offsetMilliseconds })), [0, 1000, 2000], 3000, labels);
+        await advanceTo(20_000);
+        assert.equal(root.dataset.state, 'waiting');
+        assert.equal(calls.some(call => call.name === 'CompleteRhythm'), false);
+        assert.equal(calls.some(call => call.name === 'AudioClick'), false);
+
+        // Browser input arrived at 20s, but .NET acknowledges after the clock has advanced.
+        runtime.startRhythmAt('armed', 19_500, labels.runVersion);
+        runtime.startRhythmAt('armed', 19_750, labels.runVersion);
+        await advanceTo(22_500);
+        assert.deepEqual(activeEvents.map(([index]) => index), [0, 1, 2]);
+        assert.equal(calls.filter(call => call.name === 'NotifyRhythmStarted').length, 1);
+        assert.equal(calls.find(call => call.name === 'NotifyRhythmStarted').args[0], 19_500);
+        assert.equal(calls.filter(call => call.name === 'CompleteRhythm').length, 1);
+    });
+});

@@ -125,6 +125,23 @@ public sealed class RhythmExerciseEvaluatorTests
     }
 
     [Fact]
+    public void Evaluate_TimingReferenceIsUnverifiedAndCannotPassWithoutLaterAttacks()
+    {
+        var challenge = Challenge([0, 1000]);
+        var anchor = Hit(0, InputSource.Midi, isTimingReference: true);
+
+        var result = new RhythmExerciseEvaluator().Evaluate(challenge, [anchor]);
+
+        Assert.False(result.IsSuccessful);
+        Assert.Equal(0, result.Score);
+        Assert.Equal(RhythmHitAccuracy.Unverified, result.Rhythm!.Beats[0].Accuracy);
+        Assert.Null(result.Rhythm.Beats[0].TimingError);
+        Assert.Equal(RhythmHitAccuracy.Miss, result.Rhythm.Beats[1].Accuracy);
+        Assert.Equal(1, result.Rhythm.MissedBeatCount);
+        Assert.Equal(1, result.Rhythm.SuccessfulHitCount);
+    }
+
+    [Fact]
     public void Evaluate_ExtraHit_IsReportedAndPenalized()
     {
         var result = Evaluate([0], [Hit(0), Hit(300)]);
@@ -206,12 +223,14 @@ public sealed class RhythmExerciseEvaluatorTests
     private static ExerciseInputEvent Hit(
         double milliseconds,
         InputSource source = InputSource.ComputerKeyboard,
-        InputEventType type = InputEventType.Beat) => new()
+        InputEventType type = InputEventType.Beat,
+        bool isTimingReference = false) => new()
         {
             Timestamp = Timestamp.AddMilliseconds(milliseconds),
             Offset = TimeSpan.FromMilliseconds(milliseconds),
             Source = source,
             Type = type,
-            Value = "beat"
+            Value = "beat",
+            IsTimingReference = isTimingReference
         };
 }

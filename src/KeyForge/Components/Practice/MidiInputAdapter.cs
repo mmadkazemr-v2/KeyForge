@@ -61,7 +61,8 @@ public static class MidiInputAdapter
         MidiInputMessage message,
         bool isActive,
         DateTime receivedAt,
-        double browserTimelineOriginMilliseconds)
+        double browserTimelineOriginMilliseconds,
+        bool isTimingReference = false)
     {
         if (!isActive || !IsNoteOn(message)) return null;
         var input = TryCreate(message, receivedAt, browserTimelineOriginMilliseconds);
@@ -80,7 +81,8 @@ public static class MidiInputAdapter
             MidiData1 = input.MidiData1,
             MidiData2 = input.MidiData2,
             BrowserTimestampMilliseconds = input.BrowserTimestampMilliseconds,
-            Sequence = input.Sequence
+            Sequence = input.Sequence,
+            IsTimingReference = isTimingReference
         };
     }
 
