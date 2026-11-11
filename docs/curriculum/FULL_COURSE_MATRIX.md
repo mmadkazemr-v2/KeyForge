@@ -43,14 +43,14 @@ This is a traceability plan, not a claim that 75 lessons have been source-audite
 | 27 | Source unavailable | Undetermined | Undetermined | None authored | Obtain source |
 | 28 | Source unavailable | Undetermined | Undetermined | None authored | Obtain source |
 | 29 | Source unavailable | Undetermined | Undetermined | None authored | Obtain source |
-| 30 | Source unavailable | Undetermined | Undetermined | None authored | Obtain source |
+| 30 | User-supplied URL lead; metadata unavailable | Undetermined | Undetermined | None authored | Verify video identity, title, chapters and activity content |
 | 31 | Source unavailable | Undetermined | Undetermined | None authored | Obtain source |
 | 32 | Source unavailable | Undetermined | Undetermined | None authored | Obtain source |
-| 33 | Source unavailable | Undetermined | Undetermined | None authored | Obtain source |
+| 33 | User-supplied URL lead; metadata unavailable | Undetermined | Undetermined | None authored | Verify video identity, title, chapters and activity content |
 | 34 | Source unavailable | Undetermined | Undetermined | None authored | Obtain source |
 | 35 | Source unavailable | Undetermined | Undetermined | None authored | Obtain source |
-| 36 | Source unavailable | Undetermined | Undetermined | None authored | Obtain source |
-| 37 | Source unavailable | Undetermined | Undetermined | None authored | Obtain source |
+| 36 | User-supplied URL lead; metadata unavailable | Undetermined | Undetermined | None authored | Verify video identity, title, chapters and activity content |
+| 37 | User-supplied URL lead; metadata unavailable | Undetermined | Undetermined | None authored | Verify video identity, title, chapters and activity content |
 | 38 | Source unavailable | Undetermined | Undetermined | None authored | Obtain source |
 | 39 | Source unavailable | Undetermined | Undetermined | None authored | Obtain source |
 | 40 | Source unavailable | Undetermined | Undetermined | None authored | Obtain source |

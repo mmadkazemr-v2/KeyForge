@@ -6,7 +6,7 @@ The intended freeze is for the selected regular-piano scope derived from the ver
 
 ### Course coverage
 
-- All 75 canonical session positions have a stable source URL or an explicitly accepted/unresolved source-gap record.
+- All 75 canonical session positions have a stable, verified source URL or an explicitly accepted/unresolved source-gap record. URL-only leads do not count as source-verified sessions.
 - Every available session has verified chapter/topic metadata and its activity types classified as MIDI Scored, Guided Practice, Theory, Ear Training, or Source-Linked Performance.
 - Exact score-dependent targets (pitches, octave, sequence, meter, rests, durations, voice/hand assignments) are marked verified only after readable authorized source inspection.
 - Adapted KeyForge drills remain labeled adapted and are never silently promoted to official transcriptions.

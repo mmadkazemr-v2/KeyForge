@@ -1,6 +1,6 @@
 # KeyForge Capability Matrix for LentoVivo
 
-Assessment is based on source inspection of lesson models, generators/evaluators, practice components, and tests in the current repository at `f9a72e6`. “Implemented” means a mechanism exists, not that every course activity is authored or source verified.
+Assessment is based on source inspection of lesson models, generators/evaluators, practice components, and tests in the current repository at `f9a72e6`. Task 67.2 added URL-only leads for Sessions 30, 33, 36 and 37 but no retrievable activity requirements; those leads do not change the capability assessment. “Implemented” means a mechanism exists, not that every course activity is authored or source verified.
 
 | Capability | Current status | Evidence / limits | Dependency / requirement |
 |---|---|---|---|
@@ -20,6 +20,8 @@ Assessment is based on source inspection of lesson models, generators/evaluators
 ## Status summary and shared dependencies
 
 No engine feature should be expanded until the full session source index and an authorized/reliable activity requirement are available. Highest shared prerequisites for source-faithful scored pieces are:
+
+Current evidence does not support a complete course requirements freeze: 4 sessions have source metadata verified (03–05 and 14), 4 additional positions have user-supplied URL leads only (30, 33, 36, 37), and 67 positions still lack a session-specific URL in the evidence set. No new capability requirement was established in Task 67.2.
 
 1. Verified source inventory and a traceability record: session → chapter/page → activity → target transcription record → YAML ID → test.
 2. One timed musical-event contract shared by notation and scoring, preserving pitch, onset, duration, voice/hand intent and rests where applicable.
