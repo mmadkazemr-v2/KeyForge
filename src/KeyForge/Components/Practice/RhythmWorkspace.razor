@@ -94,7 +94,7 @@
     }
     @if (_pausedForMidi)
     {
-        <p class="rhythm-workspace__error" role="status" data-midi-disconnect-pause>@UiText.MidiPerformancePaused</p>
+        <p class="rhythm-workspace__error" role="status" data-midi-disconnect-pause>@_midiPauseStatus</p>
     }
 </div>
 
@@ -122,6 +122,7 @@
     private bool _startFailed;
     private bool _metronomeRunning;
     private bool _pausedForMidi;
+    private string _midiPauseStatus = UiText.MidiPerformancePaused;
     private bool _firstMidiNoteMode;
     private bool _firstMidiRunArmed;
     private bool _compatibleWithFirstMidiNote;
@@ -231,11 +232,12 @@
 
     private void HandleMidiDeviceStateChanged(string? deviceId, bool connected)
     {
-        if (connected || !_started) return;
-        _ = InvokeAsync(PauseForMidiDisconnectAsync);
+        if (!_started) return;
+        _ = InvokeAsync(() => PauseForMidiDeviceChangeAsync(
+            connected ? UiText.MidiDeviceChangedPaused : UiText.MidiPerformancePaused));
     }
 
-    private async Task PauseForMidiDisconnectAsync()
+    private async Task PauseForMidiDeviceChangeAsync(string status)
     {
         if (!_started) return;
         _runVersion++;
@@ -243,6 +245,7 @@
         _isActive = false;
         _firstMidiRunArmed = false;
         _pausedForMidi = true;
+        _midiPauseStatus = status;
         RuntimeExercise.ResetCapturedInputs();
         MidiInput.SetTimelineOrigin(null);
         if (_module is not null)

@@ -129,6 +129,7 @@ public static class UiText
     public static string MidiDeviceOpenFailure => Select("باز کردن ورودی میدی ممکن نشد", "Could not open the selected MIDI input");
     public static string MidiSelectDevice => Select("یک ورودی میدی انتخاب کنید", "Select a MIDI input");
     public static string MidiPerformancePaused => Select("تمرین با قطع دستگاه میدی متوقف شد. پس از اتصال دوباره، تمرین را از نو آغاز کنید.", "Practice paused because the selected MIDI device disconnected. Reconnect it and restart the exercise.");
+    public static string MidiDeviceChangedPaused => Select("دستگاه MIDI تغییر کرد. تمرین را با دستگاه انتخاب‌شده از نو آغاز کنید.", "The selected MIDI device changed. Restart the exercise with the selected device.");
     public static string SelectedMidiDevice => Select("دستگاه انتخاب‌شده", "Selected device");
     public static string MidiInputStatus => Select("وضعیت ورودی", "Input status");
     public static string MidiInputActive => Select("ورودی میدی فعال است", "MIDI input active");
