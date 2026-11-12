@@ -107,31 +107,34 @@ else if (CurrentExercise is { } exercise)
             </div>
         </section>
 
-        <section class="practice-audio-preferences" aria-label="@UiText.PracticeAudioSettings">
-            <label>
-                <span class="kf-meta">@UiText.MetronomeSource</span>
-                <select value="@_metronomeAudioMode" @onchange="HandleMetronomeAudioModeChanged">
-                    <option value="KeyForge">@UiText.KeyForgeMetronome</option>
-                    <option value="External">@UiText.ExternalMetronome</option>
-                    <option value="Off">@UiText.MetronomeOff</option>
-                </select>
-            </label>
-            @if (_metronomeAudioMode is PracticeMetronomeMode.External)
-            {
-                <p class="kf-text-muted" role="note">@UiText.ExternalMetronomePhaseWarning</p>
-            }
-            @if (!_internalMidiAudioEnabled && !IsKeyForgeMetronomeEnabled)
-            {
-                <p class="kf-text-muted" role="status">@UiText.ReaperFirstPracticeDescription</p>
-            }
-            @if (_internalMidiAudioEnabled || IsKeyForgeMetronomeEnabled)
-            {
-                <div class="practice-audio-preferences__activation">
-                    <p class="kf-text-muted">@UiText.PracticeAudioActivationDescription</p>
-                    <AudioActivationControl />
-                </div>
-            }
-        </section>
+        <details class="practice-audio-preferences">
+            <summary>@UiText.PracticeAudioSettings</summary>
+            <div class="practice-audio-preferences__content">
+                <label>
+                    <span class="kf-meta">@UiText.MetronomeSource</span>
+                    <select value="@_metronomeAudioMode" @onchange="HandleMetronomeAudioModeChanged">
+                        <option value="KeyForge">@UiText.KeyForgeMetronome</option>
+                        <option value="External">@UiText.ExternalMetronome</option>
+                        <option value="Off">@UiText.MetronomeOff</option>
+                    </select>
+                </label>
+                @if (_metronomeAudioMode is PracticeMetronomeMode.External)
+                {
+                    <p class="kf-text-muted" role="note">@UiText.ExternalMetronomePhaseWarning</p>
+                }
+                @if (!_internalMidiAudioEnabled && !IsKeyForgeMetronomeEnabled)
+                {
+                    <p class="kf-text-muted" role="status">@UiText.ReaperFirstPracticeDescription</p>
+                }
+                @if (_internalMidiAudioEnabled || IsKeyForgeMetronomeEnabled)
+                {
+                    <div class="practice-audio-preferences__activation">
+                        <p class="kf-text-muted">@UiText.PracticeAudioActivationDescription</p>
+                        <AudioActivationControl />
+                    </div>
+                }
+            </div>
+        </details>
 
         <ExercisePresentation Exercise="exercise" />
 
