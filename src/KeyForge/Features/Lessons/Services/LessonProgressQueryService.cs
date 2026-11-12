@@ -35,7 +35,8 @@ public sealed class LessonProgressQueryService(
                 EstimatedMinutes = lesson.EstimatedMinutes,
                 IsUnlocked = _progression.IsUnlocked(lesson.Id),
                 IsCompleted = _progression.IsCompleted(lesson.Id),
-                BestScore = progress?.BestScore
+                BestScore = progress?.BestScore,
+                AttemptCount = progress?.AttemptCount ?? 0
             };
         }
 

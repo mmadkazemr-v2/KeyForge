@@ -62,4 +62,7 @@ public sealed class LessonListItem
     /// <c>null</c> when no scored attempt has been recorded yet.
     /// </summary>
     public int? BestScore { get; init; }
+
+    /// <summary>The number of scored attempts recorded for this lesson.</summary>
+    public int AttemptCount { get; init; }
 }

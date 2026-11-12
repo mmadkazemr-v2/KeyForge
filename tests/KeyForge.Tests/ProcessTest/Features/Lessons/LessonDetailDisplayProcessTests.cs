@@ -56,6 +56,7 @@ public sealed class LessonDetailDisplayProcessTests
         Assert.True(state.IsUnlocked);
         Assert.True(state.IsCompleted);
         Assert.Equal(94, state.BestScore);
+        Assert.Equal(2, state.AttemptCount);
     }
 
     [Fact]

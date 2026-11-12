@@ -27,7 +27,7 @@ else
         </div>
         @if (CanStartPractice)
         {
-            <a class="kf-button kf-button--primary" href="@GetPracticeUrl(_lesson.Id)">@UiText.StartPractice</a>
+            <a class="kf-button kf-button--primary" href="@GetPracticeUrl(_lesson.Id)">@(_lessonState?.IsCompleted == true ? UiText.PracticeAgain : UiText.StartPractice)</a>
         }
     </header>
 
@@ -56,11 +56,21 @@ else
                 <li>@UiText.Level: @UiText.GetLessonLevel(_lesson.Level)</li>
                 <li>@UiText.EstimatedTime: @_lesson.EstimatedMinutes @UiText.Minute</li>
                 <li>@UiText.ExerciseCount: @_lesson.Exercises.Count</li>
+            </ul>
+            <div class="lesson-detail-progress" aria-label="@UiText.YourProgress">
                 @if (_lessonState?.BestScore is { } bestScore)
                 {
-                    <li>@UiText.BestScore: <bdi>@bestScore%</bdi></li>
+                    <span>@UiText.BestScore <bdi>@bestScore%</bdi></span>
                 }
-            </ul>
+                @if (_lessonState is { AttemptCount: > 0 } progress)
+                {
+                    <span>@UiText.AttemptCount <bdi>@UiText.FormatNumber(progress.AttemptCount)</bdi></span>
+                }
+                @if (_lessonState is { AttemptCount: 0 })
+                {
+                    <span class="kf-text-muted">@UiText.NotStarted</span>
+                }
+            </div>
         </section>
 
         <section aria-labelledby="lesson-exercises-title">
@@ -77,12 +87,16 @@ else
             else
             {
                 <div class="kf-card-grid">
-                    @foreach (var exercise in _lesson.Exercises)
+                    @for (var index = 0; index < _lesson.Exercises.Count; index++)
                     {
+                        var exercise = _lesson.Exercises[index];
                         <article class="kf-card">
                             <div class="kf-card__body">
                                 <div class="kf-card__header">
-                                    <h3 class="kf-card__title">@exercise.Title</h3>
+                                    <div>
+                                        <p class="kf-meta">@UiText.GetExercisePosition(index + 1, _lesson.Exercises.Count)</p>
+                                        <h3 class="kf-card__title">@exercise.Title</h3>
+                                    </div>
                                     <span class="kf-meta">@UiText.GetExerciseType(exercise.Type)</span>
                                 </div>
                                 <p class="kf-card__description">@exercise.Description</p>

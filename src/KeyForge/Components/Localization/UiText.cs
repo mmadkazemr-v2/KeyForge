@@ -184,6 +184,9 @@ public static class UiText
     public static string EstimatedTime => Select("زمان تقریبی", "Estimated time");
     public static string Minute => Select("دقیقه", "min");
     public static string BestScore => Select("بهترین امتیاز", "Best score");
+    public static string AttemptCount => Select("تعداد تلاش‌ها", "Attempts");
+    public static string YourProgress => Select("پیشرفت شما", "Your progress");
+    public static string NotStarted => Select("هنوز شروع نشده", "Not started yet");
     public static string ViewLesson => Select("مشاهده درس", "View lesson");
 
     public static string LessonDetails => Select("جزئیات درس", "Lesson details");
@@ -193,6 +196,7 @@ public static class UiText
         "The requested lesson does not exist or is no longer available.");
     public static string BackToLessons => Select("بازگشت به درس‌ها", "Back to lessons");
     public static string StartPractice => Select("شروع تمرین", "Start practice");
+    public static string PracticeAgain => Select("تمرین دوباره", "Practice again");
     public static string LockedLessonTitle => Select("این درس قفل است", "This lesson is locked");
     public static string LockedLessonDescription => Select(
         "این درس هنوز برای شروع در دسترس نیست.",
@@ -391,6 +395,7 @@ public static class UiText
     public static string Millisecond => Select("میلی‌ثانیه", "ms");
     public static string NoTimingData => Select("بدون داده", "No data");
     public static string AttemptResult => Select("نتیجه تلاش", "Attempt result");
+    public static string DetailedFeedback => Select("جزئیات بازخورد", "Detailed feedback");
     public static string AttemptSuccessful => Select("تلاش موفق", "Successful attempt");
     public static string AttemptFailed => Select("نیاز به تلاش دوباره", "Try again");
     public static string AttemptSuccessfulDescription => Select(

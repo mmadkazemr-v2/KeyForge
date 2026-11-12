@@ -246,7 +246,10 @@ else if (CurrentExercise is { } exercise)
                 </ul>
                 @if (_result.Evaluation.Performance is { } performance)
                 {
-                    <PerformanceFeedback Details="performance" />
+                    <details class="practice-result-details">
+                        <summary>@UiText.DetailedFeedback</summary>
+                        <PerformanceFeedback Details="performance" />
+                    </details>
                 }
                 @if (_result.Evaluation.Rhythm is { } rhythm)
                 {
@@ -276,7 +279,9 @@ else if (CurrentExercise is { } exercise)
                             <dd>@UiText.GetRhythmTimingTendency(rhythm.TimingTendency)</dd>
                         </div>
                     </dl>
-                    <div class="practice-result-events" role="region" aria-label="@UiText.ExpectedBeats">
+                    <details class="practice-result-details">
+                        <summary>@UiText.DetailedFeedback</summary>
+                        <div class="practice-result-events" role="region" aria-label="@UiText.ExpectedBeats">
                         @foreach (var beat in rhythm.Beats)
                         {
                             <dl class="practice-result-events__item">
@@ -292,7 +297,8 @@ else if (CurrentExercise is { } exercise)
                                 <div><dt>@UiText.ExtraHits</dt><dd>@UiText.FormatOffset(offset)</dd></div>
                             </dl>
                         }
-                    </div>
+                        </div>
+                    </details>
                 }
                 @if (_result.Evaluation.NoteReading is { } noteReading)
                 {
@@ -351,7 +357,9 @@ else if (CurrentExercise is { } exercise)
                     </dl>
                     @if (sequence.Notes.Count > 0 && sequence.Notes.Any(note => note.ExpectedOffset.HasValue))
                     {
-                        <div class="practice-result-events" role="region" aria-label="@UiText.ExpectedSequence">
+                        <details class="practice-result-details">
+                            <summary>@UiText.DetailedFeedback</summary>
+                            <div class="practice-result-events" role="region" aria-label="@UiText.ExpectedSequence">
                             @foreach (var note in sequence.Notes)
                             {
                                 <dl class="practice-result-events__item">
@@ -374,7 +382,8 @@ else if (CurrentExercise is { } exercise)
                                     <div><dt>@UiText.ActualOnset</dt><dd>@UiText.FormatOffset(extra.ActualOffset)</dd></div>
                                 </dl>
                             }
-                        </div>
+                            </div>
+                        </details>
                     }
                 }
                 <div class="practice-actions">

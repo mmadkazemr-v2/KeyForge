@@ -177,6 +177,33 @@
     border-top: 1px solid var(--kf-color-border);
 }
 
+.practice-result-details {
+    margin: var(--kf-space-4) var(--kf-space-5);
+    border: 1px solid var(--kf-color-border);
+    border-radius: var(--kf-radius-control);
+}
+
+.practice-result-details > summary {
+    padding-block: var(--kf-space-2);
+    padding-inline: var(--kf-space-3);
+    color: var(--kf-color-text-secondary);
+    font-size: var(--kf-font-size-small);
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.practice-result-details > summary:hover {
+    color: var(--kf-color-text-primary);
+}
+
+.practice-result-details[open] > summary {
+    border-bottom: 1px solid var(--kf-color-border);
+}
+
+.practice-result-details .kf-card__body {
+    padding: var(--kf-space-4);
+}
+
 .practice-feedback .kf-card__meta {
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
 }
@@ -210,13 +237,13 @@
     gap: 0.75rem;
     margin: 0;
     padding: 0.75rem;
-    border: 1px solid var(--kf-border, #d9dee7);
-    border-radius: 0.75rem;
+    border: 1px solid var(--kf-color-border);
+    border-radius: var(--kf-radius-control);
 }
 
 .practice-result-events__item dt {
-    color: var(--kf-text-secondary, #596273);
-    font-size: 0.8rem;
+    color: var(--kf-color-text-muted);
+    font-size: var(--kf-font-size-small);
 }
 
 .practice-result-events__item dd {
@@ -245,5 +272,9 @@
     .practice-result-summary {
         grid-template-columns: 1fr;
         padding-inline: var(--kf-space-4);
+    }
+
+    .practice-result-details {
+        margin-inline: var(--kf-space-4);
     }
 }

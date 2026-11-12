@@ -1,0 +1,23 @@
+.lesson-detail-progress {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--kf-space-3) var(--kf-space-5);
+    padding-block: 0 var(--kf-space-4);
+    padding-inline: var(--kf-space-5);
+    color: var(--kf-color-text-secondary);
+}
+
+.lesson-detail-progress bdi {
+    color: var(--kf-color-text-primary);
+    font-weight: 700;
+}
+
+.lesson-detail-progress .kf-text-muted {
+    color: var(--kf-color-text-muted) !important;
+}
+
+@media (max-width: 47.99rem) {
+    .lesson-detail-progress {
+        padding-inline: var(--kf-space-4);
+    }
+}
