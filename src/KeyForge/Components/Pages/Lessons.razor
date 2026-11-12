@@ -37,13 +37,13 @@ else
                             aria-label="@GetToggleLabel(course.Metadata.Name, courseExpanded)"
                             @onclick="() => ToggleCourse(course.Metadata.Id)">
                         <span aria-hidden="true">@(courseExpanded ? "▼" : "▶")</span>
-                        <div class="practice-library__title-block">
+                        <span class="practice-library__title-block">
                             <span class="practice-library__title">@course.Metadata.Name</span>
                             @if (!string.IsNullOrWhiteSpace(course.Metadata.Description))
                             {
                                 <span class="practice-library__description">@course.Metadata.Description</span>
                             }
-                        </div>
+                        </span>
                         <span
                             class="practice-library__progress">@UiText.GetCompletedExerciseProgress(course.CompletedExerciseCount, course.ExerciseCount)</span>
                     </button>

@@ -9,6 +9,7 @@ public sealed class LessonCatalogInteractionContractTests
 
         Assert.Contains("@rendermode InteractiveServer", source, StringComparison.Ordinal);
         Assert.Contains("<button class=\"practice-library__row practice-library__course-row\"", source, StringComparison.Ordinal);
+        Assert.Contains("<span class=\"practice-library__title-block\">", source, StringComparison.Ordinal);
         Assert.Contains("aria-expanded=\"@courseExpanded\" aria-controls=\"@coursePanelId\"", source, StringComparison.Ordinal);
         Assert.Contains("@onclick=\"() => ToggleCourse(course.Metadata.Id)\"", source, StringComparison.Ordinal);
         Assert.Contains("@onclick=\"() => ToggleSession(lesson.Id)\"", source, StringComparison.Ordinal);

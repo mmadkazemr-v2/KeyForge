@@ -28,6 +28,7 @@
 
 .practice-library__course-row {
     width: 100%;
+    min-height: 4.5rem;
     border: 1px solid var(--kf-color-border, #302b3b);
     border-radius: var(--kf-radius-card, .75rem);
     background: var(--kf-color-surface, #15131c);
@@ -35,6 +36,7 @@
     text-align: start;
     font: inherit;
     cursor: pointer;
+    transition: background-color 150ms ease, border-color 150ms ease;
 }
 
 .practice-library__tree--sessions {
@@ -170,6 +172,17 @@
     .practice-library__row {
         gap: .35rem;
         padding-inline: .5rem;
+    }
+
+    .practice-library__course-row {
+        align-items: flex-start;
+    }
+
+    .practice-library__course-row .practice-library__progress {
+        max-width: 6.5rem;
+        white-space: normal;
+        text-align: end;
+        line-height: 1.35;
     }
 
     .practice-library__tree--sessions {
