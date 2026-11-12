@@ -47,6 +47,10 @@
         </tbody>
     </table>
     <p role="status">@T("رویدادهای ثبت‌شده", "Captured events"): @RuntimeExercise.InputEvents.Count</p>
+    @if (_interrupted)
+    {
+        <p role="alert">@UiText.MidiDeviceChangedPaused</p>
+    }
     @if (!_active)
     {
         <button type="button" class="kf-button kf-button--primary" @onclick="StartAsync">@UiText.StartPractice</button>
@@ -63,7 +67,11 @@
     [Parameter, EditorRequired] public RuntimeExercise RuntimeExercise { get; set; } = null!;
     [Parameter] public EventCallback<DateTime> OnCompleted { get; set; }
     private bool _active;
+    private bool _starting;
+    private bool _interrupted;
+    private bool _disposed;
     private int _generation;
+    private int _activeGeneration;
     private double? _origin;
     private IDisposable? _registration;
     private bool Relative => RuntimeExercise.Challenge.Performance!.TimingReference == PerformanceTimingReference.FirstAttack;
@@ -77,18 +85,31 @@
 
     private async Task StartAsync()
     {
+        if (_active || _starting || _disposed) return;
         var generation = ++_generation;
+        _starting = true;
+        _activeGeneration = 0;
+        _interrupted = false;
         RuntimeExercise.ResetCapturedInputs();
-        var origin = await MidiInput.CaptureBrowserTimestampAsync();
-        if (generation != _generation) return;
-        _origin = origin;
-        MidiInput.SetTimelineOrigin(origin);
-        _active = origin is not null;
+        MidiInput.SetTimelineOrigin(null);
+        try
+        {
+            var origin = await MidiInput.CaptureBrowserTimestampAsync();
+            if (generation != _generation || _disposed) return;
+            _origin = origin;
+            MidiInput.SetTimelineOrigin(origin);
+            _active = origin is not null;
+            _activeGeneration = _active ? generation : 0;
+        }
+        finally
+        {
+            if (generation == _generation) _starting = false;
+        }
     }
 
     private Task CaptureAsync(MidiInputMessage message)
     {
-        if (!_active
+        if (!_active || _activeGeneration != _generation || !MidiInput.Accepts(message)
             || _origin is not { } origin
             || MidiInputAdapter.TryCreate(message, DateTime.UtcNow, origin) is not { } input)
         {
@@ -103,7 +124,10 @@
     private void Restart()
     {
         _generation++;
+        _starting = false;
         _active = false;
+        _activeGeneration = 0;
+        _interrupted = false;
         _origin = null;
         RuntimeExercise.ResetCapturedInputs();
         MidiInput.SetTimelineOrigin(null);
@@ -111,13 +135,19 @@
 
     private void DeviceChanged(string? device, bool connected)
     {
-        if (connected)
+        if (!_active && !_starting) return;
+        Interlocked.Increment(ref _generation);
+        _ = InvokeAsync(() =>
         {
-            return;
-        }
-
-        Restart();
-        _ = InvokeAsync(StateHasChanged);
+            _starting = false;
+            _active = false;
+            _activeGeneration = 0;
+            _origin = null;
+            _interrupted = true;
+            RuntimeExercise.ResetCapturedInputs();
+            MidiInput.SetTimelineOrigin(null);
+            StateHasChanged();
+        });
     }
 
     private async Task FinishAsync()
@@ -128,13 +158,19 @@
         }
 
         _active = false;
+        _activeGeneration = 0;
         await OnCompleted.InvokeAsync(DateTime.UtcNow);
     }
 
     public void Dispose()
     {
+        _disposed = true;
         _generation++;
+        _starting = false;
         _active = false;
+        _activeGeneration = 0;
+        RuntimeExercise.ResetCapturedInputs();
+        MidiInput.SetTimelineOrigin(null);
         _registration?.Dispose();
         MidiInput.SelectedDeviceStateChanged -= DeviceChanged;
     }
