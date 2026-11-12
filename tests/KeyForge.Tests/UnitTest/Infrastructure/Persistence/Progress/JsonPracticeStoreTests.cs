@@ -3,6 +3,36 @@ namespace KeyForge.Tests.UnitTest.Infrastructure.Persistence.Progress;
 public sealed class JsonPracticeStoreTests
 {
     [Fact]
+    public void SeparateProfileFilesKeepAttemptsAndProgressIsolated()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "KeyForgeProfiles", Guid.NewGuid().ToString("N"));
+        var firstPath = Path.Combine(directory, "profile-one.json");
+        var secondPath = Path.Combine(directory, "profile-two.json");
+        try
+        {
+            var first = new JsonPracticeStore(firstPath);
+            var second = new JsonPracticeStore(secondPath);
+            first.RecordIfNew(new ExerciseAttempt
+            {
+                LessonId = "lesson",
+                ExerciseId = "exercise",
+                Score = 88,
+                IsSuccessful = true,
+                CompletedAt = DateTime.UtcNow
+            });
+
+            Assert.Single(first.GetAttemptsByLesson("lesson"));
+            Assert.Empty(second.GetAttemptsByLesson("lesson"));
+            Assert.Equal(88, first.GetProgress("lesson")!.BestScore);
+            Assert.Null(second.GetProgress("lesson"));
+        }
+        finally
+        {
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
     public void RestartPreservesAttemptsProgressAndIdentityDeduplication()
     {
         var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + ".json");
