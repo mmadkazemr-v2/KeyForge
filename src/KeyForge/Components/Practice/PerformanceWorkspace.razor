@@ -85,7 +85,13 @@
 
     private async Task StartAsync()
     {
-        if (_active || _starting || _disposed) return;
+        {
+            if (_active || _starting || _disposed)
+            {
+                return;
+            }
+        }
+
         var generation = ++_generation;
         _starting = true;
         _activeGeneration = 0;
@@ -95,7 +101,11 @@
         try
         {
             var origin = await MidiInput.CaptureBrowserTimestampAsync();
-            if (generation != _generation || _disposed) return;
+            if (generation != _generation || _disposed)
+            {
+                return;
+            }
+
             _origin = origin;
             MidiInput.SetTimelineOrigin(origin);
             _active = origin is not null;
@@ -103,7 +113,10 @@
         }
         finally
         {
-            if (generation == _generation) _starting = false;
+            if (generation == _generation)
+            {
+                _starting = false;
+            }
         }
     }
 
@@ -135,7 +148,11 @@
 
     private void DeviceChanged(string? device, bool connected)
     {
-        if (!_active && !_starting) return;
+        if (!_active && !_starting)
+        {
+            return;
+        }
+
         Interlocked.Increment(ref _generation);
         _ = InvokeAsync(() =>
         {
