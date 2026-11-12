@@ -32,13 +32,11 @@ else
                 var courseExpanded = _expandedCourses.Contains(course.Metadata.Id);
                 var coursePanelId = GetCoursePanelId(course.Metadata.Id);
                 <li class="practice-library__course">
-                    <div class="practice-library__row practice-library__course-row">
-                        <button class="practice-library__toggle" type="button"
-                                aria-expanded="@courseExpanded" aria-controls="@coursePanelId"
-                                aria-label="@GetToggleLabel(course.Metadata.Name, courseExpanded)"
-                                @onclick="() => ToggleCourse(course.Metadata.Id)">
-                            <span aria-hidden="true">@(courseExpanded ? "▼" : "▶")</span>
-                        </button>
+                    <button class="practice-library__row practice-library__course-row" type="button"
+                            aria-expanded="@courseExpanded" aria-controls="@coursePanelId"
+                            aria-label="@GetToggleLabel(course.Metadata.Name, courseExpanded)"
+                            @onclick="() => ToggleCourse(course.Metadata.Id)">
+                        <span aria-hidden="true">@(courseExpanded ? "▼" : "▶")</span>
                         <div class="practice-library__title-block">
                             <span class="practice-library__title">@course.Metadata.Name</span>
                             @if (!string.IsNullOrWhiteSpace(course.Metadata.Description))
@@ -48,7 +46,7 @@ else
                         </div>
                         <span
                             class="practice-library__progress">@UiText.GetCompletedExerciseProgress(course.CompletedExerciseCount, course.ExerciseCount)</span>
-                    </div>
+                    </button>
                     <ul id="@coursePanelId" class="practice-library__tree practice-library__tree--sessions" hidden="@(!courseExpanded)">
                         @foreach (var session in course.Sessions)
                         {

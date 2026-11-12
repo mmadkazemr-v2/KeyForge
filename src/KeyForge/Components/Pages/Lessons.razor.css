@@ -27,10 +27,14 @@
 }
 
 .practice-library__course-row {
+    width: 100%;
     border: 1px solid var(--kf-color-border, #302b3b);
     border-radius: var(--kf-radius-card, .75rem);
     background: var(--kf-color-surface, #15131c);
     color: var(--kf-color-text-primary, #f5f3f8);
+    text-align: start;
+    font: inherit;
+    cursor: pointer;
 }
 
 .practice-library__tree--sessions {
@@ -69,6 +73,11 @@
 
 .practice-library__course-row:hover {
     border-color: var(--kf-color-border-strong, #453d55);
+}
+
+.practice-library__course-row:focus-visible {
+    outline: 3px solid var(--kf-color-primary-bright, #a78bfa);
+    outline-offset: 2px;
 }
 
 .practice-library__title-block,
