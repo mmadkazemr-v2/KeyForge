@@ -1,11 +1,12 @@
 @page "/import"
 @rendermode InteractiveServer
 @using KeyForge.Infrastructure.Content.Import
+@inject ILogger<Import> Logger
 
 <PageTitle>@T("ورود MusicXML", "Import MusicXML")</PageTitle>
 <h1>@T("وارد کردن بخش هنرجو از MusicXML", "Import a MusicXML learner part")</h1>
 <p>@T("فایل MusicXML را انتخاب کنید، سپس بخش هنرجو را مشخص کنید.", "Choose your MusicXML file, then explicitly select the learner part.")</p>
-<InputFile OnChange="ReadAsync" accept=".musicxml,.xml"/>
+<InputFile OnChange="ReadAsync" accept=".musicxml,.xml" />
 @if (_xml is not null)
 {
     <label>@T("بخش هنرجو", "Learner part")
@@ -50,18 +51,51 @@
 
     private async Task ReadAsync(InputFileChangeEventArgs args)
     {
-        _xml = _yaml = _error = null;
+        _xml = _yaml = _error = _previewId = null;
+        _parts = [];
         _part = "";
         try
         {
+            var extension = Path.GetExtension(args.File.Name);
+            if (!extension.Equals(".xml", StringComparison.OrdinalIgnoreCase) &&
+                !extension.Equals(".musicxml", StringComparison.OrdinalIgnoreCase))
+            {
+                _error = T("پسوند فایل باید .xml یا .musicxml باشد.", "Choose a .xml or .musicxml file.");
+                return;
+            }
+
+            switch (args.File.Size)
+            {
+                case 0:
+                    _error = T("فایل خالی است.", "The selected file is empty.");
+                    return;
+                case > MusicXmlPerformanceImporter.MaximumCharacters:
+                    _error = T("حجم فایل از حد مجاز بیشتر است.", "The selected file exceeds the import size limit.");
+                    return;
+            }
+
             using var reader = new StreamReader(args.File.OpenReadStream(MusicXmlPerformanceImporter.MaximumCharacters));
             var xml = await reader.ReadToEndAsync();
             _parts = _importer.GetParts(xml);
+            if (_parts.Count == 0)
+            {
+                _error = T("این فایل بخش موسیقایی قابل واردکردن ندارد.", "This file contains no importable parts.");
+                return;
+            }
             _xml = xml;
         }
-        catch (Exception ex) when (ex is IOException or InvalidOperationException or ArgumentException)
+        catch (InvalidDataException)
         {
-            _error = ex.Message;
+            _error = T("فایل MusicXML معتبر نیست یا این قالب پشتیبانی نمی‌شود.", "The MusicXML file is invalid or uses an unsupported format.");
+        }
+        catch (IOException)
+        {
+            _error = T("خواندن فایل ممکن نشد. دوباره انتخابش کنید.", "The file could not be read. Please select it again.");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Unexpected error while reading a MusicXML import.");
+            _error = T("هنگام خواندن فایل خطایی رخ داد.", "An unexpected error occurred while reading the file.");
         }
     }
 
@@ -73,9 +107,14 @@
             _yaml = _importer.Import(_xml!, _part, _lessonId, "imported-performance", _bpm);
             _previewId = _lessonId;
         }
-        catch (Exception ex) when (ex is IOException or InvalidOperationException or ArgumentException or YamlLessonParseException)
+        catch (Exception ex) when (ex is InvalidDataException or InvalidOperationException or ArgumentException or YamlLessonParseException)
         {
-            _error = ex.Message;
+            _error = T("اعتبارسنجی انجام نشد. بخش، شناسه درس و داده‌های موسیقی را بررسی کنید.", "Validation failed. Check the selected part, lesson ID, and musical data.");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Unexpected error while previewing a MusicXML import.");
+            _error = T("پیش‌نمایش ساخته نشد. فایل را بررسی کنید و دوباره تلاش کنید.", "The preview could not be created. Check the file and try again.");
         }
     }
 

@@ -8,7 +8,7 @@
             <bdi>@note.OnsetErrorMilliseconds?.ToString("+0.##;-0.##;0") ms</bdi>
             @if (note.IsVelocityCorrect is { } velocityCorrect)
             {
-                <span>@(velocityCorrect ? "Dynamics ? / ??? ????" : "Dynamics ? / ??? ??????") <bdi>@note.RelativeVelocity?.ToString("0.##")</bdi></span>
+                <span>@(velocityCorrect ? T("شدت صحیح /", "Dynamics correct /") : T("شدت نادرست /", "Dynamics incorrect /")) <bdi>@note.RelativeVelocity?.ToString("0.##")</bdi></span>
             }
             @if (note.ReleaseAccuracy != PerformanceReleaseAccuracy.NotScored)
             {
@@ -18,12 +18,13 @@
     }
 </div>
 @code {
+    private static string T(string fa, string en) => CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "fa" ? fa : en;
     private static string ReleaseLabel(PerformanceReleaseAccuracy accuracy) => accuracy switch
     {
-        PerformanceReleaseAccuracy.Correct => "Release ? / ??????? ????",
-        PerformanceReleaseAccuracy.Early => "Early release / ??????? ???",
-        PerformanceReleaseAccuracy.Late => "Late release / ??????? ???",
-        _ => "Missing or unexpected release / ??????? ????? ?? ?????"
+        PerformanceReleaseAccuracy.Correct => T("رهاسازی صحیح /", "Release correct /"),
+        PerformanceReleaseAccuracy.Early => T("رهاسازی زودهنگام /", "Early release /"),
+        PerformanceReleaseAccuracy.Late => T("رهاسازی دیرهنگام /", "Late release /"),
+        _ => T("رهاسازی ثبت‌نشده یا غیرمنتظره /", "Missing or unexpected release /")
     };
     [Parameter, EditorRequired] public PerformanceEvaluationDetails Details { get; set; } = null!;
 }
